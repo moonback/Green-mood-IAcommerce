@@ -1,6 +1,7 @@
-import { supabase } from './supabase';
+import { supabase, SUPABASE_URL, SUPABASE_ANON_KEY } from './supabase';
 import { Product } from './types';
 import { useSettingsStore } from '../store/settingsStore';
+import { useToastStore } from '../store/toastStore';
 
 const AI_MODEL = 'liquid/lfm-2-24b-a2b:latest';
 
@@ -13,6 +14,8 @@ export interface GeneratedProductData {
     };
     attributes?: {
         brand?: string;
+        cbd_percentage?: number;
+        thc_max?: number;
         techFeatures?: string[];
         productMetrics?: Record<'Détente' | 'Saveur' | 'Arôme' | 'Puissance', number>;
         productSpecs?: {
@@ -43,13 +46,15 @@ export async function generateProductInfo(productName: string, categoryName?: st
 
     INFOS À GÉNÉRER :
     1. 'headline' : Accroche courte et percutante (ex: 'L'excellence californienne au service de votre détente').
-    2. 'description' : Texte immersif décrivant l'arôme, le goût et l'effet.
-    3. 'seo' : Titre et meta-description optimisés.
+    2. 'description' : Texte immersif décrivant l'arôme (terpènes), le goût et l'expérience.
+    3. 'seo' : Titre et meta-description optimisés pour le référencement CBD.
     4. 'attributes' : 
-       - 'brand': 'Green Mood Exclusive' (ou la marque réelle si connue).
-       - 'techFeatures': 3-5 tags courts (ex: 'Indoor', 'Full Spectrum', 'Lab Tested', '100% Organique').
-       - 'productMetrics': Un objet avec 'Détente', 'Saveur', 'Arôme', 'Puissance' (scores de 1 à 10).
-       - 'productSpecs': Liste de specs structurées (Méthode de culture, Taux de CBD, Taux de THC < 0.3%, Profil de Terpènes, Effets Dominants).
+       - 'brand': Fabricant original ou 'Production Exclusive'.
+       - 'cbd_percentage': Valeur numérique entre 5 et 90 (ex: 22.5).
+       - 'thc_max': Valeur numérique <= 0.3 (ex: 0.18).
+       - 'techFeatures': 3-5 tags (ex: ['Indoor', 'Bio-Organique', 'Grown in Italy', 'Full Spectrum']).
+       - 'productMetrics': { 'Détente': 8, 'Saveur': 9, 'Arôme': 9, 'Puissance': 7 } (scores sur 10).
+       - 'productSpecs': Liste d'objets { name, description, category } pour : 'Profil de Terpènes', 'Méthode de Culture', 'Effet Dominant', 'Certifications'.
 
     Exemple de structure :
     {
@@ -69,15 +74,43 @@ export async function generateProductInfo(productName: string, categoryName?: st
     `;
 
     try {
-        const { data, error } = await supabase.functions.invoke('ai-chat', {
-            body: {
+        const { data: { session } } = await supabase.auth.getSession();
+        const functionUrl = `${SUPABASE_URL}/functions/v1/ai-chat?apikey=${SUPABASE_ANON_KEY}`;
+        
+        const response = await fetch(functionUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${session?.access_token || SUPABASE_ANON_KEY}`,
+                'apikey': SUPABASE_ANON_KEY,
+                'x-client-info': 'green-mood-ai-ecommerce'
+            },
+            body: JSON.stringify({
                 model: AI_MODEL,
                 messages: [{ role: 'user', content: prompt }],
                 x_title: `${storeName} Admin AI`,
-            },
+            })
         });
 
-        if (error) throw new Error(`AI error: ${error.message}`);
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('[AI] Direct Fetch Error:', {
+                status: response.status,
+                statusText: response.statusText,
+                errorText,
+                hasSession: !!session,
+                url: functionUrl
+            });
+            
+            useToastStore.getState().addToast({
+                type: 'error',
+                message: `Erreur IA (${response.status}): ${response.status === 401 ? 'Session expirée ou non autorisée' : 'Service indisponible'}`
+            });
+            
+            return null;
+        }
+
+        const data = await response.json();
 
         let content = data?.choices?.[0]?.message?.content;
         if (!content) return null;
@@ -121,6 +154,9 @@ export async function autoFillProductSync(product: Product, force: boolean = fal
 
     if (force) {
         if (generated.description) updates.description = generated.description;
+        if (generated.attributes?.cbd_percentage) updates.cbd_percentage = generated.attributes.cbd_percentage;
+        if (generated.attributes?.thc_max) updates.thc_max = generated.attributes.thc_max;
+        
         updates.attributes = {
             ...product.attributes,
             headline: generated.headline || product.attributes?.headline || '',
@@ -144,6 +180,9 @@ export async function autoFillProductSync(product: Product, force: boolean = fal
         const hasHeadline = !!currentAttrs.headline;
 
         if (!hasBrand || !hasMetrics || !hasTechFeatures || !hasProductSpecs || !hasSeoTitle || !hasSeoMeta || !hasHeadline) {
+            if (generated.attributes?.cbd_percentage) updates.cbd_percentage = generated.attributes.cbd_percentage;
+            if (generated.attributes?.thc_max) updates.thc_max = generated.attributes.thc_max;
+
             updates.attributes = {
                 ...currentAttrs,
                 headline: hasHeadline ? currentAttrs.headline : generated.headline || '',

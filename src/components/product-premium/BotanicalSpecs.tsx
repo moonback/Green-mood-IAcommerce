@@ -27,20 +27,20 @@ export default function ProductSpecs({ specs }: Props) {
   if (!specs.length) return null;
 
   return (
-    <section className="mx-auto max-w-[1200px] px-4 py-4 sm:px-6 lg:px-8">
+    <section id="specs" className="mx-auto max-w-[1200px] px-4 py-4 sm:px-6 lg:px-8 scroll-mt-24">
       {/* ── Header Decor ── */}
       <div className="mb-12 relative">
         <div className="absolute -left-4 top-0 w-1 h-12 bg-gradient-to-b from-[color:var(--color-primary)] to-transparent rounded-full" />
         <p className="text-[10px] font-black uppercase tracking-[0.4em] text-[color:var(--color-primary)] mb-2 flex items-center gap-2">
-          <Info className="w-3 h-3" /> Information Produit
+          <Info className="w-3 h-3" /> Expertise & Transparence
         </p>
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
           <div className="space-y-2">
             <h3 className="text-4xl font-black text-[color:var(--color-text)] uppercase tracking-tight leading-none">
-              Caractéristiques <span className="text-transparent bg-clip-text bg-gradient-to-r from-[color:var(--color-primary)] to-cyan-400">Détaillées</span>
+              Composition <span className="text-transparent bg-clip-text bg-gradient-to-r from-[color:var(--color-primary)] to-emerald-400">& Analyse</span>
             </h3>
             <p className="text-sm text-[color:var(--color-text-muted)] max-w-xl font-medium">
-              Toutes les informations nécessaires pour faire le bon choix, toujours au meilleur prix.
+              Nous garantissons une traçabilité totale et des analyses en laboratoire indépendant pour chaque lot.
             </p>
           </div>
 
@@ -156,7 +156,7 @@ export default function ProductSpecs({ specs }: Props) {
                       <div className="flex-1 space-y-12">
                         <div className="space-y-4">
                           <p className="text-[11px] font-black uppercase tracking-[0.3em] text-[color:var(--color-text-subtle)] flex items-center gap-2">
-                            <span className="w-8 h-px bg-[color:var(--color-primary)]/30" /> Présentation technique
+                            <span className="w-8 h-px bg-[color:var(--color-primary)]/30" /> Analyse Bio-chimique
                           </p>
                           <div 
                             className="text-lg md:text-xl text-[color:var(--color-text)] leading-relaxed font-medium bg-[color:var(--color-bg-elevated)] backdrop-blur-sm p-8 rounded-3xl border border-[color:var(--color-border)] shadow-inner [&_p]:mb-4 [&_ul]:list-disc [&_ul]:pl-5 [&_li]:mb-1"
@@ -170,9 +170,9 @@ export default function ProductSpecs({ specs }: Props) {
                             <div className="space-y-1">
                               <div className="flex justify-between items-end mb-3">
                                 <div className="space-y-1">
-                                  <p className="text-[10px] font-black uppercase tracking-widest text-[color:var(--color-text-subtle)]">Indice de performance</p>
+                                  <p className="text-[10px] font-black uppercase tracking-widest text-[color:var(--color-text-subtle)]">Intensité Bien-être</p>
                                   <p className="text-2xl font-black text-[color:var(--color-text)]">
-                                    {activeSpec.intensity >= 90 ? 'Excellence' : activeSpec.intensity >= 80 ? 'Optimisé' : 'Standard'}
+                                    {activeSpec.intensity >= 90 ? 'Luxe / Pur' : activeSpec.intensity >= 80 ? 'Équilibré' : 'Subtil'}
                                   </p>
                                 </div>
                                 <div className="flex flex-col items-end">
@@ -184,7 +184,7 @@ export default function ProductSpecs({ specs }: Props) {
                               <div className="h-4 rounded-full bg-[color:var(--color-bg-muted)] overflow-hidden p-1 border border-[color:var(--color-border)] shadow-inner">
                                 <motion.div
                                   key={activeSpec.name + '-bar'}
-                                  className="h-full rounded-full bg-gradient-to-r from-[color:var(--color-primary)] via-cyan-400 to-emerald-400 relative"
+                                  className="h-full rounded-full bg-gradient-to-r from-[color:var(--color-primary)] via-emerald-500 to-emerald-400 relative"
                                   initial={{ width: 0 }}
                                   animate={{ width: `${activeSpec.intensity || 100}%` }}
                                   transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
@@ -202,14 +202,14 @@ export default function ProductSpecs({ specs }: Props) {
 
                           <div className="bg-[color:var(--color-bg-elevated)] rounded-2xl p-6 border border-[color:var(--color-border)] flex items-center gap-4">
                             <div className="w-12 h-12 rounded-xl bg-[color:var(--color-primary)]/20 flex items-center justify-center text-[color:var(--color-primary)]">
-                              <Zap className="w-6 h-6" />
+                              <ShieldCheck className="w-6 h-6" />
                             </div>
                             <div>
-                              <p className="text-[10px] font-black uppercase tracking-widest text-[color:var(--color-text-subtle)] mb-1">Impact Direct</p>
+                              <p className="text-[10px] font-black uppercase tracking-widest text-[color:var(--color-text-subtle)] mb-1">Effet Notoire</p>
                               <p className="text-xs font-bold text-[color:var(--color-text)] leading-snug">
                                 {activeSpec.intensity >= 90 
-                                  ? "Une caractéristique qui démarque vraiment ce produit de la concurrence." 
-                                  : "L'essentiel garanti pour un usage régulier en toute simplicité."}
+                                  ? "Une caractéristique qui démarque vraiment cette variété par sa puissance et sa pureté." 
+                                  : "Un profil équilibré offrant une expérience douce et agréable pour le quotidien."}
                               </p>
                             </div>
                           </div>
@@ -264,7 +264,7 @@ export default function ProductSpecs({ specs }: Props) {
                 
                 <div className="mt-4 pt-4 border-t border-[color:var(--color-border)]/50">
                   <div className="flex justify-between items-center text-[9px] font-black uppercase tracking-widest text-[color:var(--color-text-subtle)] mb-2">
-                    <span>Performance</span>
+                    <span>Intensité</span>
                     <span>{spec.intensity}%</span>
                   </div>
                   <div className="h-1 rounded-full bg-[color:var(--color-bg-muted)] overflow-hidden">

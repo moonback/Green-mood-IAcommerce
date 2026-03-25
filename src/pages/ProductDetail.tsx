@@ -21,8 +21,10 @@ import { formatProductText } from '../lib/textFormatter';
 
 const ProductStory = lazy(() => import('../components/product-premium/ProductStory'));
 const EffectVisualization = lazy(() => import('../components/product-premium/EffectVisualization'));
-const ProductSpecs = lazy(() => import('../components/product-premium/MachineSpecs'));
+const ProductSpecs = lazy(() => import('../components/product-premium/BotanicalSpecs'));
 const QualityGuarantee = lazy(() => import('../components/product-premium/QualityGuarantee'));
+const ConsumptionGuide = lazy(() => import('../components/product-premium/ConsumptionGuide'));
+const DosageGuide = lazy(() => import('../components/product-premium/DosageGuide'));
 const ProductReviews = lazy(() => import('../components/product-premium/ProductReviews'));
 const PremiumRelatedProducts = lazy(() => import('../components/product-premium/PremiumRelatedProducts'));
 
@@ -361,11 +363,13 @@ export default function ProductDetail() {
         <PremiumModal
           isOpen={activeModal === 'performance'}
           onClose={() => setActiveModal(null)}
-          title="Évaluation & Qualité"
+          title="Expertise & Bien-être"
         >
-          <div className="space-y-12">
+          <div className="space-y-16">
             <EffectVisualization metrics={product.productMetrics} />
+            <DosageGuide />
             <QualityGuarantee />
+            <ConsumptionGuide />
           </div>
         </PremiumModal>
 

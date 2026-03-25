@@ -3,25 +3,25 @@ import { useSettingsStore } from '../../store/settingsStore';
 
 const steps = [
   {
-    icon: '🚚',
-    title: 'Livraison',
-    detail: 'Transport sécurisé',
-    time: 'J+3 à J+7',
-    body: 'Votre machine est livrée emballée sur palette, protégée contre les chocs. Un transporteur spécialisé vous contacte pour convenir d\'un créneau.',
+    icon: '🌿',
+    title: 'Préparation & Contrôle',
+    detail: 'Haute Qualité',
+    time: 'Luxe & Pureté',
+    body: 'Nos fleurs de CBD sont sélectionnées avec une exigence extrême, manucurées à la main et analysées par des laboratoires indépendants pour garantir une pureté totale.',
   },
   {
-    icon: '🔧',
-    title: 'Installation',
-    detail: 'Mise en place sur site',
-    time: '1 à 3 h',
-    body: 'Notre technicien pose et cale la machine à l\'emplacement choisi, effectue les connexions électriques et réseau, puis vérifie chaque fonction.',
+    icon: '📦',
+    title: 'Livraison Discrète',
+    detail: 'Protection Optimale',
+    time: '48h - 72h',
+    body: 'Votre commande est expédiée dans des colis neutres et opaques, avec un triple emballage sous vide qui neutralise totalement les odeurs pour une totale discrétion.',
   },
   {
-    icon: '🎮',
-    title: 'Démarrage',
-    detail: 'Formation & premiers jeux',
-    time: '30 min',
-    body: 'Prise en main complète : réglages son/image, configuration monnayeur, démonstration des modes de jeu. Vous repartez autonome.',
+    icon: '🧘',
+    title: 'Dégustation & Effet',
+    detail: 'Bien-être Suprême',
+    time: 'Relaxation Totale',
+    body: 'Suivez nos guides de dosage personnalisés et profitez d\'un moment de sérénité. Nos extraits sont conçus pour agir en harmonie avec votre corps sans effet psychoactif.',
   },
 ];
 
@@ -32,10 +32,10 @@ export default function ConsumptionGuide() {
     <section className="relative border-t border-[color:var(--color-border)] bg-[color:var(--color-bg-elevated)]/20">
       <div className="mx-auto max-w-[1200px] px-4 py-16 sm:px-6 lg:px-8">
         <div className="mb-10">
-          <p className="text-[10px] font-bold uppercase tracking-[0.35em] text-[color:var(--color-primary)] mb-2">Mise en service</p>
-          <h3 className="text-3xl font-['Inter',sans-serif] font-bold text-[color:var(--color-text)]">De la commande au premier jeu</h3>
+          <p className="text-[10px] font-bold uppercase tracking-[0.35em] text-[color:var(--color-primary)] mb-2">Artisans de la Détente</p>
+          <h3 className="text-3xl font-['Inter',sans-serif] font-bold text-[color:var(--color-text)]">Un Voyage Botanique d'Exception</h3>
           <p className="mt-2 text-sm text-[color:var(--color-text-muted)] max-w-xl">
-            {settings.store_name} gère tout de A à Z — livraison, installation et formation incluses.
+            {settings.store_name} vous guide vers une expérience de CBD premium, de la sélection des graines à votre rituel quotidien.
           </p>
         </div>
 

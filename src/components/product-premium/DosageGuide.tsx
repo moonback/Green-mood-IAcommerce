@@ -4,35 +4,35 @@ import { useSettingsStore } from '../../store/settingsStore';
 
 const profiles = [
   {
-    level: 'Usage privé',
-    context: 'Salon / Salle de jeux',
-    tip: 'Pour animer vos soirées en famille ou entre amis. La machine s\'intègre parfaitement dans une salle de jeux, garage ou sous-sol aménagé.',
-    icon: Home,
-    color: 'from-[#2563eb]/20 to-teal-500/10',
+    level: 'Léger / Découverte',
+    context: 'Détente Quotidienne',
+    tip: 'Idéal pour une première expérience. Apaise l\'esprit sans altérer la concentration. Parfait en journée pour rester productif et détendu.',
+    icon: Coffee,
+    color: 'from-emerald-500/20 to-teal-500/10',
     intensity: 33,
   },
   {
-    level: 'Bar & Café',
-    context: 'Établissement CHR',
-    tip: 'Générez des revenus complémentaires et fidélisez votre clientèle. Monnayeur intégré, robustesse professionnelle et entretien simplifié.',
-    icon: Coffee,
-    color: 'from-green-500/20 to-[#06b6d4]/10',
+    level: 'Équilibré / Médium',
+    context: 'Sérénité Active',
+    tip: 'Idéal après le travail. Aide à déconnecter et favorise une récupération musculaire optimale. Une intensité modérée pour un bien-être durable.',
+    icon: Home,
+    color: 'from-amber-500/20 to-orange-500/10',
     intensity: 66,
   },
   {
-    level: 'Salle Arcade Pro',
-    context: 'Centre de loisirs',
-    tip: 'Déploiement multi-machines pour salles d\'arcade, laser game ou bowling. Financement professionnel et contrat de maintenance disponibles.',
+    level: 'Intense / Profond',
+    context: 'Repos Absolu',
+    tip: 'Notre concentration maximale. Conçue pour favoriser un sommeil réparateur profond et calmer les tensions les plus fortes.',
     icon: Building2,
-    color: 'from-[#2563eb]/20 to-green-500/10',
+    color: 'from-purple-500/20 to-indigo-500/10',
     intensity: 100,
   },
 ];
 
 const tips = [
-  { icon: CheckCircle2, title: 'Vérifiez l\'espace', text: 'Mesurez votre emplacement avant commande. Les dimensions incluent les dégagements latéraux et arrière nécessaires à la ventilation.' },
-  { icon: Users, title: 'Public cible', text: 'Considérez le profil de vos utilisateurs pour choisir entre borne familiale (multi-jeux) ou machine dédiée (flipper, simulateur).' },
-  { icon: TrendingUp, title: 'Rentabilité', text: 'Pour un usage CHR, le ROI moyen est de 8 à 18 mois selon l\'emplacement et la fréquentation. Demandez notre simulateur de rentabilité.' },
+  { icon: CheckCircle2, title: 'Dosage Progressif', text: 'Commencez par une faible dose et augmentez par paliers de 5mg jusqu\'à trouver votre équilibre idéal.' },
+  { icon: Users, title: 'Accompagnement', text: 'Chaque organisme réagit différemment. Nos conseillers sont là pour vous orienter selon vos besoins spécifiques.' },
+  { icon: TrendingUp, title: 'Consommation Bio', text: 'Privilégiez les infusions ou la vaporisation pour préserver l\'intégrité des cannabinoïdes et des terpènes.' },
 ];
 
 export default function DosageGuide() {
@@ -54,8 +54,8 @@ export default function DosageGuide() {
               viewport={{ once: true }}
               className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.3em] text-[color:var(--color-primary)]"
             >
-              <Building2 size={14} className="mb-0.5" />
-              Profils d'utilisation
+              <CheckCircle2 size={14} className="mb-0.5" />
+              Guide de Bien-être
             </motion.div>
 
             <motion.h3
@@ -65,8 +65,8 @@ export default function DosageGuide() {
               transition={{ delay: 0.1 }}
               className="mt-4 text-4xl font-semibold text-[color:var(--color-text)] md:text-5xl"
             >
-              Quel est votre<br />
-              <span className="text-[color:var(--color-text-subtle)] italic font-light">projet ?</span>
+              Trouvez votre<br />
+              <span className="text-[color:var(--color-text-subtle)] italic font-light">équilibre.</span>
             </motion.h3>
 
             <motion.div
@@ -77,9 +77,9 @@ export default function DosageGuide() {
               className="mt-12 space-y-8"
             >
               <p className="text-[color:var(--color-text-muted)] leading-relaxed">
-                Que ce soit pour votre domicile, un bar ou une salle d'arcade, nos conseillers{' '}
+                Le dosage du CBD dépend de votre poids, de votre métabolisme et de vos attentes. L'équipe{' '}
                 <span className="text-[color:var(--color-text)] border-b border-[color:var(--color-primary)]/30">{settings.store_name}</span>{' '}
-                vous accompagnent dans le choix de la machine idéale.
+                a conçu ces profils pour vous aider à débuter votre voyage botanique.
               </p>
 
               <div className="space-y-6">
@@ -147,7 +147,7 @@ export default function DosageGuide() {
             >
               <Info size={16} className="text-[color:var(--color-primary)] shrink-0 mt-0.5" />
               <p className="text-[10px] font-medium leading-relaxed text-[color:var(--color-text-muted)] italic">
-                Devis gratuit sous 24h, financement professionnel disponible. Contactez {settings.store_name} pour une étude personnalisée.
+                Ces informations sont données à titre pédagogique et ne constituent pas un avis médical. Consultez un professionnel de santé en cas de besoin.
               </p>
             </motion.div>
           </div>

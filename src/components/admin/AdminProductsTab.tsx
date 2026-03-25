@@ -61,18 +61,15 @@ const EMPTY_PRODUCT = {
     is_bundle: false,
     is_subscribable: false,
     attributes: {
-        brand: '' as string,
-        year: null as number | null,
-        dimensions: '' as string,
-        players: null as number | null,
-        power_watts: null as number | null,
-        specs: [] as string[],
-        connectivity: [] as string[],
-        benefits: [] as string[],
+        culture_method: 'Indoor' as string,
+        effects: [] as string[],
         technical_specs: [] as any[],
         seo_title: '' as string,
         seo_meta_description: '' as string,
+        note: '' as string,
     },
+    cbd_percentage: 0 as number | null,
+    thc_max: 0.2 as number | null,
 };
 
 const INPUT =
@@ -98,7 +95,7 @@ export default function AdminProductsTab({ products, categories, onRefresh }: Ad
 
     // ── Product modal ──
     const [showProductModal, setShowProductModal] = useState(false);
-    const [productForm, setProductForm] = useState(EMPTY_PRODUCT);
+    const [productForm, setProductForm] = useState<any>(EMPTY_PRODUCT);
 
     // Full ancestor path for the currently selected category (breadcrumb display)
     const selectedCategoryPath = useMemo(() => {
@@ -138,18 +135,15 @@ export default function AdminProductsTab({ products, categories, onRefresh }: Ad
                 is_active: product.is_active,
                 is_bundle: product.is_bundle ?? false,
                 is_subscribable: product.is_subscribable ?? false,
+                cbd_percentage: product.cbd_percentage,
+                thc_max: product.thc_max,
                 attributes: {
-                    brand: '',
-                    year: null,
-                    dimensions: '',
-                    players: null,
-                    power_watts: null,
-                    specs: [],
-                    connectivity: [],
-                    benefits: [],
+                    culture_method: 'Indoor',
+                    effects: [],
                     technical_specs: [],
                     seo_title: '',
                     seo_meta_description: '',
+                    note: '',
                     ...product.attributes,
                 },
             });
@@ -165,8 +159,7 @@ export default function AdminProductsTab({ products, categories, onRefresh }: Ad
                 setBundleItemsEditor([]);
             }
         } else {
-            setEditingProductId(null);
-            setProductForm({ ...EMPTY_PRODUCT, category_id: categories[0]?.id ?? '' });
+            setProductForm({ ...EMPTY_PRODUCT, category_id: categories[0]?.id ?? '', cbd_percentage: 0, thc_max: 0.2 });
             setBundleItemsEditor([]);
         }
         setShowProductModal(true);
@@ -203,9 +196,8 @@ export default function AdminProductsTab({ products, categories, onRefresh }: Ad
             const textToEmbed = [
                 payload.name,
                 payload.description ?? '',
-                payload.attributes?.brand ? `Marque: ${payload.attributes.brand}` : '',
-                ...(Array.isArray(payload.attributes?.specs) ? payload.attributes.specs : []),
-                ...(Array.isArray(payload.attributes?.benefits) ? payload.attributes.benefits : []),
+                payload.cbd_percentage ? `CBD: ${payload.cbd_percentage}%` : '',
+                ...(Array.isArray(payload.attributes?.effects) ? payload.attributes.effects : []),
             ].filter(Boolean).join(' ').trim();
 
             if (textToEmbed) {
@@ -282,12 +274,15 @@ export default function AdminProductsTab({ products, categories, onRefresh }: Ad
                         ...prev.attributes,
                         seo_title: prev.attributes?.seo_title || data.seo?.title || '',
                         seo_meta_description: prev.attributes?.seo_meta_description || data.seo?.meta_description || '',
-                        brand: prev.attributes?.brand || data.attributes?.brand || '',
-                        specs: (prev.attributes?.specs?.length ?? 0) > 0 ? prev.attributes.specs : data.attributes?.specs || [],
-                        connectivity: (prev.attributes?.connectivity?.length ?? 0) > 0 ? prev.attributes.connectivity : data.attributes?.connectivity || [],
-                        benefits: (prev.attributes?.benefits?.length ?? 0) > 0 ? prev.attributes.benefits : data.attributes?.benefits || [],
-                        technical_specs: (prev.attributes?.technical_specs?.length ?? 0) > 0 ? prev.attributes.technical_specs : (data.attributes as any)?.technical_specs || [],
-                    }
+                        culture_method: prev.attributes?.culture_method || (data.attributes as any)?.techFeatures?.[0] || 'Indoor',
+                        effects: (prev.attributes?.effects?.length ?? 0) > 0 ? prev.attributes.effects : (data.attributes as any)?.techFeatures || [],
+                        technical_specs: (prev.attributes?.technical_specs?.length ?? 0) > 0 ? prev.attributes.technical_specs : (data.attributes as any)?.productSpecs?.map((ps: any) => ({
+                            group: ps.category,
+                            items: [{ label: ps.name, value: ps.description }]
+                        })) || [],
+                    },
+                    cbd_percentage: prev.cbd_percentage || data.attributes?.cbd_percentage || 0,
+                    thc_max: prev.thc_max || data.attributes?.thc_max || 0.2,
                 }));
             }
         } finally {
@@ -305,24 +300,27 @@ export default function AdminProductsTab({ products, categories, onRefresh }: Ad
             if (!product.description && data.description) updates.description = data.description;
 
             const currentAttrs = product.attributes || {};
-            const hasBrand = !!currentAttrs.brand;
-            const hasBenefits = currentAttrs.benefits && currentAttrs.benefits.length > 0;
-            const hasSpecs = currentAttrs.specs && currentAttrs.specs.length > 0;
+            const hasCulture = !!currentAttrs.culture_method;
+            const hasEffects = currentAttrs.effects && currentAttrs.effects.length > 0;
             const hasSeoTitle = typeof currentAttrs.seo_title === 'string' && currentAttrs.seo_title.trim().length > 0;
             const hasSeoMeta = typeof currentAttrs.seo_meta_description === 'string' && currentAttrs.seo_meta_description.trim().length > 0;
 
-            if (!hasBrand || !hasBenefits || !hasSpecs || !hasSeoTitle || !hasSeoMeta) {
+            if (!hasCulture || !hasEffects || !hasSeoTitle || !hasSeoMeta) {
                 updates.attributes = {
                     ...currentAttrs,
                     seo_title: hasSeoTitle ? currentAttrs.seo_title : data.seo?.title || '',
                     seo_meta_description: hasSeoMeta ? currentAttrs.seo_meta_description : data.seo?.meta_description || '',
-                    brand: hasBrand ? currentAttrs.brand : data.attributes?.brand || '',
-                    specs: hasSpecs ? currentAttrs.specs : data.attributes?.specs || [],
-                    connectivity: currentAttrs.connectivity || data.attributes?.connectivity || [],
-                    benefits: hasBenefits ? currentAttrs.benefits : data.attributes?.benefits || [],
-                    technical_specs: currentAttrs.technical_specs || (data.attributes as any)?.technical_specs || [],
+                    culture_method: hasCulture ? currentAttrs.culture_method : (data.attributes as any)?.techFeatures?.[0] || 'Indoor',
+                    effects: hasEffects ? currentAttrs.effects : (data.attributes as any)?.techFeatures || [],
+                    technical_specs: currentAttrs.technical_specs || (data.attributes as any)?.productSpecs?.map((ps: any) => ({
+                        group: ps.category,
+                        items: [{ label: ps.name, value: ps.description }]
+                    })) || [],
                 };
             }
+
+            if (!product.cbd_percentage && data.attributes?.cbd_percentage) updates.cbd_percentage = data.attributes.cbd_percentage;
+            if (!product.thc_max && data.attributes?.thc_max) updates.thc_max = data.attributes.thc_max;
 
             if (Object.keys(updates).length > 0) {
                 await supabase.from('products').update(updates).eq('id', product.id);
@@ -341,8 +339,8 @@ export default function AdminProductsTab({ products, categories, onRefresh }: Ad
 
     const isAIComplete = (product: Product) => {
         return !!product.description &&
-            !!product.attributes?.brand &&
-            (product.attributes?.benefits?.length ?? 0) > 0 &&
+            !!product.attributes?.culture_method &&
+            (product.attributes?.effects?.length ?? 0) > 0 &&
             hasEmbedding(product.embedding);
     };
 
@@ -356,10 +354,10 @@ export default function AdminProductsTab({ products, categories, onRefresh }: Ad
 
     const productsNeedingEnrichment = products.filter(p =>
         !p.description ||
-        !p.attributes?.brand ||
+        !p.attributes?.culture_method ||
         !(typeof p.attributes?.seo_title === 'string' && p.attributes.seo_title.trim().length > 0) ||
         !(typeof p.attributes?.seo_meta_description === 'string' && p.attributes.seo_meta_description.trim().length > 0) ||
-        (p.attributes?.benefits?.length ?? 0) === 0
+        (p.attributes?.effects?.length ?? 0) === 0
     );
 
     const handleMassAIFill = async () => {
@@ -600,7 +598,7 @@ export default function AdminProductsTab({ products, categories, onRefresh }: Ad
                                     <th className="px-5 py-4 font-bold">Produit</th>
                                     <th className="px-5 py-4 font-bold">Catégorie</th>
                                     <th className="px-5 py-4 font-bold">Prix</th>
-                                    <th className="px-5 py-4 font-bold">Marque</th>
+                                    <th className="px-5 py-4 font-bold">Culture</th>
                                     <th className="px-5 py-4 font-bold">Stock</th>
                                     <th className="px-5 py-4 font-bold">Statut</th>
                                     <th className="px-5 py-4 text-center font-bold" title="Statut IA">IA</th>
@@ -647,8 +645,8 @@ export default function AdminProductsTab({ products, categories, onRefresh }: Ad
                                             {product.price.toFixed(2)} €
                                         </td>
                                         <td className="px-5 py-4 text-sm font-medium text-zinc-400">
-                                            {product.attributes?.brand ? (
-                                                <span className="text-zinc-300">{product.attributes.brand}</span>
+                                            {product.attributes?.culture_method ? (
+                                                <span className="text-emerald-400/80 font-bold">{product.attributes.culture_method}</span>
                                             ) : '—'}
                                         </td>
                                         <td className="px-5 py-4">
@@ -691,13 +689,13 @@ export default function AdminProductsTab({ products, categories, onRefresh }: Ad
                                                     </div>
                                                 ) : (
                                                     <div className="flex gap-1 items-center">
-                                                        {(product.attributes?.specs?.length ?? 0) > 0 && (
+                                                        {(product.attributes?.technical_specs?.length ?? 0) > 0 && (
                                                             <span title="Spécifications présentes">
                                                                 <Settings className="w-3 h-3 text-zinc-500" />
                                                             </span>
                                                         )}
-                                                        {(product.attributes?.benefits?.length ?? 0) > 0 && (
-                                                            <span title="Bénéfices présents">
+                                                        {(product.attributes?.effects?.length ?? 0) > 0 && (
+                                                            <span title="Effets présents">
                                                                 <Zap className="w-3 h-3 text-zinc-500" />
                                                             </span>
                                                         )}
@@ -837,8 +835,8 @@ export default function AdminProductsTab({ products, categories, onRefresh }: Ad
                                         </span>
                                     </div>
                                     <div className="flex flex-col items-end">
-                                        <span className="text-zinc-500 text-[10px] uppercase font-bold tracking-tighter">Marque</span>
-                                        <span className="font-bold text-zinc-300 text-xs truncate max-w-[80px]">{product.attributes?.brand || '—'}</span>
+                                        <span className="text-zinc-500 text-[10px] uppercase font-bold tracking-tighter">Culture</span>
+                                        <span className="font-bold text-emerald-400 text-xs truncate max-w-[80px]">{product.attributes?.culture_method || 'Indoor'}</span>
                                     </div>
                                 </div>
 
@@ -1161,77 +1159,69 @@ export default function AdminProductsTab({ products, categories, onRefresh }: Ad
                                         />
                                     </div>
 
-                                    <div>
-                                        <label className={LABEL}>Marque</label>
-                                        <input
-                                            value={productForm.attributes?.brand ?? ''}
-                                            onChange={(e) => setProductForm({
-                                                ...productForm,
-                                                attributes: { ...productForm.attributes, brand: e.target.value }
-                                            })}
-                                            className={INPUT}
-                                            placeholder="Stern Pinball, Sega, Taito..."
-                                        />
-                                    </div>
+                                    <div className="col-span-2 grid grid-cols-2 gap-4 p-4 border border-zinc-800 bg-zinc-900/50 rounded-2xl">
+                                        <div className="col-span-2 text-[10px] font-bold uppercase tracking-widest text-emerald-400 mb-2">Compositions & Culture</div>
+                                        
+                                        <div>
+                                            <label className={LABEL}>% CBD</label>
+                                            <input
+                                                type="number"
+                                                step="0.1"
+                                                min="0"
+                                                max="100"
+                                                value={productForm.cbd_percentage ?? 0}
+                                                onChange={(e) => setProductForm({ ...productForm, cbd_percentage: parseFloat(e.target.value) || 0 })}
+                                                className={INPUT}
+                                                placeholder="ex: 15.5"
+                                            />
+                                        </div>
 
-                                    <div>
-                                        <label className={LABEL}>Année</label>
-                                        <input
-                                            type="number"
-                                            min="1990"
-                                            max="2030"
-                                            value={productForm.attributes?.year ?? ''}
-                                            onChange={(e) => setProductForm({
-                                                ...productForm,
-                                                attributes: { ...productForm.attributes, year: e.target.value ? parseInt(e.target.value) : null }
-                                            })}
-                                            className={INPUT}
-                                            placeholder="2023"
-                                        />
-                                    </div>
+                                        <div>
+                                            <label className={LABEL}>% THC (Max)</label>
+                                            <input
+                                                type="number"
+                                                step="0.01"
+                                                min="0"
+                                                max="1"
+                                                value={productForm.thc_max ?? 0.2}
+                                                onChange={(e) => setProductForm({ ...productForm, thc_max: parseFloat(e.target.value) || 0 })}
+                                                className={INPUT}
+                                                placeholder="ex: 0.2"
+                                            />
+                                        </div>
 
-                                    <div>
-                                        <label className={LABEL}>Dimensions (L×l×H)</label>
-                                        <input
-                                            value={productForm.attributes?.dimensions ?? ''}
-                                            onChange={(e) => setProductForm({
-                                                ...productForm,
-                                                attributes: { ...productForm.attributes, dimensions: e.target.value }
-                                            })}
-                                            className={INPUT}
-                                            placeholder="65 x 75 x 175 cm"
-                                        />
-                                    </div>
+                                        <div>
+                                            <label className={LABEL}>Méthode de culture</label>
+                                            <select
+                                                value={productForm.attributes?.culture_method ?? 'Indoor'}
+                                                onChange={(e) => setProductForm({
+                                                    ...productForm,
+                                                    attributes: { ...productForm.attributes, culture_method: e.target.value }
+                                                })}
+                                                className={INPUT}
+                                            >
+                                                <option value="Indoor">Indoor (Intérieur)</option>
+                                                <option value="Outdoor">Outdoor (Extérieur)</option>
+                                                <option value="Greenhouse">Greenhouse (Sous-serre)</option>
+                                                <option value="Glasshouse">Glasshouse (Premium Serre)</option>
+                                            </select>
+                                        </div>
 
-                                    <div>
-                                        <label className={LABEL}>Joueurs</label>
-                                        <input
-                                            type="number"
-                                            min="1"
-                                            max="8"
-                                            value={productForm.attributes?.players ?? ''}
-                                            onChange={(e) => setProductForm({
-                                                ...productForm,
-                                                attributes: { ...productForm.attributes, players: e.target.value ? parseInt(e.target.value) : null }
-                                            })}
-                                            className={INPUT}
-                                            placeholder="1"
-                                        />
-                                    </div>
-
-                                    <div>
-                                        <label className={LABEL}>Puissance (W)</label>
-                                        <input
-                                            type="number"
-                                            min="0"
-                                            value={productForm.attributes?.power_watts ?? ''}
-                                            onChange={(e) => setProductForm({
-                                                ...productForm,
-                                                attributes: { ...productForm.attributes, power_watts: e.target.value ? parseInt(e.target.value) : null }
-                                            })}
-                                            className={INPUT}
-                                            placeholder="350"
-                                        />
+                                        <div>
+                                            <label className={LABEL}>Effets notables (virgules)</label>
+                                            <input
+                                                value={productForm.attributes?.effects?.join(', ') ?? ''}
+                                                onChange={(e) => setProductForm({
+                                                    ...productForm,
+                                                    attributes: { 
+                                                        ...productForm.attributes, 
+                                                        effects: e.target.value.split(',').map(s => s.trim()).filter(Boolean) 
+                                                    }
+                                                })}
+                                                className={INPUT}
+                                                placeholder="Relaxant, Créatif, Énergisant..."
+                                            />
+                                        </div>
                                     </div>
 
                                     <div>
@@ -1259,51 +1249,19 @@ export default function AdminProductsTab({ products, categories, onRefresh }: Ad
                                         />
                                     </div>
 
-                                    <div className="col-span-2">
-                                        <label className={LABEL}>Spécifications techniques (séparées par des virgules)</label>
+                                    <div className="col-span-2 space-y-3">
+                                        <label className={LABEL}>Note additionnelle (Optionnel)</label>
                                         <input
-                                            value={productForm.attributes?.specs?.join(', ') ?? ''}
+                                            value={productForm.attributes?.note ?? ''}
                                             onChange={(e) => setProductForm({
                                                 ...productForm,
                                                 attributes: {
                                                     ...productForm.attributes,
-                                                    specs: e.target.value.split(',').map(s => s.trim()).filter(Boolean)
+                                                    note: e.target.value
                                                 }
                                             })}
                                             className={INPUT}
-                                            placeholder='Écran 32" HD, Monnayeur intégré, Haut-parleurs stéréo...'
-                                        />
-                                    </div>
-
-                                    <div className="col-span-2">
-                                        <label className={LABEL}>Connectivité (séparée par des virgules)</label>
-                                        <input
-                                            value={productForm.attributes?.connectivity?.join(', ') ?? ''}
-                                            onChange={(e) => setProductForm({
-                                                ...productForm,
-                                                attributes: {
-                                                    ...productForm.attributes,
-                                                    connectivity: e.target.value.split(',').map(s => s.trim()).filter(Boolean)
-                                                }
-                                            })}
-                                            className={INPUT}
-                                            placeholder="USB, HDMI, Ethernet, Wi-Fi..."
-                                        />
-                                    </div>
-
-                                    <div className="col-span-2">
-                                        <label className={LABEL}>Bénéfices / Avantages (séparés par des virgules)</label>
-                                        <input
-                                            value={productForm.attributes?.benefits?.join(', ') ?? ''}
-                                            onChange={(e) => setProductForm({
-                                                ...productForm,
-                                                attributes: {
-                                                    ...productForm.attributes,
-                                                    benefits: e.target.value.split(',').map(s => s.trim()).filter(Boolean)
-                                                }
-                                            })}
-                                            className={INPUT}
-                                            placeholder="Certifié CE, SAV 48h, Rentabilité rapide..."
+                                            placeholder="ex: Arôme intense de pin et agrumes..."
                                         />
                                     </div>
 
