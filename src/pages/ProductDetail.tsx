@@ -8,7 +8,7 @@ import { getCategoryAncestors } from '../lib/categoryTree';
 import { useCartStore } from '../store/cartStore';
 import { useToastStore } from '../store/toastStore';
 import { useBudtenderStore } from '../store/budtenderStore';
-import type { Product, MachineSpec } from '../types/premiumProduct';
+import type { Product, ProductSpec } from '../types/premiumProduct';
 import ProductHero from '../components/product-premium/ProductHero';
 import SectionSkeleton from '../components/product-premium/SectionSkeleton';
 import PremiumModal from '../components/product-premium/PremiumModal';
@@ -21,7 +21,7 @@ import { formatProductText } from '../lib/textFormatter';
 
 const ProductStory = lazy(() => import('../components/product-premium/ProductStory'));
 const EffectVisualization = lazy(() => import('../components/product-premium/EffectVisualization'));
-const MachineSpecs = lazy(() => import('../components/product-premium/MachineSpecs'));
+const ProductSpecs = lazy(() => import('../components/product-premium/MachineSpecs'));
 const QualityGuarantee = lazy(() => import('../components/product-premium/QualityGuarantee'));
 const ProductReviews = lazy(() => import('../components/product-premium/ProductReviews'));
 const PremiumRelatedProducts = lazy(() => import('../components/product-premium/PremiumRelatedProducts'));
@@ -30,296 +30,132 @@ const PremiumRelatedProducts = lazy(() => import('../components/product-premium/
 function getSpecIcon(spec: string): string {
   const s = spec.toLowerCase();
 
-  // ── Affichage ──────────────────────────────────────────────────────────────
-  if (/\b(4k|uhd|8k)\b/.test(s)) return '🎆';
-  if (/\b(oled|amoled)\b/.test(s)) return '✨';
-  if (/écran|screen|lcd|hd|display|moniteur|résolution|refresh|hz|ips|va panel/.test(s)) return '🖥️';
-  if (/projecteur|projection|beamer/.test(s)) return '📽️';
-  if (/luminosité|luminance|nits|brightness/.test(s)) return '☀️';
+  // ── Botanical / CBD Specific ──────────────────────────────────────────────
+  if (/\b(indoor|greenhouse|outdoor)\b/.test(s)) return '🌱';
+  if (/\b(cbd|cbg|cbn|cbc|thcv)\b/.test(s)) return '🧪';
+  if (/\b(terpène|arôme|goût|saveur)\b/.test(s)) return '👃';
+  if (/\b(détente|relax|sommeil|calme)\b/.test(s)) return '🧘';
+  if (/\b(lab|testé|analysé|pur)\b/.test(s)) return '🔬';
+  if (/\b(bio|organique|naturel)\b/.test(s)) return '🍃';
 
-  // ── Audio ──────────────────────────────────────────────────────────────────
-  if (/subwoofer|basse|bass/.test(s)) return '🔉';
-  if (/casque|headset|headphone|earphone|oreillette/.test(s)) return '🎧';
-  if (/microphone|micro|mic/.test(s)) return '🎙️';
-  if (/amplificateur|ampli/.test(s)) return '📻';
-  if (/son|audio|haut-parleur|speaker|stéréo|surround|dolby|dts|atmos/.test(s)) return '🔊';
+  // ── General Specs ─────────────────────────────────────────────────────────
+  if (/\b(poids|gramme|g)\b/.test(s)) return '⚖️';
+  if (/\b(provenance|origine|pays)\b/.test(s)) return '🌍';
+  if (/\b(certifié|conformité|norme)\b/.test(s)) return '✅';
+  if (/\b(garantie|sécurité)\b/.test(s)) return '🛡️';
 
-  // ── Connectivité ──────────────────────────────────────────────────────────
-  if (/bluetooth/.test(s)) return '🔷';
-  if (/wi-?fi|wireless|sans.?fil/.test(s)) return '📶';
-  if (/ethernet|rj.?45|lan/.test(s)) return '🌐';
-  if (/hdmi/.test(s)) return '📺';
-  if (/usb.?c|thunderbolt/.test(s)) return '⚡';
-  if (/usb|port|jack|aux|prise/.test(s)) return '🔌';
-  if (/réseau|network|internet/.test(s)) return '📡';
-  if (/nfc|rfid/.test(s)) return '📲';
-
-  // ── Puissance & Énergie ───────────────────────────────────────────────────
-  if (/batterie|autonomie|mah|battery/.test(s)) return '🔋';
-  if (/consommation|watts?|watt|courant|ampère|tension|voltage|psu|alimentation/.test(s)) return '⚡';
-
-  // ── Éclairage ─────────────────────────────────────────────────────────────
-  if (/rgb|argb|led|rétro.?éclairage|backlight|lumière|light/.test(s)) return '💡';
-  if (/néon|neon|strip/.test(s)) return '🌈';
-
-  // ── Structure & Matériaux ─────────────────────────────────────────────────
-  if (/acier|steel|inox|aluminium|alu|titane/.test(s)) return '🔩';
-  if (/plastique|abs|polycarbonate|composite/.test(s)) return '🧱';
-  if (/verre|tempered glass|gorilla/.test(s)) return '🪟';
-  if (/caoutchouc|rubber|silicone/.test(s)) return '⚫';
-
-  // ── Dimensions & Physique ─────────────────────────────────────────────────
-  if (/poids|kg|gramme|masse|weight/.test(s)) return '⚖️';
-  if (/dimension|taille|encombrement|largeur|hauteur|profondeur|cm|mm|inch/.test(s)) return '📏';
-  if (/volume|litre|capacité de stockage/.test(s)) return '📦';
-
-  // ── Refroidissement & Thermique ────────────────────────────────────────────
-  if (/ventilateur|cooling|refroidissement|fan|radiateur|thermal|température/.test(s)) return '❄️';
-
-  // ── Processeur / Électronique ─────────────────────────────────────────────
-  if (/processeur|cpu|processor|core|ghz|mhz/.test(s)) return '🧠';
-  if (/mémoire|ram|vram|ddr/.test(s)) return '💾';
-  if (/gpu|carte graphique|graphique|rtx|rx\s/.test(s)) return '🎴';
-  if (/stockage|ssd|hdd|nvme|disque/.test(s)) return '💿';
-  if (/chipset|carte mère|motherboard/.test(s)) return '🖥️';
-
-  // ── Certifications & Conformité ───────────────────────────────────────────
-  if (/ce\b|rohs|fcc|ukca|norme|certif|homolog|iso/.test(s)) return '✅';
-  if (/licence|officiel|agréé|authorized/.test(s)) return '⭐';
-  if (/brevet|patent|exclusif/.test(s)) return '📜';
-
-  // ── Garantie & Services ───────────────────────────────────────────────────
-  if (/garantie|warranty|sav|assurance/.test(s)) return '🛡️';
-  if (/maintenance|réparation|dépannage|spare|pièce de rechange/.test(s)) return '🛠️';
-  if (/support|assistance|hotline|helpdesk/.test(s)) return '📞';
-  if (/mise à jour|firmware|update|logiciel|software/.test(s)) return '🔄';
-
-  // ── Logistique ────────────────────────────────────────────────────────────
-  if (/livraison|shipping|transport|expédition/.test(s)) return '🚚';
-  if (/installation|mise en service|setup/.test(s)) return '🔧';
-  if (/emballage|packaging|colis/.test(s)) return '📦';
-
-  // ── Marque & Origine ──────────────────────────────────────────────────────
-  if (/marque|brand|manufacturer|fabricant/.test(s)) return '🏢';
-  if (/made in|origine|provenance|pays/.test(s)) return '🌍';
-  if (/année|year|édition|version|model/.test(s)) return '📅';
-
-  // ── Fallback ──────────────────────────────────────────────────────────────
-  return '⚙️';
+  return '📄';
 }
 
 function getSpecCategory(spec: string): string {
   const s = spec.toLowerCase();
 
-  // Affichage
-  if (/écran|screen|lcd|oled|amoled|hd|4k|uhd|8k|display|moniteur|résolution|refresh|hz|ips|luminosité|nits|projecteur/.test(s)) return 'Affichage';
+  if (/culture|méthode|indoor|outdoor|greenhouse/.test(s)) return 'Culture';
+  if (/taux|cbd|thc|cbg|cbn|analyse/.test(s)) return 'Composition';
+  if (/profil|terpène|arôme|goût|parfum|saveur/.test(s)) return 'Profil Aromatique';
+  if (/effet|détente|sommeil|bien.?être/.test(s)) return 'Effets Dominants';
+  if (/lab|test|certif|norme|origine/.test(s)) return 'Qualité & Analyse';
 
-  // Audio
-  if (/son|audio|haut-parleur|speaker|stéréo|surround|dolby|dts|atmos|subwoofer|casque|headset|micro|amplificateur/.test(s)) return 'Audio';
-
-  // Connectivité
-  if (/bluetooth|wi-?fi|wireless|ethernet|rj.?45|lan|hdmi|usb|thunderbolt|port|jack|aux|prise|réseau|network|nfc|rfid/.test(s)) return 'Connectivité';
-
-  // Énergie & Puissance
-  if (/consommation|watts?|watt|courant|ampère|tension|voltage|psu|alimentation|batterie|autonomie|mah/.test(s)) return 'Énergie & Puissance';
-
-  // Éclairage
-  if (/led|rgb|argb|lumière|light|rétro.?éclairage|backlight|néon|strip/.test(s)) return 'Éclairage';
-
-  // Refroidissement
-  if (/ventilateur|cooling|refroidissement|fan|radiateur|thermal|température/.test(s)) return 'Refroidissement';
-
-  // Processeur & Mémoire
-  if (/processeur|cpu|processor|core|ghz|mhz|mémoire|ram|vram|ddr/.test(s)) return 'Processeur & Mémoire';
-
-  // Graphique & Stockage
-  if (/gpu|carte graphique|graphique|rtx|stockage|ssd|hdd|nvme|disque/.test(s)) return 'Graphique & Stockage';
-
-  // Matériaux & Structure
-  if (/acier|steel|inox|aluminium|alu|titane|plastique|abs|polycarbonate|verre|caoutchouc|rubber|silicone|métal|structure|matériau|châssis/.test(s)) return 'Matériaux & Structure';
-
-  // Spécifications Physiques
-  if (/poids|kg|gramme|masse|weight|dimension|taille|encombrement|largeur|hauteur|profondeur|cm|mm/.test(s)) return 'Spécifications Physiques';
-
-  // Certifications & Conformité
-  if (/ce\b|rohs|fcc|ukca|norme|certif|homolog|iso|licence|officiel|agréé|brevet/.test(s)) return 'Certification & Conformité';
-
-  // Logiciel & Mises à jour
-  if (/firmware|update|mise à jour|logiciel|software/.test(s)) return 'Logiciels';
-
-  // Engagement & Services
-  if (/garantie|warranty|sav|assurance|maintenance|réparation|support|assistance|livraison|transport|installation|emballage/.test(s)) return 'Engagement & Services';
-
-  // Marque & Origine
-  if (/marque|brand|manufacturer|fabricant|made in|origine|année|year|édition|version/.test(s)) return 'Marque & Origine';
-
-  return 'Technique';
+  return 'Informations';
 }
 
-const fallbackSpecs: MachineSpec[] = [
-  { name: 'Qualité construction', icon: '🔩', category: 'Matériaux & Structure', description: 'Structure robuste avec châssis acier traité. Conçu pour un usage intensif commercial.', intensity: 90 },
-  { name: 'Connectivité intégrée', icon: '🔌', category: 'Connectivité', description: 'Multiple interfaces de connexion pour une intégration simple dans tout environnement.', intensity: 85 },
-  { name: 'Affichage HD', icon: '🖥️', category: 'Affichage', description: 'Écran haute définition avec rendu lumineux, adapté aux environnements bien éclairés.', intensity: 88 },
-  { name: 'Certifié CE', icon: '✅', category: 'Certification & Conformité', description: 'Conforme aux normes européennes en vigueur. Sécurité électrique garantie.', intensity: 100 },
+const fallbackSpecs: ProductSpec[] = [
+  { name: 'Culture Organique', icon: '🌱', category: 'Culture', description: 'Cultivé sans pesticides ni métaux lourds dans le respect de l environement.', intensity: 100 },
+  { name: 'Tests Labo', icon: '🔬', category: 'Qualité & Analyse', description: 'Chaque lot est analysé par un laboratoire indépendant pour garantir la pureté.', intensity: 100 },
+  { name: 'THC < 0.3%', icon: '⚖️', category: 'Composition', description: 'Produit 100% légal conforme à la législation européenne.', intensity: 100 },
+  { name: 'Full Spectrum', icon: '🧪', category: 'Composition', description: 'Contient l ensemble des cannabinoïdes naturels pour un effet d entourage maximal.', intensity: 90 },
 ];
 
-// ── Machine performance metrics (0–10) ───────────────────────────────────────
-function deriveMachineMetrics(base: BaseProduct): Record<'Performance' | 'Durabilité' | 'Immersion' | 'Prix-qualité', number> {
+// ── Product evaluation metrics (0–10) ───────────────────────────────────────
+function deriveProductMetrics(base: BaseProduct): Record<'Détente' | 'Saveur' | 'Arôme' | 'Puissance', number> {
   const attrs = base.attributes ?? {};
-  const specs: string[] = Array.isArray(attrs.specs) ? attrs.specs : [];
-  const players = Number(attrs.players) || 1;
-  const power = Number(attrs.power_watts) || 0;
-  const price = base.price ?? 0;
-  const originalValue = (base as any).original_value ?? null;
+  
+  // If we already have metrics in attributes, use them
+  if (attrs.productMetrics) {
+    return attrs.productMetrics;
+  }
 
-  const performance = Math.min(10, Math.round(
-    (specs.length >= 4 ? 8 : specs.length * 2) +
-    (power >= 600 ? 2 : power >= 300 ? 1 : 0)
-  ));
+  // Fallback derivation based on existing fields
+  const cbd = base.cbd_percentage || 0;
+  const thc = base.thc_max || 0.3;
 
-  const immersion = Math.min(10,
-    players >= 4 ? 10 :
-      players >= 2 ? 8 : 6
-  );
-
-  const durability = Math.min(10, Math.max(6, Math.round(
-    (specs.length >= 5 ? 8 : specs.length >= 3 ? 7 : 6) +
-    (power >= 500 ? 1 : 0) +
-    (players >= 2 ? 1 : 0)
-  )));
-
-  const prixQualite = Math.min(10,
-    originalValue && price < originalValue
-      ? Math.round(7 + Math.min(3, ((originalValue - price) / originalValue) * 10))
-      : 7
-  );
+  const detente = Math.min(10, Math.max(5, Math.round(cbd / 2)));
+  const puissance = Math.min(10, Math.max(4, Math.round(cbd / 3 + (thc > 0.2 ? 2 : 0))));
 
   return {
-    Performance: Math.max(6, performance),
-    Durabilité: durability,
-    Immersion: immersion,
-    'Prix-qualité': prixQualite,
+    Détente: detente,
+    Saveur: 8, // Default good score
+    Arôme: 8, // Default good score
+    Puissance: puissance,
   };
 }
 
 // ── Build Product (enhance BaseProduct with premium fields) ──────────────────
 function enhanceProduct(base: BaseProduct): Product {
   const attrs = base.attributes ?? {};
-  const specs: string[] = Array.isArray(attrs.specs) ? attrs.specs : [];
-  const connectivity: string[] = Array.isArray(attrs.connectivity) ? attrs.connectivity : [];
-  const benefits: string[] = Array.isArray(attrs.benefits) ? attrs.benefits : [];
-  const technical_specs = Array.isArray(attrs.technical_specs) ? attrs.technical_specs : [];
-  const brand = String(attrs.brand ?? '');
+  const techFeatures: string[] = Array.isArray(attrs.techFeatures) ? attrs.techFeatures : [];
+  const productSpecsData = Array.isArray(attrs.productSpecs) ? attrs.productSpecs : [];
+  const brand = String(attrs.brand ?? 'Green Mood Exclusive');
 
-  // Machine specs → interaction viewer
-  // Prioritize structured 'technical_specs' if they exist
-  let specs_enhanced: MachineSpec[] = [];
+  // Specs → interaction viewer
+  let specs_enhanced: ProductSpec[] = [];
 
-  if (technical_specs.length > 0) {
-    technical_specs.forEach((group) => {
-      group.items.forEach((item: any) => {
-        specs_enhanced.push({
-          name: item.label,
-          icon: item.icon || getSpecIcon(item.label + ' ' + item.value),
-          category: group.group,
-          description: item.description || `${item.label} : ${item.value}`,
-          intensity: 100
-        });
-      });
-    });
-  } else if (specs.length > 0) {
-    specs_enhanced = specs.map((spec, i) => ({
-      name: spec.length > 40 ? spec.slice(0, 40) + '…' : spec,
-      icon: getSpecIcon(spec),
-      category: getSpecCategory(spec),
-      description: `${spec} — caractéristique technique incluse sur le produit ${base.name}.`,
-      intensity: Math.max(70, 100 - (i * 5)),
+  if (productSpecsData.length > 0) {
+    specs_enhanced = productSpecsData.map(s => ({
+      ...s,
+      intensity: s.intensity ?? 100,
+      icon: s.icon ?? getSpecIcon(s.name),
+      category: s.category ?? getSpecCategory(s.name),
+      description: s.description ?? ''
     }));
   } else {
-    specs_enhanced = fallbackSpecs;
+    // Try to derive from basic attributes
+    if (base.cbd_percentage) {
+      specs_enhanced.push({
+        name: 'CBD',
+        icon: '🧪',
+        category: 'Composition',
+        description: `Taux de CBD élevé de ${base.cbd_percentage}% pour une efficacité optimale.`,
+        intensity: Math.min(100, (base.cbd_percentage / 20) * 100)
+      });
+    }
+    
+    if (base.thc_max !== undefined && base.thc_max <= 0.3) {
+      specs_enhanced.push({
+        name: 'THC',
+        icon: '✅',
+        category: 'Composition',
+        description: `Taux de THC inférieur à 0.3%, garantissant l'absence d'effet psychotrope légal.`,
+        intensity: 100
+      });
+    }
+
+    if (specs_enhanced.length === 0) {
+      specs_enhanced = fallbackSpecs;
+    }
   }
 
-  // Add weight if available
-  if (base.weight_grams) {
+  // Add standard trust elements
+  if (!specs_enhanced.some(s => s.category === 'Engagement')) {
     specs_enhanced.push({
-      name: 'Poids',
-      icon: '⚖️',
-      category: 'Spécifications Physiques',
-      description: `Poids de l'unité : ${(base.weight_grams / 1000).toFixed(1)} kg. Châssis renforcé pour une stabilité maximale.`,
-      intensity: 95
-    });
-  }
-
-  // Add brand if available
-
-  // Add brand if available
-  if (brand) {
-    specs_enhanced.push({
-      name: 'Manufacture',
-      icon: '🏢',
-      category: 'Origine',
-      description: `Produit certifié et distribué sous la marque ${brand}. Qualité de fabrication contrôlée.`,
+      name: 'Qualité Premium',
+      icon: '🛡️',
+      category: 'Engagement',
+      description: 'Sélection rigoureuse des meilleures fleurs et résines du marché européen.',
       intensity: 100
     });
   }
 
-  // Add standard warranty and support
-  specs_enhanced.push({
-    name: 'Garantie Premium',
-    icon: '🛡️',
-    category: 'Sérénité',
-    description: 'Garantie de 2 ans pièces et main d\'œuvre. Échange standard en cas de défaut majeur constaté au déballage.',
-    intensity: 100
-  });
-
-  specs_enhanced.push({
-    name: 'Support Technique',
-    icon: '🛠️',
-    category: 'Sérénité',
-    description: 'Assistance technique prioritaire par téléphone et email. Accès aux guides de maintenance et mises à jour logicielles.',
-    intensity: 100
-  });
-
-  // Add connectivity if available and not already in specs
-  if (connectivity.length > 0) {
-    connectivity.forEach(conn => {
-      if (!specs_enhanced.some(s => s.name.toLowerCase().includes(conn.toLowerCase()))) {
-        specs_enhanced.push({
-          name: conn,
-          icon: getSpecIcon(conn),
-          category: 'Connectivité',
-          description: `Interface ${conn} intégrée pour une connectivité étendue et des mises à jour simplifiées.`,
-          intensity: 100
-        });
-      }
-    });
-  }
-
-  // Add delivery criteria
-  specs_enhanced.push({
-    name: 'Condition de Livraison',
-    icon: '🚚',
-    category: 'Logistique',
-    description: 'Expédition sécurisée avec emballage haute protection. Livraison suivie jusqu\'à votre point de destination.',
-    intensity: 100
-  });
-
-  // Feature chips: benefits first, then connectivity ports
-  const techFeatures: string[] = [
-    ...benefits.slice(0, 2),
-    ...connectivity.slice(0, 2),
-  ].filter(Boolean).slice(0, 6);
-
   return {
     ...base,
-    headline: `${base.name} · ${brand || 'Produit'} Premium`,
+    headline: attrs.headline || `${base.name} · CBD Edition Limitée`,
     shortDescription: formatProductText(base.description?.trim()
       ? base.description
-      : `${brand ? brand + ' · ' : ''}Découvrez l'excellence avec ${base.name}. Certifié CE.`),
-    techFeatures,
-    machineMetrics: deriveMachineMetrics(base),
-    machineSpecs: specs_enhanced,
-  };
+      : `${brand} · Découvrez les arômes profonds de la variété ${base.name}.`),
+    techFeatures: techFeatures.length > 0 ? techFeatures : ['Premium', 'Lab Tested', 'Organique'],
+    productMetrics: deriveProductMetrics(base),
+    productSpecs: specs_enhanced,
+  } as Product;
 }
 
 export default function ProductDetail() {
@@ -517,18 +353,18 @@ export default function ProductDetail() {
           title="Histoire & Concept"
         >
           <ProductStory
-            title={`${product.machineMetrics.Performance >= 8 ? 'Performance & usage' : 'Qualité & durabilité'}`}
-            text={formatProductText(product.description?.trim() || `${product.name} — produit électronique certifié CE, pensé pour un usage quotidien ou premium.`)}
+            title={`${product.productMetrics.Détente >= 8 ? 'Relaxation & Bien-être' : 'Qualité & Arômes'}`}
+            text={formatProductText(product.description?.trim() || `${product.name} — variété CBD premium sélectionnée pour sa pureté et son profil aromatique unique.`)}
           />
         </PremiumModal>
 
         <PremiumModal
           isOpen={activeModal === 'performance'}
           onClose={() => setActiveModal(null)}
-          title="Performance & Qualité"
+          title="Évaluation & Qualité"
         >
           <div className="space-y-12">
-            <EffectVisualization metrics={product.machineMetrics} />
+            <EffectVisualization metrics={product.productMetrics} />
             <QualityGuarantee />
           </div>
         </PremiumModal>
@@ -536,9 +372,9 @@ export default function ProductDetail() {
         <PremiumModal
           isOpen={activeModal === 'specs'}
           onClose={() => setActiveModal(null)}
-          title="Spécifications Techniques"
+          title="Spécifications Variété"
         >
-          <MachineSpecs specs={product.machineSpecs} />
+          <ProductSpecs specs={product.productSpecs} />
         </PremiumModal>
 
         <PremiumModal

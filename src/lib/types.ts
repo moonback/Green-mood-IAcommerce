@@ -39,6 +39,8 @@ export interface Product {
   is_active: boolean;
   is_bundle: boolean;
   is_subscribable: boolean;
+  cbd_percentage: number | null;
+  thc_max: number | null;
   attributes: {
     // Leisure machine specs
     specs?: string[];           // ex: ["Écran 32\" HD", "2 joueurs simultanés", "Monnayeur inclus"]

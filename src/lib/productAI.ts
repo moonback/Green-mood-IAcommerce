@@ -5,6 +5,7 @@ import { useSettingsStore } from '../store/settingsStore';
 const AI_MODEL = 'liquid/lfm-2-24b-a2b:latest';
 
 export interface GeneratedProductData {
+    headline?: string;
     description?: string;
     seo?: {
         title?: string;
@@ -12,17 +13,14 @@ export interface GeneratedProductData {
     };
     attributes?: {
         brand?: string;
-        specs?: string[];
-        connectivity?: string[];
-        benefits?: string[];
-        technical_specs?: {
-            group: string;
-            items: {
-                label: string;
-                value: string;
-                icon?: string;
-                description?: string;
-            }[];
+        techFeatures?: string[];
+        productMetrics?: Record<'Détente' | 'Saveur' | 'Arôme' | 'Puissance', number>;
+        productSpecs?: {
+            name: string;
+            icon: string;
+            category: string;
+            description: string;
+            intensity: number;
         }[];
     };
 }
@@ -31,29 +29,41 @@ export interface GeneratedProductData {
  * Uses OpenRouter to generate missing product information based on the name.
  */
 export async function generateProductInfo(productName: string, categoryName?: string): Promise<GeneratedProductData | null> {
-    const storeName = useSettingsStore.getState().settings.store_name || 'e-commerce';
-    const domainContext = categoryName ? `dans le domaine "${categoryName}"` : `pour le store "${storeName}"`;
+    const storeName = useSettingsStore.getState().settings.store_name || 'Green Mood';
+    const domainContext = categoryName ? `dans la catégorie "${categoryName}"` : `pour la boutique CBD "${storeName}"`;
 
     const prompt = `
-    Recherche les specs de : "${productName}" ${domainContext}.
-    Génère un JSON e-commerce en français.
+    Agis en tant qu'expert en CBD et Cannabis légal. Recherche les caractéristiques de : "${productName}" ${domainContext}.
+    Génère un JSON e-commerce en français, style premium, luxueux et apaisant.
 
     CONSIGNES DE SÉCURITÉ JSON :
     - NE JAMAIS utiliser de guillemets doubles (") à l'intérieur des valeurs (texte). Utilise des guillemets simples (').
-    - Utilise des balises HTML (<p>, <strong>, <ul>, <li>) dans 'description' avec des guillemets simples pour les classes.
+    - Utilise des balises HTML (<p>, <strong>, <ul>, <li>) dans 'description'.
     - Pas de texte avant/après le bloc {}.
-    3. INFOS : Marque, specs (10), technical_specs (structurés par groupe), connectivity, benefits (3).
 
-    Structure :
+    INFOS À GÉNÉRER :
+    1. 'headline' : Accroche courte et percutante (ex: 'L'excellence californienne au service de votre détente').
+    2. 'description' : Texte immersif décrivant l'arôme, le goût et l'effet.
+    3. 'seo' : Titre et meta-description optimisés.
+    4. 'attributes' : 
+       - 'brand': 'Green Mood Exclusive' (ou la marque réelle si connue).
+       - 'techFeatures': 3-5 tags courts (ex: 'Indoor', 'Full Spectrum', 'Lab Tested', '100% Organique').
+       - 'productMetrics': Un objet avec 'Détente', 'Saveur', 'Arôme', 'Puissance' (scores de 1 à 10).
+       - 'productSpecs': Liste de specs structurées (Méthode de culture, Taux de CBD, Taux de THC < 0.3%, Profil de Terpènes, Effets Dominants).
+
+    Exemple de structure :
     {
-        "description": "...",
+        "headline": "...",
+        "description": "<p>...</p>",
         "seo": { "title": "...", "meta_description": "..." },
         "attributes": {
-            "brand": "...",
-            "specs": ["...", "..."],
-            "technical_specs": [{ "group": "...", "items": [{ "label": "...", "value": "..." }] }],
-            "connectivity": ["..."],
-            "benefits": ["...", "...", "..."]
+            "brand": "Green Mood",
+            "techFeatures": ["Indoor", "Sans pesticides"],
+            "productMetrics": { "Détente": 8, "Saveur": 9, "Arôme": 9, "Puissance": 7 },
+            "productSpecs": [
+                { "name": "Culture", "icon": "🌱", "category": "Culture", "description": "Indoor", "intensity": 90 },
+                { "name": "CBD", "icon": "🧪", "category": "Taux", "description": "15%", "intensity": 75 }
+            ]
         }
     }
     `;
@@ -113,35 +123,36 @@ export async function autoFillProductSync(product: Product, force: boolean = fal
         if (generated.description) updates.description = generated.description;
         updates.attributes = {
             ...product.attributes,
+            headline: generated.headline || product.attributes?.headline || '',
             seo_title: generated.seo?.title || product.attributes?.seo_title || '',
             seo_meta_description: generated.seo?.meta_description || product.attributes?.seo_meta_description || '',
             brand: generated.attributes?.brand || product.attributes?.brand || '',
-            specs: generated.attributes?.specs || [],
-            connectivity: generated.attributes?.connectivity || [],
-            benefits: generated.attributes?.benefits || [],
-            technical_specs: generated.attributes?.technical_specs || [],
+            techFeatures: generated.attributes?.techFeatures || [],
+            productMetrics: generated.attributes?.productMetrics || {},
+            productSpecs: generated.attributes?.productSpecs || [],
         };
     } else {
         if (!product.description && generated.description) updates.description = generated.description;
 
         const currentAttrs = product.attributes || {};
         const hasBrand = !!currentAttrs.brand;
-        const hasBenefits = currentAttrs.benefits && currentAttrs.benefits.length > 0;
-        const hasSpecs = currentAttrs.specs && currentAttrs.specs.length > 0;
-        const hasTechnicalSpecs = currentAttrs.technical_specs && currentAttrs.technical_specs.length > 0;
+        const hasMetrics = currentAttrs.productMetrics && Object.keys(currentAttrs.productMetrics).length > 0;
+        const hasTechFeatures = currentAttrs.techFeatures && currentAttrs.techFeatures.length > 0;
+        const hasProductSpecs = currentAttrs.productSpecs && currentAttrs.productSpecs.length > 0;
         const hasSeoTitle = typeof currentAttrs.seo_title === 'string' && currentAttrs.seo_title.trim().length > 0;
         const hasSeoMeta = typeof currentAttrs.seo_meta_description === 'string' && currentAttrs.seo_meta_description.trim().length > 0;
+        const hasHeadline = !!currentAttrs.headline;
 
-        if (!hasBrand || !hasBenefits || !hasSpecs || !hasTechnicalSpecs || !hasSeoTitle || !hasSeoMeta) {
+        if (!hasBrand || !hasMetrics || !hasTechFeatures || !hasProductSpecs || !hasSeoTitle || !hasSeoMeta || !hasHeadline) {
             updates.attributes = {
                 ...currentAttrs,
+                headline: hasHeadline ? currentAttrs.headline : generated.headline || '',
                 seo_title: hasSeoTitle ? currentAttrs.seo_title : generated.seo?.title || '',
                 seo_meta_description: hasSeoMeta ? currentAttrs.seo_meta_description : generated.seo?.meta_description || '',
                 brand: hasBrand ? currentAttrs.brand : generated.attributes?.brand || '',
-                specs: hasSpecs ? currentAttrs.specs : generated.attributes?.specs || [],
-                connectivity: currentAttrs.connectivity || generated.attributes?.connectivity || [],
-                benefits: hasBenefits ? currentAttrs.benefits : generated.attributes?.benefits || [],
-                technical_specs: hasTechnicalSpecs ? currentAttrs.technical_specs : generated.attributes?.technical_specs || [],
+                techFeatures: hasTechFeatures ? currentAttrs.techFeatures : generated.attributes?.techFeatures || [],
+                productMetrics: hasMetrics ? currentAttrs.productMetrics : generated.attributes?.productMetrics || {},
+                productSpecs: hasProductSpecs ? currentAttrs.productSpecs : generated.attributes?.productSpecs || [],
             };
         }
     }

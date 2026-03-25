@@ -1,7 +1,7 @@
 import { motion } from 'motion/react';
 
 interface Props {
-  metrics: Record<'Performance' | 'Durabilité' | 'Immersion' | 'Prix-qualité', number>;
+  metrics: Record<'Détente' | 'Saveur' | 'Arôme' | 'Puissance', number>;
 }
 
 const effectConfig: {
@@ -12,13 +12,13 @@ const effectConfig: {
   color: string;
   bg: string;
 }[] = [
-    { key: 'Performance', label: 'Qualité', sublabel: 'Finition & Matériaux', icon: '⭐', color: 'from-[#2563eb] to-[#06b6d4]', bg: 'bg-[#2563eb]/10' },
-    { key: 'Durabilité', label: 'Fiabilité', sublabel: 'Durée de vie', icon: '🛡️', color: 'from-blue-500 to-blue-400', bg: 'bg-blue-50' },
-    { key: 'Immersion', label: 'Design', sublabel: 'Esthétique & Style', icon: '✨', color: 'from-purple-500 to-purple-400', bg: 'bg-purple-50' },
-    { key: 'Prix-qualité', label: 'Rapport Qualité/Prix', sublabel: 'L\'affaire du moment', icon: '🏷️', color: 'from-amber-500 to-amber-400', bg: 'bg-amber-50' },
+    { key: 'Détente', label: 'Relaxation', sublabel: 'Effet apaisant & calme', icon: '🧘', color: 'from-[#10b981] to-[#34d399]', bg: 'bg-[#10b981]/10' },
+    { key: 'Saveur', label: 'Goût', sublabel: 'Profil en bouche', icon: '👅', color: 'from-amber-500 to-amber-400', bg: 'bg-amber-50' },
+    { key: 'Arôme', label: 'Parfum', sublabel: 'Expérience olfactive', icon: '👃', color: 'from-purple-500 to-purple-400', bg: 'bg-purple-50' },
+    { key: 'Puissance', label: 'Intensité', sublabel: 'Ressenti des effets', icon: '⚡', color: 'from-[#ef4444] to-[#f87171]', bg: 'bg-[#ef4444]/10' },
   ];
 
-export default function EffectVisualization({ metrics }: Props) {
+export default function EffectVisualization({ metrics = {} as any }: Props) {
   return (
     <section className="relative border-y border-[color:var(--color-border)] bg-[color:var(--color-bg-elevated)]/50">
       <div className="mx-auto max-w-[1200px] px-4 py-16 sm:px-6 lg:px-8">

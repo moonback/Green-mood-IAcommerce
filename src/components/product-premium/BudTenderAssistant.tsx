@@ -12,19 +12,19 @@ export default function BudTenderAssistant({ product }: Props) {
 
   const quickAnswers = useMemo(
     () => ({
-      perf: `${product.name} obtient ${product.machineMetrics.Performance}/10 en performance et ${product.machineMetrics.Immersion}/10 en immersion.`,
-      spec: `Specification cle : ${product.machineSpecs[0]?.name ?? 'Qualite construction'} (${product.machineSpecs[0]?.category ?? 'Fabrication premium'}).`,
-      usage: "Usage prive, bar ou salle arcade - nos conseillers vous aident a choisir la configuration adaptee a votre projet.",
+      effects: `${product.name} offre un score de détente de ${product.productMetrics?.Détente ?? 0}/10 et une puissance de ${product.productMetrics?.Puissance ?? 0}/10.`,
+      flavor: `Profil aromatique : ${product.productMetrics?.Arôme ?? 0}/10 pour l'arôme et ${product.productMetrics?.Saveur ?? 0}/10 pour le goût. Un vrai délice !`,
+      usage: "Nous recommandons une utilisation progressive. Commencez par de petites quantités pour apprécier les effets de cette variété premium.",
     }),
     [product]
   );
 
   const ask = (text: string) => {
     const t = text.toLowerCase();
-    let a = "Je peux vous renseigner sur les performances, specifications techniques et conseils d'installation de cette machine.";
-    if (t.includes('perfo') || t.includes('fort') || t.includes('puissant')) a = quickAnswers.perf;
-    else if (t.includes('spec') || t.includes('caract') || t.includes('technique')) a = quickAnswers.spec;
-    else if (t.includes('usage') || t.includes('install') || t.includes('utilisation') || t.includes('bar') || t.includes('salle')) a = quickAnswers.usage;
+    let a = "Je suis votre expert Budtender. Je peux vous renseigner sur les effets, les arômes ou les conseils d'utilisation de cette variété.";
+    if (t.includes('effet') || t.includes('détente') || t.includes('puissance') || t.includes('relax')) a = quickAnswers.effects;
+    else if (t.includes('goût') || t.includes('saveur') || t.includes('arôme') || t.includes('parfum')) a = quickAnswers.flavor;
+    else if (t.includes('usage') || t.includes('conseil') || t.includes('utiliser') || t.includes('consommer')) a = quickAnswers.usage;
     setHistory((h) => [...h, { q: text, a }]);
   };
 

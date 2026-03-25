@@ -1,20 +1,20 @@
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ShieldCheck, Info, Gauge, Zap, LayoutGrid, List } from 'lucide-react';
-import type { MachineSpec } from '../../types/premiumProduct';
+import type { ProductSpec } from '../../types/premiumProduct';
 import { formatProductText } from '../../lib/textFormatter';
 
 interface Props {
-  specs: MachineSpec[];
+  specs: ProductSpec[];
 }
 
-export default function MachineSpecs({ specs }: Props) {
+export default function ProductSpecs({ specs }: Props) {
   const [active, setActive] = useState(specs[0]?.name ?? '');
   const [viewMode, setViewMode] = useState<'details' | 'grid'>('grid');
 
   // Group specs by category
   const groupedSpecs = useMemo(() => {
-    const groups: Record<string, MachineSpec[]> = {};
+    const groups: Record<string, ProductSpec[]> = {};
     specs.forEach((spec) => {
       if (!groups[spec.category]) groups[spec.category] = [];
       groups[spec.category].push(spec);

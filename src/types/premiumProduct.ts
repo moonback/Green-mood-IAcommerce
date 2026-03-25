@@ -1,10 +1,10 @@
 import type { Product as BaseProduct, Review as BaseReview } from '../lib/types';
 
-/** A single machine specification (shown in the interactive specs viewer) */
-export interface MachineSpec {
+/** A single product specification (shown in the interactive specs viewer) */
+export interface ProductSpec {
   name: string;
   icon: string;
-  category: string;    // spec category label (e.g. "Affichage", "Connectivité")
+  category: string;    // spec category label (e.g. "Culture", "Profil", "Informations")
   description: string;
   intensity: number;    // 0-100, used for the progress bar
 }
@@ -20,8 +20,8 @@ export interface Product extends BaseProduct {
   shortDescription: string;
   /** Quick feature tags shown as chips under the product title */
   techFeatures: string[];
-  /** 0-10 machine metrics used for the performance visualization */
-  machineMetrics: Record<'Performance' | 'Durabilité' | 'Immersion' | 'Prix-qualité', number>;
-  /** Machine specifications (shown in the interactive spec viewer) */
-  machineSpecs: MachineSpec[];
+  /** 0-10 product metrics used for the evaluation visualization */
+  productMetrics: Record<'Détente' | 'Saveur' | 'Arôme' | 'Puissance', number>;
+  /** Product specifications (shown in the interactive spec viewer) */
+  productSpecs: ProductSpec[];
 }

@@ -3,12 +3,12 @@ import { ShieldCheck, Wrench, Truck, CreditCard, Headphones, Award } from 'lucid
 import { useSettingsStore } from '../../store/settingsStore';
 
 const badges = [
-  { icon: <Award className="w-5 h-5" />, label: 'Meilleurs Prix', desc: 'Des millions d\'articles à prix réduits toute l\'année' },
-  { icon: <ShieldCheck className="w-5 h-5" />, label: 'Paiement Sécurisé', desc: 'Règlement 100% crypté et facilité de paiement en 3x/4x sans frais' },
-  { icon: <Truck className="w-5 h-5" />, label: 'Expédition 24h', desc: 'Livraison express en relais ou à domicile' },
-  { icon: <Wrench className="w-5 h-5" />, label: 'Retours Simples', desc: 'Vous avez 30 jours pour changer d\'avis (frais offerts)' },
-  { icon: <CreditCard className="w-5 h-5" />, label: 'Immense Choix', desc: 'Culture, tech, mode... trouvez tout au même endroit' },
-  { icon: <Headphones className="w-5 h-5" />, label: 'Service Client', desc: 'Nos conseillers sont à votre écoute 7j/7' },
+  { icon: <Award className="w-5 h-5" />, label: 'Qualité Royale', desc: 'Sélection rigoureuse des meilleures fleurs et résines premium' },
+  { icon: <ShieldCheck className="w-5 h-5" />, label: 'Analyses Labo', desc: 'Tous nos produits sont testés pour garantir pureté et conformité THC < 0.3%' },
+  { icon: <Truck className="w-5 h-5" />, label: 'Livraison Discrète', desc: 'Expédition rapide sous 24h dans un emballage neutre et inodore' },
+  { icon: <Wrench className="w-5 h-5" />, label: 'Expertise Budtender', desc: 'Des conseils d\'experts pour trouver la variété adaptée à vos besoins' },
+  { icon: <CreditCard className="w-5 h-5" />, label: 'Bien-être Suprême', desc: 'Détente, sommeil, récupération... le meilleur du CBD légal' },
+  { icon: <Headphones className="w-5 h-5" />, label: 'Soutien Client', desc: 'Notre équipe est à votre écoute pour une expérience d\'exception' },
 ];
 
 export default function QualityGuarantee() {
@@ -19,9 +19,9 @@ export default function QualityGuarantee() {
       <div className="mx-auto max-w-[1200px] px-4 py-16 sm:px-6 lg:px-8">
         <div className="mb-10 text-center sm:text-left">
           <p className="text-[10px] font-black uppercase tracking-[0.35em] text-[color:var(--color-primary)] mb-2">Notre engagement</p>
-          <h3 className="text-3xl font-['Inter',sans-serif] font-black text-[color:var(--color-text)] uppercase">Le Choix & Les Prix</h3>
+          <h3 className="text-3xl font-['Inter',sans-serif] font-black text-[color:var(--color-text)] uppercase">L'Excellence du <span className="text-[color:var(--color-primary)]">CBD Premium</span></h3>
           <p className="mt-2 text-sm text-[color:var(--color-text-muted)] max-w-xl font-medium">
-            Trouvez absolument tout ce que vous cherchez au meilleur prix possible sur {settings.store_name}, avec la sérénité d'une logistique infaillible.
+            Découvrez une sélection exclusive de produits botaniques chez {settings.store_name}, avec la garantie d'une pureté absolue et d'effets contrôlés.
           </p>
         </div>
 

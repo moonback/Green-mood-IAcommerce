@@ -148,9 +148,9 @@ export default function ProductHero({ product, quantity, onQuantityChange, onAdd
             </div>
 
             {/* Tech Feature chips */}
-            {product.techFeatures.length > 0 && (
+            {(product.techFeatures || []).length > 0 && (
               <div className="flex flex-wrap gap-2">
-                {product.techFeatures.map((feature) => (
+                {(product.techFeatures || []).map((feature) => (
                   <span
                     key={feature}
                     className="rounded-full border border-[color:var(--color-border)] bg-[color:var(--color-bg-muted)]/50 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-[color:var(--color-text-subtle)] hover:border-[color:var(--color-primary)]/30 hover:text-[color:var(--color-primary)] transition-colors shadow-sm"
@@ -163,21 +163,21 @@ export default function ProductHero({ product, quantity, onQuantityChange, onAdd
 
             {/* Quick Tech Specs Bar */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-[color:var(--color-card)]/30 backdrop-blur-sm border border-[color:var(--color-border)] rounded-2xl p-4 shadow-inner">
-              {product.machineSpecs.filter(s => ['Poids', 'Manufacture', 'Qualité construction', 'Connectivité intégrée'].includes(s.name)).slice(0, 4).map((spec) => (
+              {(product.productSpecs || []).filter(s => ['Culture', 'CBD', 'THC', 'Effets'].includes(s.name)).slice(0, 4).map((spec) => (
                 <div key={spec.name} className="flex flex-col gap-1">
                   <span className="text-[10px] font-black uppercase tracking-widest text-[color:var(--color-text-subtle)] flex items-center gap-1.5 opacity-70">
                     <span className="text-sm">{spec.icon}</span> {spec.name}
                   </span>
                   <p className="text-xs font-black text-[color:var(--color-text)] truncate max-w-[120px]">
-                    {spec.description.split(':').pop()?.trim() || spec.description}
+                    {spec.description?.split(':').pop()?.trim() || spec.description}
                   </p>
                 </div>
               ))}
               {/* Fallback if none of the above are found */}
-              {product.machineSpecs.filter(s => ['Poids', 'Manufacture', 'Qualité construction', 'Connectivité intégrée'].includes(s.name)).length === 0 && (
+              {((product.productSpecs || []).filter(s => ['Culture', 'CBD', 'THC', 'Effets'].includes(s.name)).length === 0) && (
                 <div className="col-span-4 flex items-center justify-center py-2">
                   <span className="text-[10px] font-black uppercase tracking-widest text-[color:var(--color-text-subtle)] flex items-center gap-2">
-                    <Wrench className="w-3 h-3" /> Fiche technique complète disponible
+                    <BookOpen className="w-3 h-3" /> Fiche produit complète disponible
                   </span>
                 </div>
               )}
