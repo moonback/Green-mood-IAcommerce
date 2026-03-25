@@ -805,29 +805,25 @@ export function useGeminiLiveVoice({
         const pcm = float32ToInt16(down);
 
         // Final guard: re-check right before the SDK call to minimize the race window
-        if (isClosingRef.current) return;
-        const ws = wsRef.current ?? (sessionRef.current as any)?._ws;
-        if (ws && ws.readyState !== WebSocket.OPEN) return;
+        if (isClosingRef.current || !sessionRef.current) return;
+        
+        const ws = (sessionRef.current as any)?._ws;
+        if (ws && ws.readyState !== 1) return; // 1 = OPEN
 
-        const sendResult = sessionRef.current?.sendRealtimeInput({
-          media: {
-            mimeType: 'audio/pcm',
-            data: toBase64(new Uint8Array(pcm.buffer))
-          }
-        }) as any;
-
-        // The SDK's TS types say void, but its internal JS is likely async, causing an Unhandled Promise Rejection
-        if (sendResult && typeof (sendResult as any).catch === 'function') {
-          (sendResult as any).catch((err: any) => {
-            const m = String(err?.message ?? err).toLowerCase();
-            if (m.includes('closed') || m.includes('closing') || m.includes('invalid state')) return;
-            console.warn('[Voice] Async Mic error:', err);
+        try {
+          sessionRef.current.sendRealtimeInput({
+            media: {
+              mimeType: 'audio/pcm',
+              data: toBase64(new Uint8Array(pcm.buffer))
+            }
           });
+        } catch (err) {
+          // Silent catch for late-flying buffers after stop/close
         }
       } catch (err: any) {
         // Silently discard any socket teardown errors (CLOSED, CLOSING, InvalidStateError)
         const msg = String(err?.message ?? err).toLowerCase();
-        if (msg.includes('closed') || msg.includes('closing') || msg.includes('invalid state')) {
+        if (msg.includes('closed') || msg.includes('closing') || msg.includes('invalid state') || msg.includes('websocket')) {
           return;
         }
         console.warn('[Voice] Mic capture error:', err);
@@ -953,16 +949,13 @@ export function useGeminiLiveVoice({
           },
           onerror: (e: ErrorEvent) => {
             if (sessionIdRef.current !== sid) return;
-            // Immediately block mic sending — must happen synchronously before any async work
             isClosingRef.current = true;
             canStreamInputRef.current = false;
             console.error('[Voice] Live Error Detected:', {
               message: e.message,
-              filename: e.filename,
-              lineno: e.lineno,
-              colno: e.colno,
               error: e.error
             });
+            if (processorRef.current) processorRef.current.port.onmessage = null;
             startInFlightRef.current = false;
           },
           onclose: (e: CloseEvent) => {
@@ -1121,7 +1114,7 @@ export function useGeminiLiveVoice({
                     response: {
                       result: 'ok',
                       status: 'verified',
-                      directive: 'Raisonnement enregistré. Poursuis maintenant en parlant naturellement à l\'utilisateur en te basant sur ce raisonnement.'
+                      directive: 'Raisonnement enregistré. Si tu as annoncé une recherche vocalement (ex: "Je regarde..."), appelle l\'outil de recherche (search_catalog, search_knowledge, etc.) IMPÉRATIVEMENT dans ce même tour.'
                     }
                   };
                 }
