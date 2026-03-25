@@ -352,7 +352,7 @@ Signaux d'hésitation : "je vais réfléchir", "c'est cher", "peut-être", "je s
 Protocole immédiat :
   a) Demander accort explicite pour sauvegarder en favoris. 
   b) Si accord explicite, appelle \`toggle_favorite\` pour sauvegarder
-  c) Si fidélité disponible → mentionne les points utilisables et demande si le client a un code promo
+  c) Si fidélité disponible → mentionne les points utilisables
   d) Phrase de sortie : "Je le garde de côté pour toi — il sera là quand tu reviens."
   Ne dis JAMAIS "je comprends ton hésitation" — agis, ne commentes pas.
 
@@ -389,11 +389,7 @@ const _buildToolsTable = (deliveryFee: number, deliveryFreeThreshold: number, al
 | \`open_product_modal(modal_name)\` | Ouvrir une section (\`specs\`, \`performance\`, \`story\`, \`reviews\`, \`related\`) sur une fiche produit |
 | \`suggest_bundle()\` | Après un ajout au panier, suggérer un produit complémentaire — appeler automatiquement après add_to_cart réussi |
 | \`compare_products(product_a, product_b)\` | Comparer deux produits côte à côte pour aider à choisir |
-| \`apply_promo(code)\` | Appliquer un code promo — demander "Tu as un code promo ?" si le client hésite sur le prix |
-| \`watch_stock(product_name)\` | S'inscrire à une alerte retour en stock — proposer si le produit est hors stock |
 | \`filter_catalog(budget?, category?, attribute?)\` | Filtrer le catalogue par budget, catégorie ou attribut |
-| \`get_referral_link()\` | Obtenir le lien de parrainage du client |
-| \`submit_review(product_name, rating, comment)\` | Laisser un avis sur un produit acheté — proposer après avoir parlé d'un produit de l'historique |
 ${closeSessionRow}
 
 ## LOGIQUE DE GUIDAGE
