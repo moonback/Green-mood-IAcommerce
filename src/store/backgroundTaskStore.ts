@@ -16,14 +16,20 @@ interface BackgroundTaskState {
 }
 
 function buildEmbeddingText(product: Product): string {
-    const specs = Array.isArray(product.attributes?.specs) ? product.attributes.specs.join(' ') : '';
-    const benefits = Array.isArray(product.attributes?.benefits) ? product.attributes.benefits.join(' ') : '';
+    const attrs = product.attributes || {};
+    const specs = Array.isArray(attrs.productSpecs) 
+        ? attrs.productSpecs.map((s: any) => `${s.name}: ${s.description}`).join('. ') 
+        : '';
+    const effects = Array.isArray(attrs.effects) ? attrs.effects.join(', ') : '';
+    
     return [
         product.name,
         product.description ?? '',
-        product.attributes?.brand ? `Marque: ${product.attributes.brand}` : '',
+        attrs.culture_method ? `Culture: ${attrs.culture_method}` : '',
+        attrs.cbd_percentage ? `CBD: ${attrs.cbd_percentage}%` : '',
+        attrs.thc_max ? `THC: ${attrs.thc_max}%` : '',
+        effects ? `Effets: ${effects}` : '',
         specs,
-        benefits,
     ].filter(Boolean).join(' ').trim();
 }
 

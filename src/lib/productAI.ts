@@ -70,6 +70,8 @@ export async function generateProductInfo(productName: string, categoryName?: st
         "seo": { "title": "...", "meta_description": "..." },
         "attributes": {
             "brand": "Green Mood",
+            "cbd_percentage": 15.5,
+            "thc_max": 0.18,
             "techFeatures": ["Indoor", "Sans pesticides"],
             "productMetrics": { "Détente": 8, "Saveur": 9, "Arôme": 9, "Puissance": 7 },
             "productSpecs": [
@@ -119,7 +121,6 @@ export async function generateProductInfo(productName: string, categoryName?: st
 
         const data = await response.json();
 
-        // ── Handle internal function errors (often returned with 200 OK) ──
         if (data.error) {
             console.error('[AI] Internal Function Error:', data);
             useToastStore.getState().addToast({
@@ -132,46 +133,70 @@ export async function generateProductInfo(productName: string, categoryName?: st
         let content = data?.choices?.[0]?.message?.content;
         if (!content) {
             console.warn('[AI] No content returned from AI model:', data);
-            useToastStore.getState().addToast({
-                type: 'info',
-                message: "Le modèle n'a retourné aucun contenu. Réessayez avec un nom de produit plus précis."
-            });
             return null;
         }
 
-        // More aggressive JSON extraction and repair
         let jsonString = '';
         const start = content.indexOf('{');
         const end = content.lastIndexOf('}');
         
         if (start !== -1 && end !== -1 && end > start) {
             jsonString = content.substring(start, end + 1);
+            
+            // Replace newlines, tabs, and carriage returns with a single space to avoid syntax errors
+            // while maintaining valid JSON token separation. 
+            // Control characters are stripped.
+            jsonString = jsonString
+                .replace(/[\x00-\x08\x0b\x0c\x0e-\x1f\x7f-\x9f]/g, '')
+                .replace(/[\n\r\t]/g, ' ');
+            
+            // Cleanup tags
+            jsonString = jsonString
+                .replace(/<attributes>|<\/attributes>|<components>|<\/components>/g, '')
+                .replace(/,\s*}/g, '}')
+                .replace(/,\s*]/g, ']');
+
         } else {
-            console.error('[AI] No JSON block found in content:', content);
-            useToastStore.getState().addToast({
-                type: 'error',
-                message: "L'IA a généré une réponse malformée (non JSON)."
-            });
+            console.error('[AI] No JSON block found in content');
             return null;
         }
 
-        // Clean up pseudo-XML or common AI tags if they leaked into the string
-        jsonString = jsonString
-            .replace(/<attributes>/g, '')
-            .replace(/<\/attributes>/g, '')
-            .replace(/<components>/g, '')
-            .replace(/<\/components>/g, '')
-            .replace(/\\n/g, " ")
-            .replace(/\\'/g, "'")
-            .replace(/,\s*}/g, '}')
-            .replace(/,\s*]/g, ']');
+        const initialParse = (str: string) => {
+            try { return JSON.parse(str); } catch { return null; }
+        };
+
+        let parsed = initialParse(jsonString);
+
+        if (!parsed) {
+            // --- Advanced Repair Chain ---
+            console.log('[AI] Initial parse failed, attempting advanced repairs...');
+            
+            let repaired = jsonString
+                // 1. Fix smart/fancy quotes
+                .replace(/[\u201C\u201D\u201E\u201F\u2033\u2036]/g, '"')
+                .replace(/[\u2018\u2019\u201A\u201B\u2032\u2035]/g, "'");
+
+            // 2. Fix unquoted keys or keys with single quotes
+            // This regex finds keys: look for { or , then optional space, then possibly single quote or nothing, then word, then possibly single quote, then :
+            repaired = repaired.replace(/([{,]\s*)(['"]?)([a-zA-Z0-9_]+)(['"]?\s*):/g, '$1"$3":');
+
+            // 3. Fix values with single quotes (only if they aren't followed by a comma or brace that is already correctly formatted)
+            // This is risky but often necessary for AI output. 
+            // Simple approach: if it looks like a string value '...', replace with "..."
+            repaired = repaired.replace(/:\s*'([^']*)'/g, ': "$1"');
+
+            parsed = initialParse(repaired);
+            if (parsed) {
+                console.log('[AI] Advanced repair successful.');
+                jsonString = repaired;
+            }
+        }
 
         try {
-            return JSON.parse(jsonString) as GeneratedProductData;
+            return (parsed || JSON.parse(jsonString)) as GeneratedProductData;
         } catch (e) {
-            console.warn('[AI] JSON Parse failed, attempting repair...', e);
-            // Last resort: try to fix unescaped double quotes that are NOT property keys
-            // This is complex, but here we just try to return null and let the next attempt try
+            console.warn('[AI] JSON Parse failed permanently after all repair attempts:', e);
+            console.log('[AI] Failed JSON string was:', jsonString);
             return null;
         }
     } catch (err) {
@@ -188,18 +213,19 @@ export async function autoFillProductSync(product: Product, force: boolean = fal
     if (!generated) return false;
 
     const updates: any = {};
+    const currentAttrs = product.attributes || {};
 
     if (force) {
         if (generated.description) updates.description = generated.description;
-        if (generated.attributes?.cbd_percentage) updates.cbd_percentage = generated.attributes.cbd_percentage;
-        if (generated.attributes?.thc_max) updates.thc_max = generated.attributes.thc_max;
         
         updates.attributes = {
-            ...product.attributes,
-            headline: generated.headline || product.attributes?.headline || '',
-            seo_title: generated.seo?.title || product.attributes?.seo_title || '',
-            seo_meta_description: generated.seo?.meta_description || product.attributes?.seo_meta_description || '',
-            brand: generated.attributes?.brand || product.attributes?.brand || '',
+            ...currentAttrs,
+            cbd_percentage: generated.attributes?.cbd_percentage || 0,
+            thc_max: generated.attributes?.thc_max || 0.2,
+            headline: generated.headline || currentAttrs.headline || '',
+            seo_title: generated.seo?.title || currentAttrs.seo_title || '',
+            seo_meta_description: generated.seo?.meta_description || currentAttrs.seo_meta_description || '',
+            brand: generated.attributes?.brand || currentAttrs.brand || '',
             techFeatures: generated.attributes?.techFeatures || [],
             productMetrics: generated.attributes?.productMetrics || {},
             productSpecs: generated.attributes?.productSpecs || [],
@@ -207,38 +233,36 @@ export async function autoFillProductSync(product: Product, force: boolean = fal
     } else {
         if (!product.description && generated.description) updates.description = generated.description;
 
-        const currentAttrs = product.attributes || {};
         const hasBrand = !!currentAttrs.brand;
         const hasMetrics = currentAttrs.productMetrics && Object.keys(currentAttrs.productMetrics).length > 0;
         const hasTechFeatures = currentAttrs.techFeatures && currentAttrs.techFeatures.length > 0;
         const hasProductSpecs = currentAttrs.productSpecs && currentAttrs.productSpecs.length > 0;
-        const hasSeoTitle = typeof currentAttrs.seo_title === 'string' && currentAttrs.seo_title.trim().length > 0;
-        const hasSeoMeta = typeof currentAttrs.seo_meta_description === 'string' && currentAttrs.seo_meta_description.trim().length > 0;
+        const hasSeoTitle = !!currentAttrs.seo_title;
+        const hasSeoMeta = !!currentAttrs.seo_meta_description;
         const hasHeadline = !!currentAttrs.headline;
 
         if (!hasBrand || !hasMetrics || !hasTechFeatures || !hasProductSpecs || !hasSeoTitle || !hasSeoMeta || !hasHeadline) {
-            if (generated.attributes?.cbd_percentage) updates.cbd_percentage = generated.attributes.cbd_percentage;
-            if (generated.attributes?.thc_max) updates.thc_max = generated.attributes.thc_max;
-
             updates.attributes = {
                 ...currentAttrs,
-                headline: hasHeadline ? currentAttrs.headline : generated.headline || '',
-                seo_title: hasSeoTitle ? currentAttrs.seo_title : generated.seo?.title || '',
-                seo_meta_description: hasSeoMeta ? currentAttrs.seo_meta_description : generated.seo?.meta_description || '',
-                brand: hasBrand ? currentAttrs.brand : generated.attributes?.brand || '',
-                techFeatures: hasTechFeatures ? currentAttrs.techFeatures : generated.attributes?.techFeatures || [],
-                productMetrics: hasMetrics ? currentAttrs.productMetrics : generated.attributes?.productMetrics || {},
-                productSpecs: hasProductSpecs ? currentAttrs.productSpecs : generated.attributes?.productSpecs || [],
+                cbd_percentage: currentAttrs.cbd_percentage || generated.attributes?.cbd_percentage || 0,
+                thc_max: currentAttrs.thc_max || generated.attributes?.thc_max || 0.2,
+                headline: currentAttrs.headline || generated.headline || '',
+                seo_title: currentAttrs.seo_title || generated.seo?.title || '',
+                seo_meta_description: currentAttrs.seo_meta_description || generated.seo?.meta_description || '',
+                brand: currentAttrs.brand || generated.attributes?.brand || '',
+                techFeatures: currentAttrs.techFeatures?.length ? currentAttrs.techFeatures : (generated.attributes?.techFeatures || []),
+                productMetrics: (currentAttrs.productMetrics && Object.keys(currentAttrs.productMetrics).length > 0) ? currentAttrs.productMetrics : (generated.attributes?.productMetrics || {}),
+                productSpecs: currentAttrs.productSpecs?.length ? currentAttrs.productSpecs : (generated.attributes?.productSpecs || []),
             };
         }
     }
 
-    if (Object.keys(updates).length === 0) return true;
-
-    const { error } = await supabase.from('products').update(updates).eq('id', product.id);
-    if (error) {
-        console.error('[AI] Update error:', error);
-        return false;
+    if (Object.keys(updates).length > 0) {
+        const { error } = await supabase.from('products').update(updates).eq('id', product.id);
+        if (error) {
+            console.error('[AI] Update error:', error);
+            return false;
+        }
     }
 
     return true;

@@ -86,7 +86,7 @@ export default function AdminCategoriesTab({ categories, onRefresh }: AdminCateg
                         }
                         
                         const attributes = p.attributes as null | Record<string, any>;
-                        const hasAiContent = p.description && attributes?.specs && attributes?.benefits;
+                        const hasAiContent = p.description && (attributes?.productSpecs?.length > 0 || attributes?.technical_specs?.length > 0) && attributes?.effects?.length > 0;
                         if (!hasAiContent) {
                             aiStats[p.category_id].missing++;
                         }
@@ -354,7 +354,8 @@ export default function AdminCategoriesTab({ categories, onRefresh }: AdminCateg
     };
 
     const hasMissingAI = (product: any) => {
-        return !product.description || !product.attributes?.specs || !product.attributes?.benefits;
+        const attributes = product.attributes || {};
+        return !product.description || (!attributes.productSpecs?.length && !attributes.technical_specs?.length) || !attributes.effects?.length;
     };
 
     const handleAIFillCategory = async (category: Category) => {

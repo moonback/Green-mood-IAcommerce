@@ -111,24 +111,34 @@ export default function Admin() {
 
   const loadCategories = useCallback(async () => {
     try {
-      // Direct query to ensure no issues with joins or conditions
-      const { data, error } = await supabase
+      // Direct query to categories
+      const { data: catData, error: catError } = await supabase
         .from('categories')
         .select('*')
         .order('sort_order', { ascending: true });
       
-      if (error) {
-        console.error('Core categories fetch error:', error);
+      if (catError) {
+        console.error('Core categories fetch error:', catError);
         return;
       }
+
+      // Fetch all products just once to count them locally (or use existing ones if they exist)
+      // Actually, since we're in loadCategories, we might not have products yet.
+      // Let's just fetch the count-map from products table in one go.
+      const { data: prodData } = await supabase
+        .from('products')
+        .select('category_id');
       
-      // If we need the counts, we can fetch them separately or use a separate join
-      const categoriesWithCounts = await Promise.all((data as Category[] || []).map(async (cat) => {
-        const { count } = await supabase
-          .from('products')
-          .select('*', { count: 'exact', head: true })
-          .eq('category_id', cat.id);
-        return { ...cat, products: { count: count || 0 } };
+      const countMap: Record<string, number> = {};
+      (prodData || []).forEach(p => {
+        if (p.category_id) {
+          countMap[p.category_id] = (countMap[p.category_id] || 0) + 1;
+        }
+      });
+      
+      const categoriesWithCounts = (catData as Category[] || []).map(cat => ({
+        ...cat,
+        products: [{ count: countMap[cat.id] || 0 }]
       }));
       
       setCategories(categoriesWithCounts);
