@@ -23,7 +23,7 @@ export default function SplashScreen() {
         return () => clearTimeout(timer);
     }, [isVisible]);
 
-    if (!settings.splash_enabled) return null;
+    if (!settings.splash_enabled || !settings.splash_media_url) return null;
 
     return (
         <AnimatePresence>

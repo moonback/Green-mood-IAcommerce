@@ -30,6 +30,7 @@ const PremiumRelatedProducts = lazy(() => import('../components/product-premium/
 
 // ── Spec icons derived from keyword matching ─────────────────────────────────
 function getSpecIcon(spec: string): string {
+  if (!spec) return '📄';
   const s = spec.toLowerCase();
 
   // ── Botanical / CBD Specific ──────────────────────────────────────────────
@@ -50,6 +51,7 @@ function getSpecIcon(spec: string): string {
 }
 
 function getSpecCategory(spec: string): string {
+  if (!spec) return 'Informations';
   const s = spec.toLowerCase();
 
   if (/culture|méthode|indoor|outdoor|greenhouse/.test(s)) return 'Culture';
@@ -103,13 +105,19 @@ function enhanceProduct(base: BaseProduct): Product {
   let specs_enhanced: ProductSpec[] = [];
 
   if (productSpecsData.length > 0) {
-    specs_enhanced = productSpecsData.map(s => ({
-      ...s,
-      intensity: s.intensity ?? 100,
-      icon: s.icon ?? getSpecIcon(s.name),
-      category: s.category ?? getSpecCategory(s.name),
-      description: s.description ?? ''
-    }));
+    specs_enhanced = productSpecsData
+      .filter(s => s && (s.name || s.label))
+      .map(s => {
+        const name = s.name || s.label || 'Spécification';
+        return {
+          ...s,
+          name,
+          intensity: s.intensity ?? 100,
+          icon: s.icon ?? getSpecIcon(name),
+          category: s.category ?? getSpecCategory(name),
+          description: s.description ?? ''
+        };
+      });
   } else {
     // Try to derive from basic attributes
     const cbd = base.attributes?.cbd_percentage || (base as any).cbd_percentage;
