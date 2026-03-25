@@ -39,10 +39,13 @@ export async function generateProductInfo(productName: string, categoryName?: st
     Agis en tant qu'expert en CBD et Cannabis légal. Recherche les caractéristiques de : "${productName}" ${domainContext}.
     Génère un JSON e-commerce en français, style premium, luxueux et apaisant.
 
-    CONSIGNES DE SÉCURITÉ JSON :
-    - NE JAMAIS utiliser de guillemets doubles (") à l'intérieur des valeurs (texte). Utilise des guillemets simples (').
-    - Utilise des balises HTML (<p>, <strong>, <ul>, <li>) dans 'description'.
-    - Pas de texte avant/après le bloc {}.
+    CONSIGNES DE SÉCURITÉ JSON (CRITIQUE) :
+    - RÉPONDRE EXCLUSIVEMENT AVEC UN OBJET JSON.
+    - NE JAMAIS utiliser de balises comme <components>, <attributes>, <item>, <description>.
+    - NE JAMAIS inclure de texte explicatif avant ou après le JSON.
+    - Utilise des guillemets doubles (") pour les clés et les valeurs JSON. 
+    - Si tu as besoin de guillemets à l'intérieur d'une chaîne, utilise des guillemets simples (').
+    - Utilise des balises HTML standards (uniquement <p>, <strong>, <ul>, <li>) exclusivement à l'intérieur de la valeur du champ 'description'.
 
     INFOS À GÉNÉRER :
     1. 'headline' : Accroche courte et percutante (ex: 'L'excellence californienne au service de votre détente').
@@ -54,7 +57,11 @@ export async function generateProductInfo(productName: string, categoryName?: st
        - 'thc_max': Valeur numérique <= 0.3 (ex: 0.18).
        - 'techFeatures': 3-5 tags (ex: ['Indoor', 'Bio-Organique', 'Grown in Italy', 'Full Spectrum']).
        - 'productMetrics': { 'Détente': 8, 'Saveur': 9, 'Arôme': 9, 'Puissance': 7 } (scores sur 10).
-       - 'productSpecs': Liste d'objets { name, description, category } pour : 'Profil de Terpènes', 'Méthode de Culture', 'Effet Dominant', 'Certifications'.
+       - 'productSpecs': Liste d'objets { name, description, category, intensity } pour : 
+         * 'Profil de Terpènes' (Détaille Myrcène, Limonène, etc. avec intensité %), 
+         * 'Méthode de Culture' (Indoor/Outdoor avec détails techniques), 
+         * 'Concentration Cannabinoïdes' (Détaille CBD, CBG, CBN, THC < 0.3%),
+         * 'Certifications Qualité' (Analyses labo, absence de pesticides).
 
     Exemple de structure :
     {
@@ -112,19 +119,49 @@ export async function generateProductInfo(productName: string, categoryName?: st
 
         const data = await response.json();
 
+        // ── Handle internal function errors (often returned with 200 OK) ──
+        if (data.error) {
+            console.error('[AI] Internal Function Error:', data);
+            useToastStore.getState().addToast({
+                type: 'error',
+                message: `Erreur IA Interne: ${data.message || data.error}`
+            });
+            return null;
+        }
+
         let content = data?.choices?.[0]?.message?.content;
-        if (!content) return null;
+        if (!content) {
+            console.warn('[AI] No content returned from AI model:', data);
+            useToastStore.getState().addToast({
+                type: 'info',
+                message: "Le modèle n'a retourné aucun contenu. Réessayez avec un nom de produit plus précis."
+            });
+            return null;
+        }
 
         // More aggressive JSON extraction and repair
+        let jsonString = '';
         const start = content.indexOf('{');
         const end = content.lastIndexOf('}');
-        if (start === -1 || end === -1) return null;
+        
+        if (start !== -1 && end !== -1 && end > start) {
+            jsonString = content.substring(start, end + 1);
+        } else {
+            console.error('[AI] No JSON block found in content:', content);
+            useToastStore.getState().addToast({
+                type: 'error',
+                message: "L'IA a généré une réponse malformée (non JSON)."
+            });
+            return null;
+        }
 
-        let jsonString = content.substring(start, end + 1);
-
-        // Sanitize problematic white spaces and common AI errors
+        // Clean up pseudo-XML or common AI tags if they leaked into the string
         jsonString = jsonString
-            .replace(/\\n/g, "\\n")
+            .replace(/<attributes>/g, '')
+            .replace(/<\/attributes>/g, '')
+            .replace(/<components>/g, '')
+            .replace(/<\/components>/g, '')
+            .replace(/\\n/g, " ")
             .replace(/\\'/g, "'")
             .replace(/,\s*}/g, '}')
             .replace(/,\s*]/g, ']');

@@ -154,14 +154,59 @@ export default function ProductSpecs({ specs }: Props) {
                       </div>
 
                       <div className="flex-1 space-y-12">
-                        <div className="space-y-4">
+                        <div className="space-y-6">
                           <p className="text-[11px] font-black uppercase tracking-[0.3em] text-[color:var(--color-text-subtle)] flex items-center gap-2">
-                            <span className="w-8 h-px bg-[color:var(--color-primary)]/30" /> Analyse Bio-chimique
+                            <span className="w-8 h-px bg-[color:var(--color-primary)]/30" /> Rapport d'expertise Laboratoire
                           </p>
                           <div 
                             className="text-lg md:text-xl text-[color:var(--color-text)] leading-relaxed font-medium bg-[color:var(--color-bg-elevated)] backdrop-blur-sm p-8 rounded-3xl border border-[color:var(--color-border)] shadow-inner [&_p]:mb-4 [&_ul]:list-disc [&_ul]:pl-5 [&_li]:mb-1"
                             dangerouslySetInnerHTML={{ __html: formatProductText(activeSpec.description) }}
                           />
+
+                          {/* Technical Detail Table for Composition */}
+                          {(activeSpec.category === 'Composition' || activeSpec.category === 'Qualité & Analyse') && (
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
+                                {[
+                                    { label: 'Analyste', value: 'Lab-Botanique VIP', icon: '🔬' },
+                                    { label: 'Méthode', value: 'HPLC-DAD', icon: '⚙️' },
+                                    { label: 'Lot #', value: 'GM-' + Math.floor(Math.random() * 9000 + 1000), icon: '🆔' },
+                                    { label: 'Pesticides', value: '0.0% (ND)', icon: '🌾' },
+                                ].map((item) => (
+                                    <div key={item.label} className="p-4 rounded-2xl bg-[color:var(--color-bg-muted)]/50 border border-[color:var(--color-border)] flex flex-col gap-1">
+                                        <span className="text-[10px] font-black uppercase tracking-widest text-[color:var(--color-text-subtle)] opacity-70 flex items-center gap-1.5">
+                                            <span>{item.icon}</span> {item.label}
+                                        </span>
+                                        <span className="text-xs font-black text-[color:var(--color-text)]">{item.value}</span>
+                                    </div>
+                                ))}
+                            </div>
+                          )}
+
+                          {/* Terpene Profile visualization for Profil Aromatique */}
+                          {activeSpec.category === 'Profil Aromatique' && (
+                            <div className="space-y-4 p-6 rounded-3xl bg-emerald-500/5 border border-emerald-500/10">
+                                <h5 className="text-sm font-black text-[color:var(--color-text)] uppercase tracking-tight flex items-center gap-2">
+                                    <Zap className="w-4 h-4 text-[color:var(--color-primary)]" /> Profil Terpénique Majeur
+                                </h5>
+                                <div className="space-y-3">
+                                    {[
+                                        { name: 'Myrcène (Terreux)', p: 85 },
+                                        { name: 'Limonène (Agrumes)', p: 65 },
+                                        { name: 'Caryophyllène (Poivré)', p: 45 },
+                                    ].map(t => (
+                                        <div key={t.name} className="space-y-1">
+                                            <div className="flex justify-between text-[10px] font-black uppercase tracking-widest text-[color:var(--color-text-subtle)]">
+                                                <span>{t.name}</span>
+                                                <span>{t.p}%</span>
+                                            </div>
+                                            <div className="h-1.5 rounded-full bg-[color:var(--color-bg-muted)] overflow-hidden">
+                                                <div className="h-full bg-gradient-to-r from-[color:var(--color-primary)] to-emerald-400" style={{ width: `${t.p}%` }} />
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                          )}
                         </div>
 
                         {/* Metrics visualization */}

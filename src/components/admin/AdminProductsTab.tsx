@@ -280,6 +280,7 @@ export default function AdminProductsTab({ products, categories, onRefresh }: Ad
                             group: ps.category,
                             items: [{ label: ps.name, value: ps.description }]
                         })) || [],
+                        note: prev.attributes?.note || data.headline || '',
                     },
                     cbd_percentage: prev.cbd_percentage || data.attributes?.cbd_percentage || 0,
                     thc_max: prev.thc_max || data.attributes?.thc_max || 0.2,
@@ -1237,15 +1238,15 @@ export default function AdminProductsTab({ products, categories, onRefresh }: Ad
                                     </div>
 
                                     <div>
-                                        <label className={LABEL}>Poids (kg)</label>
+                                        <label className={LABEL}>Poids du produit (g)</label>
                                         <input
                                             type="number"
-                                            step="1"
+                                            step="0.1"
                                             min="0"
                                             value={productForm.weight_grams ?? ''}
                                             onChange={(e) => setProductForm({ ...productForm, weight_grams: e.target.value ? parseFloat(e.target.value) : null })}
                                             className={INPUT}
-                                            placeholder="ex: 85000 (en grammes)"
+                                            placeholder="ex: 50.5 (en grammes)"
                                         />
                                     </div>
 
