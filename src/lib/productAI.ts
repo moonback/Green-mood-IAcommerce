@@ -226,9 +226,15 @@ export async function autoFillProductSync(product: Product, force: boolean = fal
             seo_title: generated.seo?.title || currentAttrs.seo_title || '',
             seo_meta_description: generated.seo?.meta_description || currentAttrs.seo_meta_description || '',
             brand: generated.attributes?.brand || currentAttrs.brand || '',
+            culture_method: generated.attributes?.techFeatures?.[0] || 'Indoor',
+            effects: generated.attributes?.techFeatures || [],
             techFeatures: generated.attributes?.techFeatures || [],
             productMetrics: generated.attributes?.productMetrics || {},
             productSpecs: generated.attributes?.productSpecs || [],
+            technical_specs: generated.attributes?.productSpecs?.map((ps: any) => ({
+                group: ps.category,
+                items: [{ label: ps.name, value: ps.description }]
+            })) || [],
         };
     } else {
         if (!product.description && generated.description) updates.description = generated.description;
@@ -240,8 +246,9 @@ export async function autoFillProductSync(product: Product, force: boolean = fal
         const hasSeoTitle = !!currentAttrs.seo_title;
         const hasSeoMeta = !!currentAttrs.seo_meta_description;
         const hasHeadline = !!currentAttrs.headline;
+        const hasEffects = currentAttrs.effects && currentAttrs.effects.length > 0;
 
-        if (!hasBrand || !hasMetrics || !hasTechFeatures || !hasProductSpecs || !hasSeoTitle || !hasSeoMeta || !hasHeadline) {
+        if (!hasBrand || !hasMetrics || !hasTechFeatures || !hasProductSpecs || !hasSeoTitle || !hasSeoMeta || !hasHeadline || !hasEffects) {
             updates.attributes = {
                 ...currentAttrs,
                 cbd_percentage: currentAttrs.cbd_percentage || generated.attributes?.cbd_percentage || 0,
@@ -250,9 +257,15 @@ export async function autoFillProductSync(product: Product, force: boolean = fal
                 seo_title: currentAttrs.seo_title || generated.seo?.title || '',
                 seo_meta_description: currentAttrs.seo_meta_description || generated.seo?.meta_description || '',
                 brand: currentAttrs.brand || generated.attributes?.brand || '',
+                culture_method: currentAttrs.culture_method || generated.attributes?.techFeatures?.[0] || 'Indoor',
+                effects: (currentAttrs.effects?.length ?? 0) > 0 ? currentAttrs.effects : (generated.attributes?.techFeatures || []),
                 techFeatures: currentAttrs.techFeatures?.length ? currentAttrs.techFeatures : (generated.attributes?.techFeatures || []),
                 productMetrics: (currentAttrs.productMetrics && Object.keys(currentAttrs.productMetrics).length > 0) ? currentAttrs.productMetrics : (generated.attributes?.productMetrics || {}),
                 productSpecs: currentAttrs.productSpecs?.length ? currentAttrs.productSpecs : (generated.attributes?.productSpecs || []),
+                technical_specs: (currentAttrs.technical_specs?.length ?? 0) > 0 ? currentAttrs.technical_specs : (generated.attributes?.productSpecs?.map((ps: any) => ({
+                    group: ps.category,
+                    items: [{ label: ps.name, value: ps.description }]
+                })) || []),
             };
         }
     }

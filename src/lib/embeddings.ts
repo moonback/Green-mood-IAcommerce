@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { supabase, SUPABASE_URL, SUPABASE_ANON_KEY } from './supabase';
 import { getCachedEmbedding, setCachedEmbedding } from './budtenderCache';
 
 export const OPENROUTER_EMBED_MODEL = 'openai/text-embedding-3-large';
@@ -34,11 +34,31 @@ async function requestEmbedding(normalized: string, dimensions?: number): Promis
         body.dimensions = dimensions;
     }
 
-    const { data: payload, error } = await supabase.functions.invoke('ai-embeddings', { body });
+    try {
+        const { data: { session } } = await supabase.auth.getSession();
+        const functionUrl = `${SUPABASE_URL}/functions/v1/ai-embeddings?apikey=${SUPABASE_ANON_KEY}`;
+        
+        const response = await fetch(functionUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${session?.access_token || SUPABASE_ANON_KEY}`,
+                'apikey': SUPABASE_ANON_KEY,
+                'x-client-info': 'green-mood-ai-ecommerce'
+            },
+            body: JSON.stringify(body)
+        });
 
-    if (error) throw new Error(`OpenRouter embedding error: ${error.message}`);
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Edge Function error (${response.status}): ${errorText}`);
+        }
 
-    return payload;
+        return await response.json();
+    } catch (err: any) {
+        console.error('[Embeddings] Error calling ai-embeddings:', err);
+        throw err;
+    }
 }
 
 /**
