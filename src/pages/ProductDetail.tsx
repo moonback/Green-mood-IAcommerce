@@ -112,17 +112,19 @@ function enhanceProduct(base: BaseProduct): Product {
     }));
   } else {
     // Try to derive from basic attributes
-    if (base.cbd_percentage) {
+    const cbd = base.attributes?.cbd_percentage || (base as any).cbd_percentage;
+    if (cbd) {
       specs_enhanced.push({
         name: 'CBD',
         icon: '🧪',
         category: 'Composition',
-        description: `Taux de CBD élevé de ${base.cbd_percentage}% pour une efficacité optimale.`,
-        intensity: Math.min(100, (base.cbd_percentage / 20) * 100)
+        description: `Taux de CBD élevé de ${cbd}% pour une efficacité optimale.`,
+        intensity: Math.min(100, (cbd / 20) * 100)
       });
     }
     
-    if (base.thc_max !== undefined && base.thc_max <= 0.3) {
+    const thc = base.attributes?.thc_max !== undefined ? base.attributes.thc_max : (base as any).thc_max;
+    if (thc !== undefined && thc <= 0.3) {
       specs_enhanced.push({
         name: 'THC',
         icon: '✅',

@@ -67,9 +67,11 @@ const EMPTY_PRODUCT = {
         seo_title: '' as string,
         seo_meta_description: '' as string,
         note: '' as string,
+        productSpecs: [] as any[],
+        techFeatures: [] as string[],
+        cbd_percentage: 0 as number,
+        thc_max: 0.2 as number,
     },
-    cbd_percentage: 0 as number | null,
-    thc_max: 0.2 as number | null,
 };
 
 const INPUT =
@@ -135,15 +137,17 @@ export default function AdminProductsTab({ products, categories, onRefresh }: Ad
                 is_active: product.is_active,
                 is_bundle: product.is_bundle ?? false,
                 is_subscribable: product.is_subscribable ?? false,
-                cbd_percentage: product.cbd_percentage,
-                thc_max: product.thc_max,
                 attributes: {
                     culture_method: 'Indoor',
                     effects: [],
                     technical_specs: [],
+                    productSpecs: [],
+                    techFeatures: [],
                     seo_title: '',
                     seo_meta_description: '',
                     note: '',
+                    cbd_percentage: 0,
+                    thc_max: 0.2,
                     ...product.attributes,
                 },
             });
@@ -171,10 +175,22 @@ export default function AdminProductsTab({ products, categories, onRefresh }: Ad
         const payload = { ...productForm, slug: productForm.slug || slugify(productForm.name) };
         let savedId = editingProductId;
         if (editingProductId) {
-            await supabase.from('products').update(payload).eq('id', editingProductId);
+            const { error } = await supabase.from('products').update(payload).eq('id', editingProductId);
+            if (error) {
+                addToast({ type: 'error', message: `Erreur lors de la mise à jour: ${error.message}` });
+                setIsSaving(false);
+                return;
+            }
+            addToast({ type: 'success', message: 'Produit mis à jour avec succès' });
         } else {
-            const { data: newProd } = await supabase.from('products').insert(payload).select('id').single();
+            const { data: newProd, error } = await supabase.from('products').insert(payload).select('id').single();
+            if (error) {
+                addToast({ type: 'error', message: `Erreur lors de la création: ${error.message}` });
+                setIsSaving(false);
+                return;
+            }
             if (newProd) savedId = newProd.id;
+            addToast({ type: 'success', message: 'Nouveau produit créé avec succès' });
         }
         if (productForm.is_bundle && savedId) {
             await supabase.from('bundle_items').delete().eq('bundle_id', savedId);
@@ -280,10 +296,12 @@ export default function AdminProductsTab({ products, categories, onRefresh }: Ad
                             group: ps.category,
                             items: [{ label: ps.name, value: ps.description }]
                         })) || [],
+                        productSpecs: (prev.attributes?.productSpecs?.length ?? 0) > 0 ? prev.attributes.productSpecs : data.attributes?.productSpecs || [],
+                        techFeatures: (prev.attributes?.techFeatures?.length ?? 0) > 0 ? prev.attributes.techFeatures : data.attributes?.techFeatures || [],
                         note: prev.attributes?.note || data.headline || '',
+                        cbd_percentage: prev.attributes?.cbd_percentage || data.attributes?.cbd_percentage || 0,
+                        thc_max: prev.attributes?.thc_max || data.attributes?.thc_max || 0.2,
                     },
-                    cbd_percentage: prev.cbd_percentage || data.attributes?.cbd_percentage || 0,
-                    thc_max: prev.thc_max || data.attributes?.thc_max || 0.2,
                 }));
             }
         } finally {
@@ -317,11 +335,16 @@ export default function AdminProductsTab({ products, categories, onRefresh }: Ad
                         group: ps.category,
                         items: [{ label: ps.name, value: ps.description }]
                     })) || [],
+                    productSpecs: currentAttrs.productSpecs || data.attributes?.productSpecs || [],
+                    techFeatures: currentAttrs.techFeatures || data.attributes?.techFeatures || [],
                 };
             }
 
             if (!product.cbd_percentage && data.attributes?.cbd_percentage) updates.cbd_percentage = data.attributes.cbd_percentage;
             if (!product.thc_max && data.attributes?.thc_max) updates.thc_max = data.attributes.thc_max;
+            if (data.attributes?.techFeatures) {
+                updates.attributes = { ...updates.attributes, techFeatures: data.attributes.techFeatures };
+            }
 
             if (Object.keys(updates).length > 0) {
                 await supabase.from('products').update(updates).eq('id', product.id);
@@ -1170,8 +1193,11 @@ export default function AdminProductsTab({ products, categories, onRefresh }: Ad
                                                 step="0.1"
                                                 min="0"
                                                 max="100"
-                                                value={productForm.cbd_percentage ?? 0}
-                                                onChange={(e) => setProductForm({ ...productForm, cbd_percentage: parseFloat(e.target.value) || 0 })}
+                                                value={productForm.attributes?.cbd_percentage ?? 0}
+                                                onChange={(e) => setProductForm({
+                                                    ...productForm,
+                                                    attributes: { ...productForm.attributes, cbd_percentage: parseFloat(e.target.value) || 0 }
+                                                })}
                                                 className={INPUT}
                                                 placeholder="ex: 15.5"
                                             />
@@ -1184,8 +1210,11 @@ export default function AdminProductsTab({ products, categories, onRefresh }: Ad
                                                 step="0.01"
                                                 min="0"
                                                 max="1"
-                                                value={productForm.thc_max ?? 0.2}
-                                                onChange={(e) => setProductForm({ ...productForm, thc_max: parseFloat(e.target.value) || 0 })}
+                                                value={productForm.attributes?.thc_max ?? 0.2}
+                                                onChange={(e) => setProductForm({
+                                                    ...productForm,
+                                                    attributes: { ...productForm.attributes, thc_max: parseFloat(e.target.value) || 0 }
+                                                })}
                                                 className={INPUT}
                                                 placeholder="ex: 0.2"
                                             />
