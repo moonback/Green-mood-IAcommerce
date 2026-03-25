@@ -30,7 +30,7 @@ const TOKEN_MAX_RETRIES = 2;
 const TOKEN_RETRY_DELAY_MS = 1200;
 const TOOL_DEDUP_WINDOW_MS = 2500;
 const TOKEN_PREFETCH_MAX_AGE_MS = 50 * 1000; // keep a small safety margin before expiry
-const INITIAL_GREETING_DELAY_MS = 350;
+const INITIAL_GREETING_DELAY_MS = 1500;
 const BARGE_IN_RMS_THRESHOLD_FALLBACK = 0.22; // used if noise calibration hasn't run yet
 const BARGE_IN_MIN_DURATION_MS = 180;
 const BARGE_IN_STABILITY_FRAMES = 3;
@@ -326,6 +326,7 @@ export function useGeminiLiveVoice({
   const [outputTranscript, setOutputTranscript] = useState('');
   const inputTranscriptTimerRef = useRef<number | null>(null);
   const outputTranscriptTimerRef = useRef<number | null>(null);
+  const greetingTriggerSentRef = useRef(false);
 
   useEffect(() => {
     voiceStateRef.current = voiceState;
@@ -582,6 +583,7 @@ export function useGeminiLiveVoice({
     isClosingRef.current = false;
     startInFlightRef.current = false;
     sessionIdRef.current += 1;
+    greetingTriggerSentRef.current = false;
     searchResultsRef.current = [];
     if (!preserveViewedProductsOnCleanupRef.current) {
       viewedProductIdsRef.current.clear();
@@ -633,12 +635,12 @@ export function useGeminiLiveVoice({
   useEffect(() => {
     if (sessionRef.current && voiceState === 'listening' && activeProduct && !isManualCloseRef.current) {
       if (activeProduct.id !== prevActiveProductRef.current?.id) {
-        const specs = activeProduct.machineSpecs?.map(s => `• ${s.name}: ${s.description}`).join('\n') || 'Non spécifiées';
-        const metrics = activeProduct.machineMetrics ? Object.entries(activeProduct.machineMetrics).map(([k, v]) => `${k}: ${v}/10`).join(', ') : 'Non disponibles';
+        const specs = (activeProduct as any).attributes?.productSpecs?.map((s: any) => `• ${s.name}: ${s.description}`).join('\n') || 'Non spécifiées';
+        const metrics = (activeProduct as any).attributes?.botanicalProfile ? Object.entries((activeProduct as any).attributes.botanicalProfile).map(([k, v]) => `${k}: ${v}/10`).join(', ') : 'Non disponibles';
 
         const syncText = `[NAVIGATION] Le client regarde maintenant : ${activeProduct.name}.\n` +
-          `Détails techniques :\n${specs}\n` +
-          `Performance : ${metrics}\n` +
+          `Détails botaniques :\n${specs}\n` +
+          `Profil sensoriel : ${metrics}\n` +
           `Utilise ces informations pour tes futures réponses tant que le client est sur cette page.`;
 
         const timer = setTimeout(() => {
@@ -804,6 +806,9 @@ export function useGeminiLiveVoice({
 
         // Final guard: re-check right before the SDK call to minimize the race window
         if (isClosingRef.current) return;
+        const ws = wsRef.current ?? (sessionRef.current as any)?._ws;
+        if (ws && ws.readyState !== WebSocket.OPEN) return;
+
         const sendResult = sessionRef.current?.sendRealtimeInput({
           media: {
             mimeType: 'audio/pcm',
@@ -904,18 +909,24 @@ export function useGeminiLiveVoice({
               await wait(INITIAL_GREETING_DELAY_MS);
               if (sessionIdRef.current !== sid || isManualCloseRef.current) return;
 
-              // Double check WS readyState before sending content
-              const ws = wsRef.current ?? (sessionRef.current as any)?._ws;
-              if (ws && ws.readyState !== WebSocket.OPEN) return;
+              // GUARD: Ensure we only send the greeting trigger ONCE and only if 
+              // the bot hasn't already initiated ANY activity (speaking, tool calls, etc.)
+              if (!greetingTriggerSentRef.current && voiceStateRef.current === 'listening') {
+                greetingTriggerSentRef.current = true;
+                
+                // Double check WS readyState before sending content
+                const ws = wsRef.current ?? (sessionRef.current as any)?._ws;
+                if (ws && ws.readyState !== WebSocket.OPEN) return;
 
-              const greetingTrigger = userName
-                ? `[MANDATORY_TOOL_USE: Do not use empty arguments] [START SESSION] Greet the customer warmly by their name (${userName}) and ask how you can help them today.`
-                : "[MANDATORY_TOOL_USE: Do not use empty arguments] [START SESSION] Greet the customer warmly and ask how you can help them today.";
+                const greetingTrigger = userName
+                  ? `[START SESSION] Accueille le client par son prénom (${userName}) et demande-lui comment tu peux l'aider aujourd'hui.`
+                  : "[START SESSION] Accueille chaleureusement le client et demande-lui comment tu peux l'aider aujourd'hui.";
 
-              sessionRef.current?.sendClientContent({
-                turns: [{ role: 'user', parts: [{ text: greetingTrigger }] }],
-                turnComplete: true
-              });
+                sessionRef.current?.sendClientContent({
+                  turns: [{ role: 'user', parts: [{ text: greetingTrigger }] }],
+                  turnComplete: true
+                });
+              }
 
               // Log voice session analytically
               try {
@@ -1018,6 +1029,12 @@ export function useGeminiLiveVoice({
           },
           onmessage: async (msg: LiveServerMessage) => {
             if (sessionIdRef.current !== sid) return;
+
+            // If we receive ANY content from the server (speaking or tool call),
+            // consider the greeting sequence handled/bypassed.
+            if (msg.serverContent || msg.toolCall) {
+              greetingTriggerSentRef.current = true;
+            }
 
             const setupTurn = () => {
               scheduledUntilRef.current = playbackCtxRef.current?.currentTime ?? 0;

@@ -1138,6 +1138,30 @@ export default function Assistant() {
           </div>
         </div>
       </motion.aside>
+      <VoiceAdvisor
+        products={products}
+        pastProducts={memory.pastProducts}
+        pastOrders={memory.pastOrders}
+        savedPrefs={memory.savedPrefs}
+        userName={memory.userName}
+        isOpen={useBudtenderStore(s => s.isVoiceOpen)}
+        onClose={() => useBudtenderStore.getState().closeVoice()}
+        onHangup={() => useBudtenderStore.getState().closeVoice()}
+        onAddItem={(product, quantity) => {
+          addItem(product, quantity);
+        }}
+        onViewProduct={(product) => navigate(`/catalogue/${product.slug}`)}
+        onNavigate={(path) => navigate(path)}
+        onOpenModal={(modalName) => {
+          window.dispatchEvent(new CustomEvent('cortex-open-modal', { detail: modalName }));
+        }}
+        onSavePrefs={memory.updatePrefs}
+        cartItems={items}
+        customPrompt={settings?.custom_chat_prompt || ""}
+        loyaltyPoints={memory.loyaltyPoints}
+        allowCloseSession={settings?.voice_close_session_enabled ?? true}
+        showUI={true}
+      />
     </div>
   );
 }
