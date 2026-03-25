@@ -1,0 +1,26 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /pos
+Disallow: /api/
+Disallow: /auth/
+
+User-agent: GPTBot
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: AmazonBot
+Allow: /
+
+User-agent: Meta-ExternalAgent
+Allow: /
+
+Sitemap: https://greenmood.fr/sitemap.xml

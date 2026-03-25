@@ -1,0 +1,1453 @@
+import { useState, useMemo, FormEvent } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
+import {
+    ShoppingBag,
+    Plus,
+    Search,
+    List,
+    LayoutGrid,
+    Brain,
+    Edit3,
+    ArrowUpDown,
+    Trash2,
+    X,
+    Hash,
+    Star,
+    Eye,
+    ChevronLeft,
+    ChevronRight,
+    Sparkles,
+    Zap,
+    Settings,
+    ChevronDown,
+    Upload,
+    FileDown,
+    FileText
+} from 'lucide-react';
+import { supabase } from '../../lib/supabase';
+import type { Product, Category } from '../../lib/types';
+import { buildCategoryTree, flattenTree, getCategoryAncestors } from '../../lib/categoryTree';
+import CSVImporter from './CSVImporter';
+import MassModifyModal from './MassModifyModal';
+import AdminProductPreviewModal from './AdminProductPreviewModal';
+import ProductImporter from './ProductImporter';
+import { generateEmbedding } from '../../lib/embeddings';
+import { generateProductInfo } from '../../lib/productAI';
+import { slugify } from '../../lib/utils';
+import { useBackgroundTaskStore } from '../../store/backgroundTaskStore';
+import { useToastStore } from '../../store/toastStore';
+import ProductImageUpload from './ProductImageUpload';
+
+interface AdminProductsTabProps {
+    products: Product[];
+    categories: Category[];
+    onRefresh: () => void;
+}
+
+const EMPTY_PRODUCT = {
+    category_id: '',
+    slug: '',
+    name: '',
+    sku: null as string | null,
+    description: null as string | null,
+    weight_grams: null as number | null,
+    price: 0,
+    original_value: null as number | null,
+    image_url: null as string | null,
+    stock_quantity: 0,
+    is_available: true,
+    is_featured: false,
+    is_active: true,
+    is_bundle: false,
+    is_subscribable: false,
+    attributes: {
+        brand: '' as string,
+        year: null as number | null,
+        dimensions: '' as string,
+        players: null as number | null,
+        power_watts: null as number | null,
+        specs: [] as string[],
+        connectivity: [] as string[],
+        benefits: [] as string[],
+        technical_specs: [] as any[],
+        seo_title: '' as string,
+        seo_meta_description: '' as string,
+    },
+};
+
+const INPUT =
+    'w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2.5 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-green-neon transition-colors';
+const LABEL = 'block text-xs text-zinc-400 mb-1 font-medium uppercase tracking-wider';
+
+const PLACEHOLDER_IMAGE = "https://images.unsplash.com/photo-1555617766-c94804975da3?q=80&w=2070&auto=format&fit=crop";
+
+export default function AdminProductsTab({ products, categories, onRefresh }: AdminProductsTabProps) {
+    const [searchQuery, setSearchQuery] = useState('');
+    const [viewMode, setViewMode] = useState<'list' | 'grid'>('grid');
+    const [isSaving, setIsSaving] = useState(false);
+    const [isActionsMenuOpen, setIsActionsMenuOpen] = useState(false);
+
+    const { isSyncingAI, aiSyncProgress, startMassAIFill, isSyncingVectors, startVectorSync } = useBackgroundTaskStore();
+    const addToast = useToastStore(s => s.addToast);
+
+    const ITEMS_PER_PAGE = 20;
+    const [currentPage, setCurrentPage] = useState(1);
+
+    // Category tree for the hierarchical category selector
+    const categoryTree = useMemo(() => buildCategoryTree(categories, true), [categories]);
+
+    // ── Product modal ──
+    const [showProductModal, setShowProductModal] = useState(false);
+    const [productForm, setProductForm] = useState(EMPTY_PRODUCT);
+
+    // Full ancestor path for the currently selected category (breadcrumb display)
+    const selectedCategoryPath = useMemo(() => {
+        if (!productForm.category_id) return null;
+        return getCategoryAncestors(productForm.category_id, categories);
+    }, [productForm.category_id, categories]);
+    const [editingProductId, setEditingProductId] = useState<string | null>(null);
+    const [bundleItemsEditor, setBundleItemsEditor] = useState<{ product_id: string; quantity: number }[]>([]);
+
+    // ── Mass Modification ──
+    const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
+    const [showMassModifyModal, setShowMassModifyModal] = useState(false);
+
+    // ── Preview ──
+    const [previewProduct, setPreviewProduct] = useState<Product | null>(null);
+
+    // ── Stock adjustment ──
+    const [stockAdjust, setStockAdjust] = useState<{ id: string; qty: string; note: string } | null>(null);
+    const [isGeneratingAI, setIsGeneratingAI] = useState<string | null>(null); // Product ID or 'modal'
+
+    const openProductModal = (product?: Product) => {
+        if (product) {
+            setEditingProductId(product.id);
+            setProductForm({
+                category_id: product.category_id,
+                slug: product.slug,
+                name: product.name,
+                sku: product.sku ?? null,
+                description: product.description,
+                weight_grams: product.weight_grams,
+                price: product.price,
+                original_value: product.original_value ?? null,
+                image_url: product.image_url,
+                stock_quantity: product.stock_quantity,
+                is_available: product.is_available,
+                is_featured: product.is_featured,
+                is_active: product.is_active,
+                is_bundle: product.is_bundle ?? false,
+                is_subscribable: product.is_subscribable ?? false,
+                attributes: {
+                    brand: '',
+                    year: null,
+                    dimensions: '',
+                    players: null,
+                    power_watts: null,
+                    specs: [],
+                    connectivity: [],
+                    benefits: [],
+                    technical_specs: [],
+                    seo_title: '',
+                    seo_meta_description: '',
+                    ...product.attributes,
+                },
+            });
+            if (product.is_bundle) {
+                supabase
+                    .from('bundle_items')
+                    .select('product_id, quantity')
+                    .eq('bundle_id', product.id)
+                    .then(({ data }) => {
+                        setBundleItemsEditor((data ?? []) as { product_id: string; quantity: number }[]);
+                    });
+            } else {
+                setBundleItemsEditor([]);
+            }
+        } else {
+            setEditingProductId(null);
+            setProductForm({ ...EMPTY_PRODUCT, category_id: categories[0]?.id ?? '' });
+            setBundleItemsEditor([]);
+        }
+        setShowProductModal(true);
+    };
+
+    const handleSaveProduct = async (e: FormEvent) => {
+        e.preventDefault();
+        setIsSaving(true);
+        const payload = { ...productForm, slug: productForm.slug || slugify(productForm.name) };
+        let savedId = editingProductId;
+        if (editingProductId) {
+            await supabase.from('products').update(payload).eq('id', editingProductId);
+        } else {
+            const { data: newProd } = await supabase.from('products').insert(payload).select('id').single();
+            if (newProd) savedId = newProd.id;
+        }
+        if (productForm.is_bundle && savedId) {
+            await supabase.from('bundle_items').delete().eq('bundle_id', savedId);
+            if (bundleItemsEditor.length > 0) {
+                await supabase.from('bundle_items').insert(
+                    bundleItemsEditor.filter((i) => i.product_id).map((i) => ({ bundle_id: savedId, ...i }))
+                );
+            }
+            await supabase.rpc('sync_bundle_stock', { p_bundle_id: savedId });
+        }
+        setShowProductModal(false);
+        onRefresh();
+        setIsSaving(false);
+
+        // ── Auto-generate embedding after save (non-blocking) ──────────────────
+        // This ensures every product always has an up-to-date search vector
+        // without requiring a manual sync step.
+        if (savedId) {
+            const textToEmbed = [
+                payload.name,
+                payload.description ?? '',
+                payload.attributes?.brand ? `Marque: ${payload.attributes.brand}` : '',
+                ...(Array.isArray(payload.attributes?.specs) ? payload.attributes.specs : []),
+                ...(Array.isArray(payload.attributes?.benefits) ? payload.attributes.benefits : []),
+            ].filter(Boolean).join(' ').trim();
+
+            if (textToEmbed) {
+                generateEmbedding(textToEmbed)
+                    .then((embedding) => {
+                        if (embedding.length > 0) {
+                            return supabase.from('products').update({ embedding }).eq('id', savedId!);
+                        }
+                    })
+                    .then(() => onRefresh())
+                    .catch((err) => {
+                        console.warn('[Auto-embed] Échec de la génération vectorielle (non bloquant):', err);
+                    });
+            }
+        }
+    };
+
+    const handleDeleteProduct = async (id: string) => {
+        if (!confirm('Désactiver ce produit ? Il ne sera plus visible dans le catalogue.')) return;
+        await supabase.from('products').update({ is_active: false }).eq('id', id);
+        onRefresh();
+    };
+
+    const handleMassDelete = async () => {
+        if (selectedProductIds.length === 0) return;
+        if (!confirm(`ATTENTION: Voulez-vous supprimer DÉFINITIVEMENT les ${selectedProductIds.length} produit(s) sélectionné(s) de la base de données ?\n\nCette action est irréversible.`)) return;
+
+        setIsSaving(true);
+        try {
+            const { error } = await supabase.from('products').delete().in('id', selectedProductIds);
+            if (error) throw error;
+            addToast({ message: `${selectedProductIds.length} produit(s) supprimé(s) avec succès.`, type: 'success' });
+            setSelectedProductIds([]);
+            onRefresh();
+        } catch (error) {
+            console.error('[AdminProducts] Erreur lors de la suppression massive:', error);
+            addToast({ message: "Erreur lors de la suppression des produits.", type: 'error' });
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const handleStockAdjust = async () => {
+        if (!stockAdjust) return;
+        const qty = parseInt(stockAdjust.qty);
+        if (isNaN(qty) || qty === 0) return;
+        setIsSaving(true);
+        const product = products.find((p) => p.id === stockAdjust.id);
+        if (!product) { setIsSaving(false); return; }
+        const newStock = Math.max(0, product.stock_quantity + qty);
+        await supabase.from('products').update({ stock_quantity: newStock }).eq('id', stockAdjust.id);
+        await supabase.from('stock_movements').insert({
+            product_id: stockAdjust.id,
+            quantity_change: qty,
+            type: qty > 0 ? 'restock' : 'adjustment',
+            note: stockAdjust.note || 'Ajustement manuel',
+        });
+        onRefresh();
+        setStockAdjust(null);
+        setIsSaving(false);
+    };
+
+    const handleAIFillInModal = async () => {
+        if (!productForm.name) return;
+        setIsGeneratingAI('modal');
+        try {
+            const cat = categories.find(c => c.id === productForm.category_id);
+            const data = await generateProductInfo(productForm.name, cat?.name);
+            if (data) {
+                setProductForm(prev => ({
+                    ...prev,
+                    description: prev.description || data.description || null,
+                    attributes: {
+                        ...prev.attributes,
+                        seo_title: prev.attributes?.seo_title || data.seo?.title || '',
+                        seo_meta_description: prev.attributes?.seo_meta_description || data.seo?.meta_description || '',
+                        brand: prev.attributes?.brand || data.attributes?.brand || '',
+                        specs: (prev.attributes?.specs?.length ?? 0) > 0 ? prev.attributes.specs : data.attributes?.specs || [],
+                        connectivity: (prev.attributes?.connectivity?.length ?? 0) > 0 ? prev.attributes.connectivity : data.attributes?.connectivity || [],
+                        benefits: (prev.attributes?.benefits?.length ?? 0) > 0 ? prev.attributes.benefits : data.attributes?.benefits || [],
+                        technical_specs: (prev.attributes?.technical_specs?.length ?? 0) > 0 ? prev.attributes.technical_specs : (data.attributes as any)?.technical_specs || [],
+                    }
+                }));
+            }
+        } finally {
+            setIsGeneratingAI(null);
+        }
+    };
+
+    const handleSingleAIFillSync = async (product: Product) => {
+        setIsGeneratingAI(product.id);
+        try {
+            const data = await generateProductInfo(product.name, (product.category as any)?.name);
+            if (!data) return;
+
+            const updates: any = {};
+            if (!product.description && data.description) updates.description = data.description;
+
+            const currentAttrs = product.attributes || {};
+            const hasBrand = !!currentAttrs.brand;
+            const hasBenefits = currentAttrs.benefits && currentAttrs.benefits.length > 0;
+            const hasSpecs = currentAttrs.specs && currentAttrs.specs.length > 0;
+            const hasSeoTitle = typeof currentAttrs.seo_title === 'string' && currentAttrs.seo_title.trim().length > 0;
+            const hasSeoMeta = typeof currentAttrs.seo_meta_description === 'string' && currentAttrs.seo_meta_description.trim().length > 0;
+
+            if (!hasBrand || !hasBenefits || !hasSpecs || !hasSeoTitle || !hasSeoMeta) {
+                updates.attributes = {
+                    ...currentAttrs,
+                    seo_title: hasSeoTitle ? currentAttrs.seo_title : data.seo?.title || '',
+                    seo_meta_description: hasSeoMeta ? currentAttrs.seo_meta_description : data.seo?.meta_description || '',
+                    brand: hasBrand ? currentAttrs.brand : data.attributes?.brand || '',
+                    specs: hasSpecs ? currentAttrs.specs : data.attributes?.specs || [],
+                    connectivity: currentAttrs.connectivity || data.attributes?.connectivity || [],
+                    benefits: hasBenefits ? currentAttrs.benefits : data.attributes?.benefits || [],
+                    technical_specs: currentAttrs.technical_specs || (data.attributes as any)?.technical_specs || [],
+                };
+            }
+
+            if (Object.keys(updates).length > 0) {
+                await supabase.from('products').update(updates).eq('id', product.id);
+                onRefresh();
+            }
+        } finally {
+            setIsGeneratingAI(null);
+        }
+    };
+
+    const hasEmbedding = (embedding: Product['embedding']) => {
+        if (Array.isArray(embedding)) return embedding.length > 0;
+        if (typeof embedding === 'string') return embedding.trim().length > 0 && embedding.trim() !== '[]';
+        return false;
+    };
+
+    const isAIComplete = (product: Product) => {
+        return !!product.description &&
+            !!product.attributes?.brand &&
+            (product.attributes?.benefits?.length ?? 0) > 0 &&
+            hasEmbedding(product.embedding);
+    };
+
+    const productsWithoutVectors = products.filter((product) => !hasEmbedding(product.embedding));
+
+    const handleSyncMissingVectors = () => {
+        if (productsWithoutVectors.length === 0 || isSyncingVectors) return;
+        startVectorSync(productsWithoutVectors, onRefresh);
+        addToast({ message: "Sync vecteurs lancée en arrière-plan", type: "info" });
+    };
+
+    const productsNeedingEnrichment = products.filter(p =>
+        !p.description ||
+        !p.attributes?.brand ||
+        !(typeof p.attributes?.seo_title === 'string' && p.attributes.seo_title.trim().length > 0) ||
+        !(typeof p.attributes?.seo_meta_description === 'string' && p.attributes.seo_meta_description.trim().length > 0) ||
+        (p.attributes?.benefits?.length ?? 0) === 0
+    );
+
+    const handleMassAIFill = async () => {
+        if (productsNeedingEnrichment.length === 0 || isSyncingAI) return;
+        if (!confirm(`Voulez-vous enrichir ${productsNeedingEnrichment.length} produit(s) via l'IA ? Cette opération continuera en arrière-plan.`)) return;
+
+        startMassAIFill(productsNeedingEnrichment, false, onRefresh);
+        addToast({ message: "Enrichissement IA lancé en arrière-plan", type: "info" });
+    };
+
+    const handleForceMassAIFill = async () => {
+        if (filteredProducts.length === 0 || isSyncingAI) return;
+        if (!confirm(`ATTENTION: Voulez-vous FORCER la génération IA sur les ${filteredProducts.length} produits affichés ?\n\nCette opération continuera en arrière-plan.`)) return;
+
+        startMassAIFill(filteredProducts, true, onRefresh);
+        addToast({ message: "Régénération forcée lancée en arrière-plan", type: "info" });
+    };
+
+    const filteredProducts = products.filter(
+        (p) =>
+            !searchQuery ||
+            p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            (p.sku && p.sku.toLowerCase().includes(searchQuery.toLowerCase()))
+    );
+
+    const totalPages = Math.ceil(filteredProducts.length / ITEMS_PER_PAGE);
+    const paginatedProducts = filteredProducts.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
+
+    const toggleSelection = (id: string) => {
+        setSelectedProductIds(prev =>
+            prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+        );
+    };
+
+    const toggleAll = () => {
+        if (selectedProductIds.length === filteredProducts.length && filteredProducts.length > 0) {
+            setSelectedProductIds([]);
+        } else {
+            setSelectedProductIds(filteredProducts.map(p => p.id));
+        }
+    };
+
+    const allSelected = filteredProducts.length > 0 && selectedProductIds.length === filteredProducts.length;
+
+    return (
+        <div className="space-y-6">
+            {/* Header: Search, Count & Actions */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <h2 className="text-xl font-serif font-bold text-white flex items-center gap-2">
+                        <ShoppingBag className="w-5 h-5 text-emerald-400" />
+                        Inventaire des Produits
+                        <div className="flex items-center gap-2 ml-2">
+                            <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-full text-[12px] font-bold leading-none">
+                                {filteredProducts.length} Produits
+                            </span>
+
+                        </div>
+                    </h2>
+                    <p className="text-xs text-zinc-500 mt-1">Gérez votre catalogue et vos niveaux de stock.</p>
+                </div>
+
+                <div className="flex items-center gap-3">
+                    <div className="flex bg-zinc-900 border border-zinc-800 rounded-xl p-1">
+                        <button
+                            onClick={() => setViewMode('list')}
+                            className={`p-2 rounded-lg transition-all ${viewMode === 'list' ? 'bg-zinc-800 text-emerald-400 shadow-lg' : 'text-zinc-500 hover:text-white'}`}
+                            title="Vue Liste"
+                        >
+                            <List className="w-4 h-4" />
+                        </button>
+                        <button
+                            onClick={() => setViewMode('grid')}
+                            className={`p-2 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-zinc-800 text-emerald-400 shadow-lg' : 'text-zinc-500 hover:text-white'}`}
+                            title="Vue Grille"
+                        >
+                            <LayoutGrid className="w-4 h-4" />
+                        </button>
+                    </div>
+
+                    {selectedProductIds.length > 0 && (
+                        <div className="flex gap-2">
+                            <button
+                                onClick={() => setShowMassModifyModal(true)}
+                                className="flex items-center gap-2 bg-green-900/40 hover:bg-green-600/60 border border-emerald-500 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition-all shadow-lg shadow-emerald-500/20 active:scale-95"
+                            >
+                                <Edit3 className="w-4 h-4" />
+                                <span className="hidden sm:inline">Modif. massive ({selectedProductIds.length})</span>
+                            </button>
+                            <button
+                                onClick={handleMassDelete}
+                                disabled={isSaving}
+                                className="flex items-center gap-2 bg-red-900/40 hover:bg-red-600/60 border border-red-500 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition-all shadow-lg shadow-red-500/20 active:scale-95 disabled:opacity-50"
+                            >
+                                <Trash2 className="w-4 h-4" />
+                                <span className="hidden sm:inline">Supprimer ({selectedProductIds.length})</span>
+                            </button>
+                        </div>
+                    )}
+
+                    {/* Actions Dropdown */}
+                    <div className="relative">
+                        <button
+                            onClick={() => setIsActionsMenuOpen(!isActionsMenuOpen)}
+                            className="flex items-center gap-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition-all shadow-xl active:scale-95"
+                        >
+                            <Brain className={`w-4 h-4 ${isSyncingAI || isSyncingVectors ? 'text-emerald-400 animate-pulse' : 'text-zinc-400'}`} />
+                            <span>Actions</span>
+                            <ChevronDown className={`w-4 h-4 transition-transform ${isActionsMenuOpen ? 'rotate-180' : ''}`} />
+                        </button>
+
+                        <AnimatePresence>
+                            {isActionsMenuOpen && (
+                                <>
+                                    <div
+                                        className="fixed inset-0 z-40"
+                                        onClick={() => setIsActionsMenuOpen(false)}
+                                    />
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                                        exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                                        className="absolute right-0 mt-2 w-72 bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl p-2 z-50 overflow-hidden"
+                                    >
+                                        <div className="px-3 py-2 text-[10px] font-black uppercase tracking-widest text-zinc-500 border-b border-zinc-800 mb-1">
+                                            Importation
+                                        </div>
+
+                                        <CSVImporter
+                                            type="products"
+                                            onComplete={() => {
+                                                onRefresh();
+                                                setIsActionsMenuOpen(false);
+                                            }}
+                                            exampleUrl="/examples/products_example.csv"
+                                            variant="menu"
+                                        />
+
+                                        <div className="px-3 py-2 text-[10px] font-black uppercase tracking-widest text-zinc-500 border-b border-zinc-800 my-1">
+                                            Intelligence Artificielle
+                                        </div>
+
+                                        <button
+                                            onClick={() => {
+                                                handleMassAIFill();
+                                                setIsActionsMenuOpen(false);
+                                            }}
+                                            disabled={isSyncingAI || productsNeedingEnrichment.length === 0}
+                                            className="w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl text-sm text-zinc-300 hover:text-white hover:bg-zinc-800 transition-all disabled:opacity-50"
+                                        >
+                                            <div className="flex items-center gap-3">
+                                                <Sparkles className={`w-4 h-4 ${isSyncingAI ? 'text-emerald-400 animate-pulse' : ''}`} />
+                                                <span>Enrichir SEO & descriptions</span>
+                                            </div>
+                                            <span className="px-1.5 py-0.5 rounded-md bg-zinc-800 text-[10px] font-bold text-zinc-500 border border-zinc-700">
+                                                {productsNeedingEnrichment.length}
+                                            </span>
+                                        </button>
+
+                                        <button
+                                            onClick={() => {
+                                                handleForceMassAIFill();
+                                                setIsActionsMenuOpen(false);
+                                            }}
+                                            disabled={isSyncingAI || filteredProducts.length === 0}
+                                            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-zinc-300 hover:text-orange-400 hover:bg-orange-500/5 transition-all disabled:opacity-50"
+                                        >
+                                            <Zap className={`w-4 h-4 ${isSyncingAI ? 'text-orange-400 animate-pulse' : 'text-orange-500'}`} />
+                                            <span>Régénérer TOUT</span>
+                                        </button>
+
+                                        <button
+                                            onClick={() => {
+                                                handleSyncMissingVectors();
+                                                setIsActionsMenuOpen(false);
+                                            }}
+                                            disabled={isSyncingVectors || productsWithoutVectors.length === 0}
+                                            className="w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl text-sm text-zinc-300 hover:text-white hover:bg-zinc-800 transition-all disabled:opacity-50"
+                                        >
+                                            <div className="flex items-center gap-3">
+                                                <Brain className={`w-4 h-4 ${isSyncingVectors ? 'text-emerald-400 animate-pulse' : ''}`} />
+                                                <span>Synchroniser vecteurs</span>
+                                            </div>
+                                            <span className="px-1.5 py-0.5 rounded-md bg-zinc-800 text-[10px] font-bold text-zinc-500 border border-zinc-700">
+                                                {productsWithoutVectors.length}
+                                            </span>
+                                        </button>
+                                    </motion.div>
+                                </>
+                            )}
+                        </AnimatePresence>
+                    </div>
+
+                    <button
+                        onClick={() => openProductModal()}
+                        className="flex items-center gap-2 bg-emerald-500 hover:bg-green-600 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition-all shadow-lg shadow-emerald-500/20 active:scale-95"
+                    >
+                        <Plus className="w-4 h-4" />
+                        <span className="hidden sm:inline">Nouveau produit</span>
+                        <span className="sm:hidden">Ajouter</span>
+                    </button>
+                </div>
+            </div>
+
+            <ProductImporter categories={categories} onImported={onRefresh} />
+
+            {/* Filters & Search */}
+            <div className="bg-zinc-900/50 backdrop-blur-sm border border-zinc-800 rounded-2xl p-4 flex flex-wrap items-center gap-4">
+                <div className="relative flex-1 min-w-[200px]">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+                    <input
+                        value={searchQuery}
+                        onChange={(e) => {
+                            setSearchQuery(e.target.value);
+                            setCurrentPage(1);
+                        }}
+                        placeholder="Rechercher par nom, SKU ou description..."
+                        className="w-full bg-zinc-950/50 border border-zinc-800 rounded-xl pl-10 pr-4 py-2 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-emerald-500 transition-all"
+                    />
+                </div>
+            </div>
+
+            {/* Views */}
+            {viewMode === 'list' ? (
+                <div className="bg-zinc-900 rounded-2xl border border-zinc-800 overflow-hidden shadow-xl">
+                    <div className="overflow-x-auto">
+                        <table className="w-full">
+                            <thead>
+                                <tr className="text-left text-xs text-zinc-500 uppercase tracking-wider border-b border-zinc-800 bg-zinc-800/50">
+                                    <th className="px-5 py-4 w-12 text-center">
+                                        <input
+                                            type="checkbox"
+                                            onChange={toggleAll}
+                                            checked={allSelected}
+                                            className="w-4 h-4 rounded border-zinc-700 bg-zinc-800 text-emerald-400 focus:ring-emerald-500 cursor-pointer"
+                                        />
+                                    </th>
+                                    <th className="px-5 py-4 font-bold">Produit</th>
+                                    <th className="px-5 py-4 font-bold">Catégorie</th>
+                                    <th className="px-5 py-4 font-bold">Prix</th>
+                                    <th className="px-5 py-4 font-bold">Marque</th>
+                                    <th className="px-5 py-4 font-bold">Stock</th>
+                                    <th className="px-5 py-4 font-bold">Statut</th>
+                                    <th className="px-5 py-4 text-center font-bold" title="Statut IA">IA</th>
+                                    <th className="px-5 py-4 text-right font-bold">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-zinc-800/80">
+                                {paginatedProducts.map((product) => (
+                                    <tr key={product.id} className="hover:bg-zinc-800/40 transition-colors group">
+                                        <td className="px-5 py-4 text-center">
+                                            <input
+                                                type="checkbox"
+                                                checked={selectedProductIds.includes(product.id)}
+                                                onChange={() => toggleSelection(product.id)}
+                                                className="w-4 h-4 rounded border-zinc-700 bg-zinc-800 text-emerald-400 focus:ring-emerald-500 cursor-pointer"
+                                            />
+                                        </td>
+                                        <td className="px-5 py-4">
+                                            <div className="flex items-center gap-4">
+                                                <div className="relative w-12 h-12 rounded-xl overflow-hidden bg-zinc-800 ring-1 ring-zinc-700/50 group-hover:ring-emerald-500/50 transition-all">
+                                                    <img
+                                                        src={product.image_url || PLACEHOLDER_IMAGE}
+                                                        alt={product.name}
+                                                        className="w-full h-full object-cover"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <p className="font-semibold text-white text-sm group-hover:text-emerald-400 transition-colors line-clamp-1">{product.name}</p>
+                                                    <div className="flex items-center gap-2 mt-0.5">
+                                                        <p className="text-[10px] text-zinc-500 font-mono">{product.sku || 'SANS-SKU'}</p>
+                                                        <span className={`text-[9px] px-1.5 py-0.5 rounded border ${product.attributes?.seo_title && product.attributes?.seo_meta_description ? 'border-emerald-500/40 text-emerald-400 bg-emerald-500/10' : 'border-zinc-700 text-zinc-500 bg-zinc-800'}`}>
+                                                            SEO {product.attributes?.seo_title && product.attributes?.seo_meta_description ? 'OK' : '—'}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td className="px-5 py-4">
+                                            <span className="text-xs px-2 py-1 rounded-md bg-zinc-800 text-zinc-400 border border-zinc-700">
+                                                {(product.category as Category | undefined)?.name ?? 'Divers'}
+                                            </span>
+                                        </td>
+                                        <td className="px-5 py-4 font-bold text-white text-sm">
+                                            {product.price.toFixed(2)} €
+                                        </td>
+                                        <td className="px-5 py-4 text-sm font-medium text-zinc-400">
+                                            {product.attributes?.brand ? (
+                                                <span className="text-zinc-300">{product.attributes.brand}</span>
+                                            ) : '—'}
+                                        </td>
+                                        <td className="px-5 py-4">
+                                            <div className="flex flex-col gap-1">
+                                                <span
+                                                    className={`font-bold text-sm ${product.stock_quantity === 0
+                                                        ? 'text-red-400'
+                                                        : product.stock_quantity <= 5
+                                                            ? 'text-orange-400'
+                                                            : 'text-white'
+                                                        }`}
+                                                >
+                                                    {product.stock_quantity}
+                                                </span>
+                                                <div className="w-12 h-1 bg-zinc-800 rounded-full overflow-hidden">
+                                                    <div
+                                                        className={`h-full rounded-full ${product.stock_quantity === 0 ? 'bg-red-500' : product.stock_quantity <= 5 ? 'bg-orange-500' : 'bg-green-500'}`}
+                                                        style={{ width: `${Math.min(100, (product.stock_quantity / 50) * 100)}%` }}
+                                                    />
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td className="px-5 py-4">
+                                            <div className="flex gap-1.5 flex-wrap">
+                                                <span
+                                                    className={`text-[10px] font-bold uppercase tracking-tight px-2 py-0.5 rounded-lg border ${product.is_active
+                                                        ? 'text-green-400 bg-green-900/20 border-green-800/50'
+                                                        : 'text-zinc-500 bg-zinc-900 border-zinc-800'
+                                                        }`}
+                                                >
+                                                    {product.is_active ? 'Actif' : 'Masqué'}
+                                                </span>
+                                            </div>
+                                        </td>
+                                        <td className="px-5 py-4">
+                                            <div className="flex justify-center gap-2">
+                                                {isAIComplete(product) ? (
+                                                    <div className="w-8 h-8 rounded-full bg-green-500/10 flex items-center justify-center border border-green-500/20" title="Fiche technique complète (IA + Vecteur)">
+                                                        <Sparkles className="w-4 h-4 text-green-500" />
+                                                    </div>
+                                                ) : (
+                                                    <div className="flex gap-1 items-center">
+                                                        {(product.attributes?.specs?.length ?? 0) > 0 && (
+                                                            <span title="Spécifications présentes">
+                                                                <Settings className="w-3 h-3 text-zinc-500" />
+                                                            </span>
+                                                        )}
+                                                        {(product.attributes?.benefits?.length ?? 0) > 0 && (
+                                                            <span title="Bénéfices présents">
+                                                                <Zap className="w-3 h-3 text-zinc-500" />
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                )}
+                                                {product.embedding ? (
+                                                    <div className="w-8 h-8 rounded-full bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20" title="Optimisé pour la recherche IA">
+                                                        <Brain className="w-4 h-4 text-emerald-400" />
+                                                    </div>
+                                                ) : (
+                                                    <Brain className="w-4 h-4 text-zinc-700 opacity-30" />
+                                                )}
+                                            </div>
+                                        </td>
+                                        <td className="px-5 py-4 text-right">
+                                            <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <button
+                                                    onClick={() => setPreviewProduct(product)}
+                                                    className="p-2 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-lg transition-all"
+                                                    title="Aperçu"
+                                                >
+                                                    <Eye className="w-4 h-4" />
+                                                </button>
+                                                <button
+                                                    onClick={() => openProductModal(product)}
+                                                    className="p-2 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-lg transition-all"
+                                                    title="Modifier"
+                                                >
+                                                    <Edit3 className="w-4 h-4" />
+                                                </button>
+                                                <button
+                                                    onClick={() => handleSingleAIFillSync(product)}
+                                                    disabled={isGeneratingAI === product.id}
+                                                    className={`p-2 rounded-lg transition-all ${isGeneratingAI === product.id ? 'text-emerald-400 animate-pulse bg-white/5' : 'text-zinc-400 hover:text-emerald-400 hover:bg-zinc-800'}`}
+                                                    title="Remplir via IA"
+                                                >
+                                                    <Sparkles className="w-4 h-4" />
+                                                </button>
+                                                <button
+                                                    onClick={() => setStockAdjust({ id: product.id, qty: '', note: '' })}
+                                                    className="p-2 text-zinc-400 hover:text-emerald-400 hover:bg-zinc-800 rounded-lg transition-all"
+                                                    title="Stock"
+                                                >
+                                                    <ArrowUpDown className="w-4 h-4" />
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDeleteProduct(product.id)}
+                                                    className="p-2 text-zinc-400 hover:text-red-400 hover:bg-zinc-800 rounded-lg transition-all"
+                                                    title="Désactiver"
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+                    {paginatedProducts.map((product) => (
+                        <motion.div
+                            key={product.id}
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            className="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden group hover:border-emerald-500/30 transition-all flex flex-col shadow-lg"
+                        >
+                            <div className="relative aspect-square bg-zinc-800 overflow-hidden">
+                                <div className="absolute top-2 left-2 z-10 bg-black/40 rounded p-1 backdrop-blur-md">
+                                    <input
+                                        type="checkbox"
+                                        checked={selectedProductIds.includes(product.id)}
+                                        onChange={() => toggleSelection(product.id)}
+                                        className="w-5 h-5 rounded border-zinc-700 bg-zinc-800 text-emerald-400 focus:ring-emerald-500 cursor-pointer shadow-lg"
+                                    />
+                                </div>
+                                <img
+                                    src={product.image_url || PLACEHOLDER_IMAGE}
+                                    alt={product.name}
+                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                />
+                                <div className="absolute top-2 right-2 flex flex-col gap-2">
+                                    <span className={`px-2 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider backdrop-blur-md border ${product.is_active ? 'bg-green-950/40 text-green-400 border-green-800/50' : 'bg-zinc-950/40 text-zinc-400 border-zinc-800'}`}>
+                                        {product.is_active ? 'En ligne' : 'Masqué'}
+                                    </span>
+                                    {product.is_featured && !product.is_bundle && (
+                                        <span className="px-2 py-1 rounded-lg text-[10px] font-bold uppercase bg-yellow-400 text-black border border-yellow-500 flex items-center gap-1">
+                                            <Star className="w-3 h-3 fill-current" />
+                                            Top
+                                        </span>
+                                    )}
+                                    {isAIComplete(product) ? (
+                                        <span className="px-2 py-1 rounded-lg text-[10px] font-bold uppercase bg-green-500 text-white border border-green-600 flex items-center gap-1">
+                                            <Sparkles className="w-3 h-3" />
+                                            IA OK
+                                        </span>
+                                    ) : (
+                                        <div className="flex gap-1">
+                                            {(product.attributes?.specs?.length ?? 0) > 0 && (
+                                                <span className="bg-zinc-800/80 backdrop-blur-md p-1 rounded-md border border-zinc-700" title="Spécifications">
+                                                    <Settings className="w-3 h-3 text-zinc-400" />
+                                                </span>
+                                            )}
+                                            {(product.attributes?.benefits?.length ?? 0) > 0 && (
+                                                <span className="bg-zinc-800/80 backdrop-blur-md p-1 rounded-md border border-zinc-700" title="Bénéfices">
+                                                    <Zap className="w-3 h-3 text-zinc-400" />
+                                                </span>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                                <div className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/80 to-transparent flex justify-between items-end">
+                                    <span className="text-lg font-bold text-white leading-none">{product.price.toFixed(2)} €</span>
+                                </div>
+                            </div>
+
+                            <div className="p-4 flex-1 flex flex-col space-y-3">
+                                <div>
+                                    <h3 className="font-semibold text-white group-hover:text-emerald-400 transition-colors line-clamp-1">{product.name}</h3>
+                                    <div className="flex items-center justify-between gap-2 mt-0.5">
+                                        <p className="text-[10px] text-zinc-500 font-medium uppercase tracking-wider">
+                                            {(product.category as Category | undefined)?.name ?? 'Divers'}
+                                        </p>
+                                        <span className={`text-[9px] px-1.5 py-0.5 rounded border ${product.attributes?.seo_title && product.attributes?.seo_meta_description ? 'border-emerald-500/40 text-emerald-400 bg-emerald-500/10' : 'border-zinc-700 text-zinc-500 bg-zinc-800'}`}>
+                                            SEO {product.attributes?.seo_title && product.attributes?.seo_meta_description ? 'OK' : '—'}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center justify-between text-xs py-2 border-y border-zinc-800/50">
+                                    <div className="flex flex-col">
+                                        <span className="text-zinc-500 text-[10px] uppercase font-bold tracking-tighter">Stock</span>
+                                        <span className={`font-bold ${product.stock_quantity <= 5 ? 'text-orange-400' : 'text-white'}`}>
+                                            {product.stock_quantity}
+                                        </span>
+                                    </div>
+                                    <div className="flex flex-col items-end">
+                                        <span className="text-zinc-500 text-[10px] uppercase font-bold tracking-tighter">Marque</span>
+                                        <span className="font-bold text-zinc-300 text-xs truncate max-w-[80px]">{product.attributes?.brand || '—'}</span>
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center gap-2 pt-1">
+                                    <button
+                                        onClick={() => setPreviewProduct(product)}
+                                        className="p-2 bg-zinc-800 hover:bg-white/10 hover:text-white text-zinc-400 rounded-xl border border-zinc-700 transition-all"
+                                        title="Aperçu"
+                                    >
+                                        <Eye className="w-3.5 h-3.5" />
+                                    </button>
+                                    <button
+                                        onClick={() => openProductModal(product)}
+                                        className="flex-1 flex items-center justify-center gap-2 bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-bold py-2 rounded-xl border border-zinc-700 transition-all"
+                                    >
+                                        <Edit3 className="w-3.5 h-3.5" />
+                                        Modifier
+                                    </button>
+                                    <button
+                                        onClick={() => handleSingleAIFillSync(product)}
+                                        disabled={isGeneratingAI === product.id}
+                                        className={`p-2 bg-zinc-800 rounded-xl border border-zinc-700 transition-all ${isGeneratingAI === product.id ? 'text-emerald-400 animate-pulse bg-zinc-700' : 'text-zinc-400 hover:text-emerald-400 hover:bg-white/10'}`}
+                                        title="Remplir via IA"
+                                    >
+                                        <Sparkles className="w-3.5 h-3.5" />
+                                    </button>
+                                    <button
+                                        onClick={() => setStockAdjust({ id: product.id, qty: '', note: '' })}
+                                        className="p-2 bg-zinc-800 hover:bg-emerald-500/10 hover:text-emerald-400 text-zinc-400 rounded-xl border border-zinc-700 transition-all"
+                                    >
+                                        <ArrowUpDown className="w-3.5 h-3.5" />
+                                    </button>
+                                    <button
+                                        onClick={() => handleDeleteProduct(product.id)}
+                                        className="p-2 bg-zinc-800 hover:bg-red-500/10 hover:text-red-500 text-zinc-400 rounded-xl border border-zinc-700 transition-all"
+                                    >
+                                        <Trash2 className="w-3.5 h-3.5" />
+                                    </button>
+                                </div>
+                            </div>
+                        </motion.div>
+                    ))}
+                </div>
+            )}
+
+            {totalPages > 1 && (
+                <div className="flex items-center justify-center gap-2 mt-6">
+                    <button
+                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                        disabled={currentPage === 1}
+                        className="p-2 bg-zinc-900 border border-zinc-800 rounded-lg hover:bg-zinc-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                    >
+                        <ChevronLeft className="w-5 h-5 text-white" />
+                    </button>
+                    <span className="text-zinc-500 font-medium text-sm px-4">
+                        Page {currentPage} sur {totalPages}
+                    </span>
+                    <button
+                        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                        disabled={currentPage === totalPages}
+                        className="p-2 bg-zinc-900 border border-zinc-800 rounded-lg hover:bg-zinc-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                    >
+                        <ChevronRight className="w-5 h-5 text-white" />
+                    </button>
+                </div>
+            )}
+
+            {/* Stock adjustment inline */}
+            <AnimatePresence>
+                {stockAdjust && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 10 }}
+                        className="bg-zinc-900 border border-green-primary/40 rounded-2xl p-5"
+                    >
+                        <p className="text-sm font-medium text-white mb-3">
+                            Ajustement —{' '}
+                            <span className="text-emerald-400">
+                                {products.find((p) => p.id === stockAdjust.id)?.name}
+                            </span>
+                        </p>
+                        <div className="flex gap-3 flex-wrap">
+                            <input
+                                type="number"
+                                placeholder="Ex: +10 or -5"
+                                value={stockAdjust.qty}
+                                onChange={(e) => setStockAdjust({ ...stockAdjust, qty: e.target.value })}
+                                className="w-36 bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-green-primary"
+                            />
+                            <input
+                                type="text"
+                                placeholder="Note..."
+                                value={stockAdjust.note}
+                                onChange={(e) => setStockAdjust({ ...stockAdjust, note: e.target.value })}
+                                className="flex-1 min-w-40 bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-green-primary"
+                            />
+                            <button
+                                onClick={handleStockAdjust}
+                                disabled={isSaving}
+                                className="bg-emerald-500 hover:bg-green-600 disabled:opacity-50 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors"
+                            >
+                                Confirmer
+                            </button>
+                            <button
+                                onClick={() => setStockAdjust(null)}
+                                className="text-zinc-400 hover:text-white px-3 text-sm transition-colors"
+                            >
+                                Annuler
+                            </button>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* Product Modal */}
+            <AnimatePresence>
+                {showProductModal && (
+                    <>
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={() => setShowProductModal(false)}
+                            className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50"
+                        />
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: 20 }}
+                            className="fixed inset-x-4 top-4 bottom-4 md:inset-x-auto md:left-1/2 md:-translate-x-1/2 md:w-full md:max-w-2xl bg-zinc-900 border border-zinc-700 rounded-2xl z-50 flex flex-col"
+                        >
+                            <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-800 flex-shrink-0">
+                                <h2 className="font-serif text-xl font-bold">
+                                    {editingProductId ? 'Modifier le produit' : 'Nouveau produit'}
+                                </h2>
+                                <button onClick={() => setShowProductModal(false)} className="p-2 text-zinc-400 hover:text-white rounded-lg hover:bg-zinc-800">
+                                    <X className="w-5 h-5" />
+                                </button>
+                            </div>
+
+                            <form onSubmit={handleSaveProduct} className="flex-1 overflow-y-auto p-6 space-y-4">
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="col-span-2">
+                                        <div className="flex items-center justify-between mb-1">
+                                            <label className={LABEL}>Nom du produit *</label>
+                                            <button
+                                                type="button"
+                                                onClick={handleAIFillInModal}
+                                                disabled={isGeneratingAI === 'modal' || !productForm.name}
+                                                className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-emerald-400 hover:bg-emerald-500/10 px-2 py-1 rounded-lg transition-all border border-emerald-500/20 hover:border-emerald-500/40 disabled:opacity-50"
+                                            >
+                                                <Sparkles className={`w-3 h-3 ${isGeneratingAI === 'modal' ? 'animate-pulse' : ''}`} />
+                                                {isGeneratingAI === 'modal' ? 'Génération...' : 'Générer via IA'}
+                                            </button>
+                                        </div>
+                                        <input
+                                            required
+                                            value={productForm.name}
+                                            onChange={(e) =>
+                                                setProductForm({ ...productForm, name: e.target.value, slug: slugify(e.target.value) })
+                                            }
+                                            className={INPUT}
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className={LABEL}>Slug (URL)</label>
+                                        <input
+                                            value={productForm.slug}
+                                            onChange={(e) => setProductForm({ ...productForm, slug: e.target.value })}
+                                            className={INPUT}
+                                        />
+                                    </div>
+
+                                    <div className="col-span-2">
+                                        <label className={LABEL}>Image du produit</label>
+                                        <ProductImageUpload
+                                            value={productForm.image_url}
+                                            onChange={(url) => setProductForm({ ...productForm, image_url: url })}
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className={LABEL}>Catégorie *</label>
+                                        <select
+                                            required
+                                            value={productForm.category_id}
+                                            onChange={(e) => setProductForm({ ...productForm, category_id: e.target.value })}
+                                            className={INPUT}
+                                        >
+                                            <option value="">Choisir une catégorie…</option>
+                                            {categoryTree.map((root) => {
+                                                const subtree = flattenTree([root]);
+                                                if (subtree.length === 1) {
+                                                    // Leaf root — plain option
+                                                    return (
+                                                        <option key={root.id} value={root.id} disabled={!root.is_active}>
+                                                            {root.name}{!root.is_active ? ' (inactive)' : ''}
+                                                        </option>
+                                                    );
+                                                }
+                                                // Root with sub-levels → optgroup
+                                                return (
+                                                    <optgroup key={root.id} label={root.name}>
+                                                        {subtree.map((c) => (
+                                                            <option key={c.id} value={c.id} disabled={!c.is_active}>
+                                                                {(c.depth ?? 0) === 0
+                                                                    ? c.name
+                                                                    : (c.depth ?? 0) === 1
+                                                                        ? `  └ ${c.name}`
+                                                                        : `     └ ${c.name}`}
+                                                                {!c.is_active ? ' (inactive)' : ''}
+                                                            </option>
+                                                        ))}
+                                                    </optgroup>
+                                                );
+                                            })}
+                                        </select>
+                                        {/* Breadcrumb path of the selected category */}
+                                        {selectedCategoryPath && selectedCategoryPath.length > 0 && (
+                                            <div className="flex items-center gap-1 mt-2 flex-wrap">
+                                                {selectedCategoryPath.map((cat, i) => (
+                                                    <span key={cat.id} className="flex items-center gap-1">
+                                                        {i > 0 && <ChevronRight className="w-3 h-3 text-zinc-500 shrink-0" />}
+                                                        <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
+                                                            i === 0
+                                                                ? 'bg-emerald-500/10 text-emerald-400'
+                                                                : i === 1
+                                                                    ? 'bg-blue-500/10 text-blue-400'
+                                                                    : 'bg-purple-500/10 text-purple-400'
+                                                        }`}>
+                                                            {cat.name}
+                                                        </span>
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <div className="col-span-2">
+                                        <label className={LABEL}>Code-barres / SKU</label>
+                                        <div className="relative">
+                                            <Hash className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+                                            <input
+                                                value={productForm.sku ?? ''}
+                                                onChange={(e) => setProductForm({ ...productForm, sku: e.target.value || null })}
+                                                className={`${INPUT} pl-10`}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="col-span-2">
+                                        <label className={LABEL}>Description</label>
+                                        <textarea
+                                            rows={3}
+                                            value={productForm.description ?? ''}
+                                            onChange={(e) => setProductForm({ ...productForm, description: e.target.value || null })}
+                                            className={INPUT}
+                                        />
+                                    </div>
+
+                                    <div className="col-span-2 rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-3 space-y-3">
+                                        <p className="text-[10px] font-black uppercase tracking-wider text-emerald-400">SEO Produit</p>
+                                        <div>
+                                            <div className="flex items-center justify-between mb-1">
+                                                <label className={LABEL}>SEO Title</label>
+                                                <span className="text-[10px] text-zinc-500">{(productForm.attributes?.seo_title ?? '').length}/60</span>
+                                            </div>
+                                            <input
+                                                value={productForm.attributes?.seo_title ?? ''}
+                                                onChange={(e) => setProductForm({
+                                                    ...productForm,
+                                                    attributes: { ...productForm.attributes, seo_title: e.target.value }
+                                                })}
+                                                className={INPUT}
+                                                placeholder="Titre optimisé SEO (max conseillé : 60 caractères)"
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <div className="flex items-center justify-between mb-1">
+                                                <label className={LABEL}>Meta Description SEO</label>
+                                                <span className="text-[10px] text-zinc-500">{(productForm.attributes?.seo_meta_description ?? '').length}/160</span>
+                                            </div>
+                                            <textarea
+                                                rows={2}
+                                                value={productForm.attributes?.seo_meta_description ?? ''}
+                                                onChange={(e) => setProductForm({
+                                                    ...productForm,
+                                                    attributes: { ...productForm.attributes, seo_meta_description: e.target.value }
+                                                })}
+                                                className={INPUT}
+                                                placeholder="Description meta optimisée SEO (max conseillé : 160 caractères)"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label className={LABEL}>Prix (€) *</label>
+                                        <input
+                                            required
+                                            type="number"
+                                            step="0.01"
+                                            min="0"
+                                            value={productForm.price}
+                                            onChange={(e) => setProductForm({ ...productForm, price: parseFloat(e.target.value) || 0 })}
+                                            className={INPUT}
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className={LABEL}>Stock initial</label>
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            value={productForm.stock_quantity}
+                                            onChange={(e) => setProductForm({ ...productForm, stock_quantity: parseInt(e.target.value) || 0 })}
+                                            className={INPUT}
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className={LABEL}>Marque</label>
+                                        <input
+                                            value={productForm.attributes?.brand ?? ''}
+                                            onChange={(e) => setProductForm({
+                                                ...productForm,
+                                                attributes: { ...productForm.attributes, brand: e.target.value }
+                                            })}
+                                            className={INPUT}
+                                            placeholder="Stern Pinball, Sega, Taito..."
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className={LABEL}>Année</label>
+                                        <input
+                                            type="number"
+                                            min="1990"
+                                            max="2030"
+                                            value={productForm.attributes?.year ?? ''}
+                                            onChange={(e) => setProductForm({
+                                                ...productForm,
+                                                attributes: { ...productForm.attributes, year: e.target.value ? parseInt(e.target.value) : null }
+                                            })}
+                                            className={INPUT}
+                                            placeholder="2023"
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className={LABEL}>Dimensions (L×l×H)</label>
+                                        <input
+                                            value={productForm.attributes?.dimensions ?? ''}
+                                            onChange={(e) => setProductForm({
+                                                ...productForm,
+                                                attributes: { ...productForm.attributes, dimensions: e.target.value }
+                                            })}
+                                            className={INPUT}
+                                            placeholder="65 x 75 x 175 cm"
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className={LABEL}>Joueurs</label>
+                                        <input
+                                            type="number"
+                                            min="1"
+                                            max="8"
+                                            value={productForm.attributes?.players ?? ''}
+                                            onChange={(e) => setProductForm({
+                                                ...productForm,
+                                                attributes: { ...productForm.attributes, players: e.target.value ? parseInt(e.target.value) : null }
+                                            })}
+                                            className={INPUT}
+                                            placeholder="1"
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className={LABEL}>Puissance (W)</label>
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            value={productForm.attributes?.power_watts ?? ''}
+                                            onChange={(e) => setProductForm({
+                                                ...productForm,
+                                                attributes: { ...productForm.attributes, power_watts: e.target.value ? parseInt(e.target.value) : null }
+                                            })}
+                                            className={INPUT}
+                                            placeholder="350"
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className={LABEL}>Ancien Prix (€)</label>
+                                        <input
+                                            type="number"
+                                            step="0.01"
+                                            min="0"
+                                            value={productForm.original_value ?? ''}
+                                            onChange={(e) => setProductForm({ ...productForm, original_value: e.target.value ? parseFloat(e.target.value) : null })}
+                                            className={INPUT}
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className={LABEL}>Poids (kg)</label>
+                                        <input
+                                            type="number"
+                                            step="1"
+                                            min="0"
+                                            value={productForm.weight_grams ?? ''}
+                                            onChange={(e) => setProductForm({ ...productForm, weight_grams: e.target.value ? parseFloat(e.target.value) : null })}
+                                            className={INPUT}
+                                            placeholder="ex: 85000 (en grammes)"
+                                        />
+                                    </div>
+
+                                    <div className="col-span-2">
+                                        <label className={LABEL}>Spécifications techniques (séparées par des virgules)</label>
+                                        <input
+                                            value={productForm.attributes?.specs?.join(', ') ?? ''}
+                                            onChange={(e) => setProductForm({
+                                                ...productForm,
+                                                attributes: {
+                                                    ...productForm.attributes,
+                                                    specs: e.target.value.split(',').map(s => s.trim()).filter(Boolean)
+                                                }
+                                            })}
+                                            className={INPUT}
+                                            placeholder='Écran 32" HD, Monnayeur intégré, Haut-parleurs stéréo...'
+                                        />
+                                    </div>
+
+                                    <div className="col-span-2">
+                                        <label className={LABEL}>Connectivité (séparée par des virgules)</label>
+                                        <input
+                                            value={productForm.attributes?.connectivity?.join(', ') ?? ''}
+                                            onChange={(e) => setProductForm({
+                                                ...productForm,
+                                                attributes: {
+                                                    ...productForm.attributes,
+                                                    connectivity: e.target.value.split(',').map(s => s.trim()).filter(Boolean)
+                                                }
+                                            })}
+                                            className={INPUT}
+                                            placeholder="USB, HDMI, Ethernet, Wi-Fi..."
+                                        />
+                                    </div>
+
+                                    <div className="col-span-2">
+                                        <label className={LABEL}>Bénéfices / Avantages (séparés par des virgules)</label>
+                                        <input
+                                            value={productForm.attributes?.benefits?.join(', ') ?? ''}
+                                            onChange={(e) => setProductForm({
+                                                ...productForm,
+                                                attributes: {
+                                                    ...productForm.attributes,
+                                                    benefits: e.target.value.split(',').map(s => s.trim()).filter(Boolean)
+                                                }
+                                            })}
+                                            className={INPUT}
+                                            placeholder="Certifié CE, SAV 48h, Rentabilité rapide..."
+                                        />
+                                    </div>
+
+                                    {productForm.attributes?.technical_specs && productForm.attributes.technical_specs.length > 0 && (
+                                        <div className="col-span-2 p-4 bg-emerald-500/5 border border-emerald-500/20 rounded-xl space-y-3">
+                                            <div className="flex items-center justify-between">
+                                                <label className="text-[10px] font-black uppercase text-emerald-500 tracking-widest">Spécifications Structurées (Propulsé par IA)</label>
+                                                <button 
+                                                    onClick={() => setProductForm({
+                                                        ...productForm,
+                                                        attributes: { ...productForm.attributes, technical_specs: [] }
+                                                    })}
+                                                    className="text-[9px] text-zinc-500 hover:text-red-400 font-bold uppercase transition-colors"
+                                                >
+                                                    Réinitialiser
+                                                </button>
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-x-6 gap-y-2">
+                                                {productForm.attributes.technical_specs.map((group: any, idx: number) => (
+                                                    <div key={idx} className="space-y-1">
+                                                        <p className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest border-b border-white/5 pb-1">{group.group}</p>
+                                                        <ul className="space-y-1">
+                                                            {group.items.slice(0, 3).map((item: any, i: number) => (
+                                                                <li key={i} className="text-[10px] text-zinc-500 truncate">
+                                                                    <span className="font-bold text-zinc-300">{item.label}:</span> {item.value}
+                                                                </li>
+                                                            ))}
+                                                            {group.items.length > 3 && <li className="text-[9px] text-zinc-600 italic">+{group.items.length - 3} autres...</li>}
+                                                        </ul>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="space-y-4 pt-4 border-t border-zinc-800">
+                                    <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-2">Options & Visibilité</h3>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <label className="flex items-center gap-3 p-3 bg-zinc-800/50 rounded-xl border border-zinc-700/50 cursor-pointer hover:border-emerald-500 transition-colors">
+                                            <input
+                                                type="checkbox"
+                                                checked={productForm.is_active}
+                                                onChange={(e) => setProductForm({ ...productForm, is_active: e.target.checked })}
+                                                className="w-5 h-5 accent-emerald-500"
+                                            />
+                                            <div className="flex flex-col">
+                                                <span className="text-sm font-bold text-white">Actif</span>
+                                                <span className="text-[10px] text-zinc-500 uppercase">Visible en ligne</span>
+                                            </div>
+                                        </label>
+
+                                        <label className="flex items-center gap-3 p-3 bg-zinc-800/50 rounded-xl border border-zinc-700/50 cursor-pointer hover:border-emerald-500 transition-colors">
+                                            <input
+                                                type="checkbox"
+                                                checked={productForm.is_featured}
+                                                onChange={(e) => setProductForm({ ...productForm, is_featured: e.target.checked })}
+                                                className="w-5 h-5 accent-emerald-500"
+                                            />
+                                            <div className="flex flex-col">
+                                                <span className="text-sm font-bold text-white">Produit Phare</span>
+                                                <span className="text-[10px] text-zinc-500 uppercase">Top Ventes / Accueil</span>
+                                            </div>
+                                        </label>
+
+                                        <label className="flex items-center gap-3 p-3 bg-zinc-800/50 rounded-xl border border-zinc-700/50 cursor-pointer hover:border-emerald-500 transition-colors">
+                                            <input
+                                                type="checkbox"
+                                                checked={productForm.is_available}
+                                                onChange={(e) => setProductForm({ ...productForm, is_available: e.target.checked })}
+                                                className="w-5 h-5 accent-emerald-500"
+                                            />
+                                            <div className="flex flex-col">
+                                                <span className="text-sm font-bold text-white">Disponible</span>
+                                                <span className="text-[10px] text-zinc-500 uppercase">Achat activé</span>
+                                            </div>
+                                        </label>
+
+                                        <label className="flex items-center gap-3 p-3 bg-zinc-800/50 rounded-xl border border-zinc-700/50 cursor-pointer hover:border-emerald-500 transition-colors">
+                                            <input
+                                                type="checkbox"
+                                                checked={productForm.is_subscribable}
+                                                onChange={(e) => setProductForm({ ...productForm, is_subscribable: e.target.checked })}
+                                                className="w-5 h-5 accent-emerald-500"
+                                            />
+                                            <div className="flex flex-col">
+                                                <span className="text-sm font-bold text-white">Abonnement</span>
+                                                <span className="text-[10px] text-zinc-500 uppercase">Livraison récurrente</span>
+                                            </div>
+                                        </label>
+
+                                        <label className="flex items-center gap-3 p-3 bg-zinc-800/50 rounded-xl border border-zinc-700/50 cursor-pointer hover:border-emerald-500 transition-colors col-span-2">
+                                            <input
+                                                type="checkbox"
+                                                checked={productForm.is_bundle}
+                                                onChange={(e) => setProductForm({ ...productForm, is_bundle: e.target.checked })}
+                                                className="w-5 h-5 accent-emerald-500"
+                                            />
+                                            <div className="flex flex-col">
+                                                <span className="text-sm font-bold text-white">Est un Pack (Bundle)</span>
+                                                <span className="text-[10px] text-zinc-500 uppercase">Composé de plusieurs produits</span>
+                                            </div>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div className="pt-4 flex gap-3">
+                                    <button
+                                        type="submit"
+                                        disabled={isSaving}
+                                        className="flex-1 bg-emerald-500 hover:bg-green-600 disabled:opacity-50 text-white font-bold py-3 rounded-xl transition-all"
+                                    >
+                                        {isSaving ? 'Enregistrement…' : editingProductId ? 'Mettre à jour' : 'Créer le produit'}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowProductModal(false)}
+                                        className="px-6 text-zinc-400 hover:text-white font-medium"
+                                    >
+                                        Annuler
+                                    </button>
+                                </div>
+                            </form>
+                        </motion.div>
+                    </>
+                )}
+            </AnimatePresence>
+
+            <MassModifyModal
+                isOpen={showMassModifyModal}
+                onClose={() => setShowMassModifyModal(false)}
+                selectedIds={selectedProductIds}
+                categories={categories}
+                onSuccess={() => {
+                    setSelectedProductIds([]);
+                    onRefresh();
+                }}
+            />
+
+            <AdminProductPreviewModal
+                product={previewProduct}
+                isOpen={previewProduct !== null}
+                onClose={() => setPreviewProduct(null)}
+            />
+        </div>
+    );
+}

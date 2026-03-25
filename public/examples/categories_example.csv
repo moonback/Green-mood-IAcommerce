@@ -1,0 +1,5 @@
+name,slug,description,is_active,sort_order,icon_name
+Jeux d'Arcade,jeux-arcade,Bornes d'arcade multi-jeux classiques et modernes. Certifiées CE. Usage privé ou professionnel.,true,0,Gamepad2
+Flippers & Pinball,flippers,Flippers mécaniques et numériques des plus grandes marques mondiales : Stern Pinball Chicago Gaming American Pinball.,true,1,Joystick
+Simulateurs,simulateurs,Simulateurs de course moto et vol immersifs. Siège cockpit retour de force et écrans HD pour une immersion totale.,true,2,Car
+Billard & Jeux de Bar,billard-bar,Tables de billard babyfoots fléchettes électroniques et jeux de bar professionnels.,true,3,Trophy

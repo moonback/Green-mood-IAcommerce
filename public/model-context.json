@@ -1,0 +1,45 @@
+{
+  "name": "NeuroCart  CBD",
+  "url": "https://greenmood.fr",
+  "description": "Premium CBD ecommerce platform with AI BudTender recommendations.",
+  "expertise": [
+    "CBD products",
+    "Cannabidiol education",
+    "CBD dosage guidance",
+    "CBD sleep guidance",
+    "CBD anxiety guidance",
+    "CBD legal context in France"
+  ],
+  "product_catalog": {
+    "categories": [
+      "CBD oils",
+      "CBD flowers",
+      "CBD resins",
+      "CBD infusions"
+    ],
+    "highlights": [
+      "lab tested",
+      "THC compliant",
+      "traceability",
+      "premium quality"
+    ]
+  },
+  "faq_dataset": [
+    "How to choose CBD concentration?",
+    "How to start CBD dosage?",
+    "Is CBD legal in France?",
+    "Which CBD format for sleep?"
+  ],
+  "entities": [
+    "CBD",
+    "Cannabidiol",
+    "Sleep",
+    "Anxiety",
+    "Pain relief",
+    "Relaxation"
+  ],
+  "assistant": {
+    "name": "AI BudTender",
+    "purpose": "Recommend products and answer CBD education questions."
+  }
+}

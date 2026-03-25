@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="fr" data-theme="dark" style="color-scheme: dark;">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Content-Security-Policy"
+    content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob: https://images.unsplash.com https://plus.unsplash.com https://*.supabase.co https://supabaseusercontent.com https://grainy-gradients.vercel.app https://toucheverte.fr https://avranchesautomatic.com https://*.alicdn.com https://*.aliexpress.com https://*.aliexpress-media.com https://i.pravatar.cc https://api.dicebear.com https://www.transparenttextures.com https://houseofhipsters.com https://birchtreeorganizing.ca https://www.techradar.com https://m.media-amazon.com https://*.amazonaws.com; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://openrouter.ai https://generativelanguage.googleapis.com wss://generativelanguage.googleapis.com https://www.google.com https://*.open-meteo.com; frame-src 'self' https://app.netlify.com; object-src 'none'; base-uri 'self';" />
+  <meta name="theme-color" content="#a36cbe" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <link rel="icon" type="image/png" href="/logo.png" />
+  <link rel="apple-touch-icon" href="/logo.png" />
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <link rel="preconnect" href="https://images.unsplash.com" crossorigin />
+  <link rel="dns-prefetch" href="https://images.unsplash.com" />
+  <link rel="prefetch" as="image" href="/images/hero-bg.png" />
+  <title>My Store</title>
+</head>
+
+<body>
+  <div id="root"></div>
+  <script type="module" src="/src/main.tsx"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').then((reg) => {
+          console.log('[SW] Service Worker Registered successfully!', reg);
+        }).catch((err) => {
+          console.log('[SW] Service Worker Registration failed: ', err);
+        });
+      });
+    }
+  </script>
+</body>
+
+</html>
