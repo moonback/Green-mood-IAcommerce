@@ -228,7 +228,7 @@ export default function CartSidebar() {
 
                   {/* Summary — sticky bottom panel */}
                   <div className="shrink-0 border-t border-[color:var(--color-border)] bg-[color:var(--color-bg)]">
-                    <div className="p-4 space-y-3">
+                    <div className="p-4 space-y-2">
                       <FreeShippingGauge variant="compact" />
                       <LoyaltyRedemption variant="compact" />
 

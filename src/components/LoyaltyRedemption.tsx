@@ -29,36 +29,36 @@ export default function LoyaltyRedemption({ variant = 'default' }: LoyaltyRedemp
   if (isCompact) {
     return (
       <motion.div 
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="relative group cursor-pointer"
+        initial={{ opacity: 0, scale: 0.98 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="relative group"
       >
-        <label className="flex items-center justify-between gap-3 p-3 rounded-2xl bg-amber-500/[0.03] border border-amber-500/10 hover:bg-amber-500/[0.06] hover:border-amber-500/20 transition-all cursor-pointer">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div className="relative flex items-center">
+        <label className="flex items-center justify-between gap-2 p-1.5 px-3 rounded-xl bg-amber-500/[0.03] border border-amber-500/10 hover:bg-amber-500/[0.06] hover:border-amber-500/20 transition-all cursor-pointer">
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="relative flex items-center shrink-0">
               <input
                 type="checkbox"
                 checked={usePoints}
                 onChange={(e) => setUsePoints(e.target.checked)}
-                className="peer h-4 w-4 cursor-pointer appearance-none rounded border border-amber-500/30 bg-transparent checked:bg-amber-500 checked:border-amber-500 transition-all"
+                className="peer h-3.5 w-3.5 cursor-pointer appearance-none rounded border border-amber-500/30 bg-transparent checked:bg-amber-500 checked:border-amber-500 transition-all"
               />
               <motion.div 
                 initial={false}
                 animate={{ scale: usePoints ? 1 : 0 }}
                 className="pointer-events-none absolute inset-0 flex items-center justify-center text-black"
               >
-                <svg className="h-2.5 w-2.5 fill-current" viewBox="0 0 20 20">
+                <svg className="h-2 w-2 fill-current" viewBox="0 0 20 20">
                   <path d="M0 11l2-2 5 5L18 3l2 2L7 18z" />
                 </svg>
               </motion.div>
             </div>
-            <div className="flex flex-col min-w-0">
-              <p className="text-[10px] font-black text-white uppercase tracking-tight truncate">Utiliser mes crédits</p>
-              <p className="text-[9px] font-bold text-amber-500/60 uppercase tracking-tighter truncate">{points} points disponibles</p>
+            <div className="flex flex-col min-w-0 leading-tight">
+              <p className="text-[9px] font-black text-white uppercase tracking-tight truncate">Utiliser mes crédits</p>
+              <p className="text-[8px] font-bold text-amber-500/50 uppercase tracking-tighter truncate">{points} points</p>
             </div>
           </div>
           <div className="text-right shrink-0">
-            <span className="text-xs font-black text-amber-500">−{pointsValue.toFixed(2)} €</span>
+            <span className="text-[11px] font-black text-amber-500">−{pointsValue.toFixed(2)} €</span>
           </div>
         </label>
       </motion.div>

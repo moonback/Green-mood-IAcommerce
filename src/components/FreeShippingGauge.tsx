@@ -79,18 +79,18 @@ export default function FreeShippingGauge({ variant = 'compact' }: FreeShippingG
             className={`rounded-xl border overflow-hidden ${isUnlocked
                 ? 'border-emerald-500/30 bg-emerald-500/5'
                 : 'border-zinc-700/60 bg-zinc-900/70'
-                } ${variant === 'full' ? 'p-4' : 'px-4 pt-3 pb-3'}`}
+                } ${variant === 'full' ? 'p-4' : 'p-2 px-3'}`}
         >
             {/* Header row */}
-            <div className="flex items-center gap-2 mb-2">
+            <div className={`flex items-center gap-2 ${variant === 'full' ? 'mb-2' : 'mb-1.5'}`}>
                 {isUnlocked ? (
-                    <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                    <CheckCircle2 className={`${variant === 'full' ? 'w-4 h-4' : 'w-3.5 h-3.5'} text-emerald-400 flex-shrink-0`} />
                 ) : isSilver ? (
-                    <Star className="w-4 h-4 text-zinc-300 flex-shrink-0" />
+                    <Star className={`${variant === 'full' ? 'w-4 h-4' : 'w-3.5 h-3.5'} text-zinc-300 flex-shrink-0`} />
                 ) : (
-                    <Truck className="w-4 h-4 text-zinc-400 flex-shrink-0" />
+                    <Truck className={`${variant === 'full' ? 'w-4 h-4' : 'w-3.5 h-3.5'} text-zinc-400 flex-shrink-0`} />
                 )}
-                <p className={`text-xs font-semibold ${isUnlocked ? 'text-emerald-400' : 'text-zinc-300'}`}>
+                <p className={`${variant === 'full' ? 'text-xs' : 'text-[10px]'} font-semibold ${isUnlocked ? 'text-emerald-400' : 'text-zinc-300'}`}>
                     {isUnlocked
                         ? isGold ? 'Avantage Gold : Livraison offerte !' : 'Livraison offerte débloquée 🎉'
                         : isSilver 
@@ -100,7 +100,7 @@ export default function FreeShippingGauge({ variant = 'compact' }: FreeShippingG
             </div>
 
             {/* Progress bar */}
-            <div className="relative h-2 rounded-full bg-zinc-800 overflow-hidden mb-1">
+            <div className={`relative ${variant === 'full' ? 'h-2' : 'h-1.5'} rounded-full bg-zinc-800 overflow-hidden mb-1`}>
                 <motion.div
                     className={`absolute inset-y-0 left-0 rounded-full ${isUnlocked ? 'bg-emerald-500' : 'bg-gradient-to-r from-emerald-500/60 to-emerald-500'
                         }`}
@@ -119,7 +119,7 @@ export default function FreeShippingGauge({ variant = 'compact' }: FreeShippingG
             </div>
 
             {/* Threshold labels */}
-            <div className="flex justify-between text-xs text-zinc-500 mb-2">
+            <div className={`flex justify-between ${variant === 'full' ? 'text-xs' : 'text-[9px]'} text-zinc-500`}>
                 <span>{sub.toFixed(2)} €</span>
                 <span>{threshold.toFixed(0)} €</span>
             </div>
