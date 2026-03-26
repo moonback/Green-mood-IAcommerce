@@ -5,7 +5,7 @@ import {
   ArrowUpDown, ChevronLeft, ChevronRight, Microscope, Link2, Scale,
   LayoutGrid, LayoutList, ChevronDown, ChevronUp, Star,
   Sprout, Wind, Gauge, FlaskConical, Beaker, Zap, Euro, CheckCircle2,
-  Filter, MoreHorizontal
+  Filter, MoreHorizontal, Activity, Droplets
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { generateEmbedding } from '../lib/embeddings';
@@ -482,13 +482,24 @@ export default function Catalog() {
   const SidebarContent = () => {
     const getIconForSpec = (label: string) => {
       const lower = label.toLowerCase();
-      if (lower.includes('concentration') || lower.includes('cbd') || lower.includes('thc')) return Gauge;
+      if (lower.includes('concentration') || lower.includes('cbd') || lower.includes('thc')) return Activity;
+      if (lower.includes('terpène')) return Droplets;
       if (lower.includes('certif') || lower.includes('test')) return ShieldCheck;
       if (lower.includes('culture') || lower.includes('pouss')) return Sprout;
       if (lower.includes('aroma') || lower.includes('saveur') || lower.includes('goût')) return Wind;
       if (lower.includes('effet') || lower.includes('bienfait')) return Sparkles;
       if (lower.includes('lab') || lower.includes('analyse')) return FlaskConical;
       return Filter;
+    };
+
+    const cleanTerpeneLabel = (val: string) => {
+      let s = stripHtml(val).replace(/['"]+/g, '').replace(/ - .*$/, '').trim();
+      // Keep only first 2 terpenes for a cleaner look
+      const parts = s.split(/[,;]/);
+      if (parts.length > 2) {
+        return parts.slice(0, 2).join(' • ') + '...';
+      }
+      return parts.join(' • ');
     };
 
     return (
@@ -669,23 +680,57 @@ export default function Catalog() {
         {/* Dynamic Technical Specs Filters */}
         {Object.entries(availableSpecs).filter(([label, values]) => values.size > 1 && !label.toLowerCase().includes('certification')).map(([label, values]) => {
           const valsArray = Array.from(values).sort();
-          const isConcentration = label.toLowerCase().includes('concentration');
-          const isMultiColumn = valsArray.length > 6 && !isConcentration;
+          const lowerLabel = label.toLowerCase();
+          const isConcentration = lowerLabel.includes('concentration');
+          const isTerpene = lowerLabel.includes('terpène');
+          // For terpenes or complex concentrations, don't use multi-column as the text is long
+          const isMultiColumn = valsArray.length > 6 && !isConcentration && !isTerpene;
 
           return (
             <FilterSection 
               key={label} 
               title={label} 
               icon={getIconForSpec(label)} 
-              defaultOpen={isConcentration} 
+              defaultOpen={isConcentration || isTerpene} 
               activeCount={selectedSpecs[label]?.length || 0}
               onClear={() => setSelectedSpecs(prev => { const n = { ...prev }; delete n[label]; return n; })}
             >
-              <div className={`scrollbar-thin pr-1 ${isConcentration ? 'space-y-2' : isMultiColumn ? 'grid grid-cols-2 gap-1' : 'space-y-1'}`}>
+              <div className={`scrollbar-thin pr-1 ${isConcentration || isTerpene ? 'space-y-1' : isMultiColumn ? 'flex flex-wrap gap-1.5' : 'space-y-1'}`}>
                 {valsArray.map((val) => {
                   const isChecked = selectedSpecs[label]?.includes(val);
                   
-                  // For concentration, try to make it look nicer if it's very long
+                  if (isTerpene) {
+                    return (
+                      <label key={val} className={`group/spec flex items-start gap-3 px-3 py-2.5 rounded-2xl cursor-pointer transition-all border ${isChecked ? 'bg-green-neon/10 border-green-neon/30 shadow-[0_4px_15px_var(--theme-neon-transparent)]' : 'bg-[color:var(--color-bg-muted)]/50 border-transparent hover:border-[color:var(--color-border)] hover:bg-[color:var(--color-bg-elevated)]/80'}`}>
+                        <div className="relative flex items-center justify-center mt-0.5">
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={() => {
+                              setSelectedSpecs(prev => {
+                                const current = prev[label] || [];
+                                const next = current.includes(val) ? current.filter(v => v !== val) : [...current, val];
+                                return { ...prev, [label]: next };
+                              });
+                            }}
+                            className="peer sr-only"
+                          />
+                          <div className={`w-4 h-4 rounded-full border border-[color:var(--color-border)] transition-all peer-checked:bg-green-neon peer-checked:border-green-neon flex items-center justify-center group-hover/spec:border-green-neon/50`}>
+                            <CheckCircle2 className={`w-2.5 h-2.5 text-black opacity-0 peer-checked:opacity-100 transition-opacity`} />
+                          </div>
+                        </div>
+                        <div className="flex flex-col gap-0.5 min-w-0">
+                          <span className={`text-[11px] font-bold leading-tight ${isChecked ? 'text-[color:var(--color-text)]' : 'text-[color:var(--color-text-muted)] group-hover:text-[color:var(--color-text)]'}`}>
+                            {cleanTerpeneLabel(val)}
+                          </span>
+                          <span className="text-[9px] text-[color:var(--color-text-subtle)] truncate opacity-60">
+                            {stripHtml(val).replace(/['"]+/g, '').replace(/^.* - /, '')}
+                          </span>
+                        </div>
+                      </label>
+                    );
+                  }
+
                   const displayVal = isConcentration ? stripHtml(val).replace(/de CBD/gi, 'CBD').replace(/de CBG/gi, 'CBG') : stripHtml(val);
 
                   return (
