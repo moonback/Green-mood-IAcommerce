@@ -104,8 +104,8 @@ const MobileNavItem: React.FC<{
           to={href}
           onClick={() => setMobileMenuOpen(false)}
           className={`flex-1 flex items-center justify-between py-2.5 px-3 text-sm rounded-xl transition-all ${isActive
-              ? 'bg-[color:var(--color-primary)]/10 text-[color:var(--color-primary)] font-bold'
-              : 'text-[color:var(--color-text-subtle)] hover:text-[color:var(--color-text)] hover:bg-[color:var(--color-bg-elevated)]'
+            ? 'bg-[color:var(--color-primary)]/10 text-[color:var(--color-primary)] font-bold'
+            : 'text-[color:var(--color-text-subtle)] hover:text-[color:var(--color-text)] hover:bg-[color:var(--color-bg-elevated)]'
             }`}
           aria-current={isActive ? 'page' : undefined}
         >
@@ -283,8 +283,8 @@ const HeaderV2: React.FC<HeaderV2Props> = ({ setIsSearchOpen, setIsLoyaltyModalO
                       <Link
                         to="/assistant"
                         className={`relative flex flex-col items-center px-2.5 py-1.5 rounded-xl transition-all group overflow-hidden ${location.pathname === '/assistant'
-                            ? 'bg-[color:var(--color-primary)]/15 shadow-[var(--shadow-glow)]'
-                            : 'hover:bg-[color:var(--color-bg-elevated)]'
+                          ? 'bg-[color:var(--color-primary)]/15 shadow-[var(--shadow-glow)]'
+                          : 'hover:bg-[color:var(--color-bg-elevated)]'
                           }`}
                         aria-label="Conseiller Chat IA"
                       >
@@ -293,14 +293,14 @@ const HeaderV2: React.FC<HeaderV2Props> = ({ setIsSearchOpen, setIsLoyaltyModalO
                         )}
                         <MessageSquare
                           className={`w-4 h-4 transition-all duration-300 ${location.pathname === '/assistant'
-                              ? 'text-[color:var(--color-primary)] scale-110'
-                              : 'text-[color:var(--color-text-subtle)] group-hover:text-[color:var(--color-primary)] group-hover:scale-110'
+                            ? 'text-[color:var(--color-primary)] scale-110'
+                            : 'text-[color:var(--color-text-subtle)] group-hover:text-[color:var(--color-primary)] group-hover:scale-110'
                             }`}
                         />
                         <span
                           className={`text-[10px] font-bold uppercase tracking-tight mt-0.5 leading-none ${location.pathname === '/assistant'
-                              ? 'text-[color:var(--color-primary)]'
-                              : 'text-[color:var(--color-text-subtle)] group-hover:text-[color:var(--color-text)]'
+                            ? 'text-[color:var(--color-primary)]'
+                            : 'text-[color:var(--color-text-subtle)] group-hover:text-[color:var(--color-text)]'
                             }`}
                         >
                           Chat IA
@@ -311,22 +311,22 @@ const HeaderV2: React.FC<HeaderV2Props> = ({ setIsSearchOpen, setIsLoyaltyModalO
                       <button
                         onClick={toggleVoice}
                         className={`relative flex flex-col items-center px-2.5 py-1.5 rounded-xl transition-all group overflow-hidden ${isVoiceOpen
-                            ? 'bg-[color:var(--color-secondary)]/10 shadow-[0_0_20px_rgba(56,189,248,0.12)]'
-                            : 'hover:bg-[color:var(--color-bg-elevated)]'
+                          ? 'bg-[color:var(--color-secondary)]/10 shadow-[0_0_20px_rgba(56,189,248,0.12)]'
+                          : 'hover:bg-[color:var(--color-bg-elevated)]'
                           }`}
                         aria-label="Conseiller Vocal IA"
                       >
                         {isVoiceOpen && <span className="absolute inset-0 rounded-xl border border-[color:var(--color-secondary)]/30" />}
                         <Mic
                           className={`w-4 h-4 transition-all duration-300 ${isVoiceOpen
-                              ? 'text-[color:var(--color-secondary)] scale-110'
-                              : 'text-[color:var(--color-text-subtle)] group-hover:text-[color:var(--color-secondary)] group-hover:scale-110'
+                            ? 'text-[color:var(--color-secondary)] scale-110'
+                            : 'text-[color:var(--color-text-subtle)] group-hover:text-[color:var(--color-secondary)] group-hover:scale-110'
                             }`}
                         />
                         <span
                           className={`text-[10px] font-bold uppercase tracking-tight mt-0.5 leading-none ${isVoiceOpen
-                              ? 'text-[color:var(--color-secondary)]'
-                              : 'text-[color:var(--color-text-subtle)] group-hover:text-[color:var(--color-text-muted)]'
+                            ? 'text-[color:var(--color-secondary)]'
+                            : 'text-[color:var(--color-text-subtle)] group-hover:text-[color:var(--color-text-muted)]'
                             }`}
                         >
                           Voice
@@ -616,8 +616,8 @@ const HeaderV2: React.FC<HeaderV2Props> = ({ setIsSearchOpen, setIsLoyaltyModalO
                             to="/assistant"
                             onClick={() => setMobileMenuOpen(false)}
                             className={`flex items-center gap-2 px-3 py-2.5 rounded-xl transition-all border ${location.pathname === '/assistant'
-                                ? 'bg-[color:var(--color-primary)]/15 border-[color:var(--color-primary)]/30 text-[color:var(--color-primary)]'
-                                : 'bg-[color:var(--color-bg-elevated)] border-[color:var(--color-border)] text-[color:var(--color-text-muted)]'
+                              ? 'bg-[color:var(--color-primary)]/15 border-[color:var(--color-primary)]/30 text-[color:var(--color-primary)]'
+                              : 'bg-[color:var(--color-bg-elevated)] border-[color:var(--color-border)] text-[color:var(--color-text-muted)]'
                               }`}
                           >
                             <MessageSquare className="w-4 h-4" />
@@ -631,8 +631,8 @@ const HeaderV2: React.FC<HeaderV2Props> = ({ setIsSearchOpen, setIsLoyaltyModalO
                               setMobileMenuOpen(false);
                             }}
                             className={`flex items-center gap-2 px-3 py-2.5 rounded-xl transition-all border ${isVoiceOpen
-                                ? 'bg-cyan-400/10 border-cyan-400/30 text-cyan-400'
-                                : 'bg-[color:var(--color-bg-elevated)] border-[color:var(--color-border)] text-[color:var(--color-text-muted)]'
+                              ? 'bg-cyan-400/10 border-cyan-400/30 text-cyan-400'
+                              : 'bg-[color:var(--color-bg-elevated)] border-[color:var(--color-border)] text-[color:var(--color-text-muted)]'
                               }`}
                           >
                             <Mic className="w-4 h-4" />
