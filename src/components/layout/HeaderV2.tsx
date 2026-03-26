@@ -174,7 +174,7 @@ function HeaderV2({ setIsSearchOpen, setIsLoyaltyModalOpen }: HeaderV2Props) {
                 <img
                   src={logoUrl}
                   alt={settings.store_name}
-                  className={`object-contain transition-all duration-300 ${isScrolled ? 'h-8 md:h-10' : 'h-8 md:h-10'}`}
+                  className={`object-contain transition-all duration-300 ${isScrolled ? 'h-18' : 'h-22'}`}
                 />
               </Link>
 

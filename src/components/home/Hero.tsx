@@ -1,15 +1,17 @@
 import { motion, useScroll, useTransform, useSpring, useMotionValue, AnimatePresence } from 'motion/react';
-import { ArrowUpRight, Truck, CheckCircle, MessageSquare, Star, Zap, Lock, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ArrowUpRight, Truck, CheckCircle, MessageSquare, Star, Zap, Lock, Loader2, ChevronLeft, ChevronRight, Mic, Flame } from 'lucide-react';
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import type { Product } from '../../lib/types';
+import { useBudtenderStore } from '../../store/budtenderStore';
+import { useAuthStore } from '../../store/authStore';
 
 const TRUST = [
-  { icon: Truck, label: 'Livraison 24/48h', sub: 'Suivie & Express' },
-  { icon: Lock, label: 'Paiement Sécurisé', sub: 'SSL & 3DS' },
-  { icon: CheckCircle, label: 'Certifié Premium', sub: 'Sélection Experte' },
-  { icon: Zap, label: 'Garantie 1 An', sub: 'Support Dédié' },
+  { icon: Truck, label: 'Livraison 24/48h', sub: 'Discrétion Totale' },
+  { icon: Lock, label: 'Paiement Sécurisé', sub: 'Crypté & Anonyme' },
+  { icon: CheckCircle, label: 'Certifié Labo', sub: 'Taux < 0.3% THC' },
+  { icon: Zap, label: 'BudTender IA', sub: 'Conseil 24/7' },
 ] as const;
 
 export default function Hero() {
@@ -20,8 +22,9 @@ export default function Hero() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [direction, setDirection] = useState(0);
+  const { openVoice } = useBudtenderStore();
+  const { user } = useAuthStore();
 
-  // RAF-throttled mouse tracking for 3D effect
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
 
@@ -44,7 +47,7 @@ export default function Hero() {
           .from('products')
           .select('*, category:categories(*)')
           .eq('is_active', true)
-          .eq('is_featured', true)
+          .order('is_featured', { ascending: false })
           .order('created_at', { ascending: false })
           .limit(8);
 
@@ -58,13 +61,12 @@ export default function Hero() {
     fetchHeroProducts();
   }, []);
 
-  // Auto-play slider
   useEffect(() => {
     if (products.length <= 1) return;
     const timer = setInterval(() => {
       setDirection(1);
       setCurrentIndex(prev => (prev + 1) % products.length);
-    }, 6000);
+    }, 8000);
     return () => clearInterval(timer);
   }, [products.length]);
 
@@ -86,7 +88,7 @@ export default function Hero() {
 
   if (isLoading) {
     return (
-      <section className="min-h-[92vh] flex items-center justify-center bg-[color:var(--color-bg)]">
+      <section className="min-h-[95vh] flex items-center justify-center bg-[color:var(--color-bg)]">
         <Loader2 className="w-8 h-8 text-[color:var(--color-primary)] animate-spin" />
       </section>
     );
@@ -96,246 +98,193 @@ export default function Hero() {
     <section
       ref={containerRef}
       onMouseMove={handleMouseMove}
-      className="relative min-h-[92vh] flex flex-col justify-center overflow-hidden bg-[color:var(--color-bg)]"
+      className="relative min-h-[95vh] flex flex-col justify-center overflow-hidden bg-[color:var(--color-bg)] pt-20"
     >
-      {/* Atmospheric background */}
-      <div className="absolute inset-0 pointer-events-none select-none">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_70%_at_65%_45%,color-mix(in_srgb,var(--color-primary)_7%,transparent),transparent_80%)]" />
-        <div className="absolute inset-0 [background-image:linear-gradient(rgba(255,255,255,0.018)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.018)_1px,transparent_1px)] [background-size:72px_72px] [mask-image:radial-gradient(ellipse_80%_80%_at_65%_40%,#000,transparent)]" />
+      <div className="absolute inset-0 z-0">
+        <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/20 to-[color:var(--color-bg)] z-10" />
+        <img src="/images/cbd_hero_premium_dark.png" className="w-full h-full object-cover opacity-60" alt="Background" />
       </div>
 
       <motion.div
         style={{ opacity: heroOpacity, y: heroY }}
-        className="relative z-10 w-full max-w-8xl mx-auto px-6 lg:px-12 py-24 lg:py-0 lg:min-h-[92vh] grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center"
+        className="relative z-10 w-full max-w-screen-2xl mx-auto px-6 lg:px-12 py-24 lg:py-0 lg:min-h-[85vh] grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center"
       >
-        {/* ── LEFT: Content ── */}
         <div className="flex flex-col gap-8 items-center lg:items-start text-center lg:text-left">
-
-          {/* Status pill */}
           <motion.div
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full border border-[color:var(--color-border)] bg-[color:var(--color-card)] backdrop-blur-sm"
+            className="inline-flex items-center gap-3 px-6 py-2.5 rounded-full border border-white/10 bg-black/40 backdrop-blur-md"
           >
-            <span className="w-1.5 h-1.5 rounded-full bg-[color:var(--color-primary)] animate-pulse shrink-0" />
-            <Truck size={11} className="text-[color:var(--color-primary)]" />
-            <span className="text-[9px] font-black uppercase tracking-[0.2em] text-[color:var(--color-text-muted)]">
-              Livraison Express · France Métropolitaine
+            <span className="w-2 h-2 rounded-full bg-[color:var(--color-primary)] animate-pulse" />
+            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-[color:var(--color-primary)]">
+              Green Mood · Excellence Botanique
             </span>
           </motion.div>
 
-          {/* Headline — animated per slide */}
           <AnimatePresence mode="wait" custom={direction}>
             <motion.div
               key={currentIndex}
               custom={direction}
-              initial={{ opacity: 0, y: direction > 0 ? 20 : -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: direction > 0 ? -20 : 20 }}
-              transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+              initial={{ opacity: 0, x: direction > 0 ? 30 : -30 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: direction > 0 ? -30 : 30 }}
+              transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
               className="space-y-6 w-full"
             >
-              <h1 className="text-[clamp(2.2rem,5vw,4rem)] font-black leading-[1.05] tracking-tight text-[color:var(--color-text)]">
+              <h1 className="text-[clamp(2.5rem,7vw,5rem)] font-black leading-[0.9] tracking-tighter text-white uppercase italic">
                 {product ? (
                   <>
                     {product.name}
                     <br />
-                    <span className="text-[color:var(--color-primary)]">Livré chez vous en 24h.</span>
+                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-[color:var(--color-primary)] to-emerald-400">
+                      Sensation Pure.
+                    </span>
                   </>
                 ) : (
                   <>
-                    La Performance<br />
-                    <span className="text-[color:var(--color-primary)]">Sans Compromis.</span>
+                    L'excellence <br />
+                    <span className="text-[color:var(--color-primary)]">Du Chanvre.</span>
                   </>
                 )}
               </h1>
 
-              <p className="max-w-md text-base md:text-lg text-[color:var(--color-text-muted)] leading-relaxed font-light">
+              <p className="max-w-md text-lg text-zinc-400 leading-relaxed font-medium">
                 {product?.description
-                  ? `${product.description.slice(0, 130)}${product.description.length > 130 ? '…' : ''}`
-                  : 'Une sélection rigoureuse des meilleurs produits. Testés, approuvés, livrés chez vous en express.'}
+                  ? `${product.description.slice(0, 150)}${product.description.length > 150 ? '…' : ''}`
+                  : 'Une expérience CBD inégalée. Des fleurs nobles, des huiles pures, sélectionnées pour votre bien-être.'}
               </p>
 
               {product && (
-                <div className="flex items-center gap-3">
-                  <span className="text-3xl font-black text-[color:var(--color-text)]">
-                    {product.price.toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}
+                <div className="flex items-center gap-4 justify-center lg:justify-start">
+                  <span className="text-4xl font-black text-white">
+                    {product.price}€
                   </span>
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[color:var(--color-primary)]/10 border border-[color:var(--color-primary)]/20">
-                    <Star size={10} className="text-[color:var(--color-primary)] fill-[color:var(--color-primary)]" />
-                    <span className="text-[9px] font-black uppercase tracking-wide text-[color:var(--color-primary)]">Phare</span>
-                  </span>
+                  <div className="flex items-center gap-1">
+                    {[...Array(5)].map((_, i) => <Star key={i} size={12} className="fill-[color:var(--color-primary)] text-[color:var(--color-primary)]" />)}
+                  </div>
                 </div>
               )}
 
-              <div className="flex flex-wrap items-center gap-4">
+              <div className="flex flex-wrap items-center gap-6 pt-4 justify-center lg:justify-start">
                 <button
                   onClick={() => navigate(product ? `/catalogue/${product.slug}` : '/catalogue')}
-                  className="group relative h-14 px-8 bg-[color:var(--color-text)] text-[color:var(--color-bg)] font-black text-sm overflow-hidden rounded-2xl transition-all hover:scale-[1.02] active:scale-[0.98] shadow-lg"
+                  className="group relative h-16 px-10 bg-white text-black font-black uppercase tracking-[0.2em] text-xs rounded-2xl overflow-hidden shadow-[0_0_40px_rgba(255,255,255,0.15)] transition hover:scale-105 active:scale-95"
                 >
-                  <span className="relative z-10 flex items-center gap-2 uppercase tracking-tight">
-                    {product ? 'Voir le produit' : 'Explorer la boutique'}
-                    <ArrowUpRight size={16} className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+                  <span className="relative z-10 flex items-center gap-2">
+                    Voir le produit
+                    <ArrowUpRight size={16} />
                   </span>
-                  <div className="absolute inset-0 bg-[color:var(--color-primary)] translate-y-full group-hover:translate-y-0 transition-transform duration-500 ease-[0.76,0,0.24,1]" />
+                  <div className="absolute inset-0 bg-[color:var(--color-primary)] translate-y-full group-hover:translate-y-0 transition-transform duration-500" />
                 </button>
 
-                <Link
-                  to="/assistant"
-                  className="group flex items-center gap-3 text-[color:var(--color-text-muted)] hover:text-[color:var(--color-text)] transition-colors"
+                <button
+                  onClick={() => { if (user) openVoice(); else navigate('/connexion?redirect=%2F'); }}
+                  className="group flex items-center gap-4 h-16 px-8 rounded-2xl border border-white/10 bg-black/40 backdrop-blur-md text-xs font-black uppercase tracking-[0.2em] text-white hover:border-[color:var(--color-primary)]/40 transition-all"
                 >
-                  <div className="h-11 w-11 rounded-xl border border-[color:var(--color-border)] flex items-center justify-center group-hover:border-[color:var(--color-primary)]/40 group-hover:bg-[color:var(--color-primary)]/5 transition-all">
-                    <MessageSquare size={16} className="group-hover:text-[color:var(--color-primary)] transition-colors" />
-                  </div>
-                  <div className="text-left">
-                    <span className="block text-[9px] font-black uppercase tracking-[0.15em]">Conseil IA</span>
-                    <span className="block text-[9px] text-[color:var(--color-text-subtle)]/60 font-semibold">Besoin d'aide ?</span>
-                  </div>
-                </Link>
+                  <Mic size={18} className="text-[color:var(--color-primary)] animate-pulse" />
+                  BudTender IA
+                </button>
               </div>
             </motion.div>
           </AnimatePresence>
         </div>
 
-        {/* ── RIGHT: Product Visual ── */}
-        <div className="relative">
+        <div className="relative flex justify-center lg:justify-end">
           <AnimatePresence mode="wait" custom={direction}>
             <motion.div
               key={`vis-${currentIndex}`}
               custom={direction}
-              initial={{ opacity: 0, scale: 0.93, rotate: direction > 0 ? 3 : -3 }}
+              initial={{ opacity: 0, scale: 0.9, rotate: direction > 0 ? 5 : -5 }}
               animate={{ opacity: 1, scale: 1, rotate: 0 }}
-              exit={{ opacity: 0, scale: 0.93, rotate: direction > 0 ? -3 : 3 }}
-              transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+              exit={{ opacity: 0, scale: 0.9, rotate: direction > 0 ? -5 : 5 }}
+              transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
               style={{ rotateX, rotateY, perspective: 1200 }}
-              className="group relative w-full will-change-transform"
+              className="relative w-full max-w-[500px] will-change-transform"
             >
-              {/* Product frame */}
-              <div className="relative rounded-[2.5rem] overflow-hidden border border-[color:var(--color-border)] bg-[color:var(--color-card)] shadow-[0_40px_80px_-20px_rgba(0,0,0,0.25)] group-hover:border-[color:var(--color-primary)]/30 transition-colors duration-500">
+              <div className="relative rounded-[3rem] overflow-hidden border border-white/10 shadow-[0_40px_100px_-20px_rgba(0,0,0,0.6)] aspect-[4/5] bg-zinc-900 group">
                 <img
-                  src={product?.image_url || '/images/hero_premium_gadget.png'}
+                  src={product?.image_url || '/images/cbd_hero_premium_dark.png'}
                   alt={product?.name || 'Produit Premium'}
-                  fetchPriority="high"
-                  loading="eager"
-                  className="w-full aspect-[4/3] object-cover transition-transform duration-700 group-hover:scale-[1.04]"
+                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000"
                 />
-
-                {/* Subtle scan line */}
-                <motion.div
-                  animate={{ top: ['-5%', '105%'] }}
-                  transition={{ duration: 5, repeat: Infinity, ease: 'linear' }}
-                  className="absolute left-0 right-0 h-px bg-[color:var(--color-primary)] opacity-20 pointer-events-none z-10"
-                />
-
-                {/* Corner brackets */}
-                <div className="absolute top-5 left-5 w-6 h-6 border-t-2 border-l-2 border-[color:var(--color-primary)] opacity-30 group-hover:opacity-90 transition-opacity duration-500" />
-                <div className="absolute top-5 right-5 w-6 h-6 border-t-2 border-r-2 border-[color:var(--color-primary)] opacity-30 group-hover:opacity-90 transition-opacity duration-500" />
-                <div className="absolute bottom-5 left-5 w-6 h-6 border-b-2 border-l-2 border-[color:var(--color-primary)] opacity-30 group-hover:opacity-90 transition-opacity duration-500" />
-                <div className="absolute bottom-5 right-5 w-6 h-6 border-b-2 border-r-2 border-[color:var(--color-primary)] opacity-30 group-hover:opacity-90 transition-opacity duration-500" />
-
-                {/* Certified badge */}
-                <div className="absolute top-6 left-6 inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-[color:var(--color-bg)]/75 backdrop-blur-md border border-[color:var(--color-border)] z-20">
-                  <CheckCircle size={13} className="text-[color:var(--color-primary)]" />
-                  <span className="text-[9px] font-black uppercase tracking-widest text-[color:var(--color-text)]">Certifié Premium</span>
-                </div>
-
-                {/* Bottom gradient */}
-                <div className="absolute inset-0 bg-gradient-to-t from-[color:var(--color-bg)]/40 via-transparent to-transparent pointer-events-none" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent pointer-events-none" />
+                
+                {product?.category && (
+                  <div className="absolute top-8 left-8">
+                    <span className="px-4 py-2 rounded-xl bg-black/60 backdrop-blur-md border border-white/10 text-[10px] font-black uppercase tracking-widest text-emerald-400">
+                      {product.category.name}
+                    </span>
+                  </div>
+                )}
               </div>
 
-              {/* Floating stock badge */}
               <motion.div
-                animate={{ y: [0, -8, 0] }}
+                animate={{ y: [0, -10, 0] }}
                 transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
-                className="absolute -bottom-4 -right-4 lg:-right-8 inline-flex items-center gap-3 px-4 py-3 rounded-2xl bg-[color:var(--color-card)]/90 backdrop-blur-xl border border-[color:var(--color-border)] shadow-xl z-20"
+                className="absolute -bottom-6 -right-6 lg:-right-10 inline-flex items-center gap-4 px-6 py-4 rounded-3xl bg-black/80 backdrop-blur-xl border border-white/10 shadow-2xl z-20"
               >
-                <div className="h-9 w-9 rounded-xl bg-[color:var(--color-primary)]/15 border border-[color:var(--color-primary)]/20 flex items-center justify-center shrink-0">
-                  <Zap size={16} className="text-[color:var(--color-primary)]" />
+                <div className="h-10 w-10 rounded-xl bg-[color:var(--color-primary)]/20 border border-[color:var(--color-primary)]/30 flex items-center justify-center">
+                  <Flame size={18} className="text-[color:var(--color-primary)]" />
                 </div>
                 <div>
-                  <p className="text-[10px] font-black text-[color:var(--color-text)] uppercase tracking-wide leading-none">En Stock</p>
-                  <div className="flex items-center gap-1.5 mt-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[color:var(--color-primary)] animate-pulse" />
-                    <p className="text-[9px] text-[color:var(--color-text-muted)] font-semibold uppercase tracking-tight">Expédié 24h</p>
-                  </div>
+                  <p className="text-[10px] font-black text-white uppercase tracking-widest">Favori du mois</p>
+                  <p className="text-[9px] text-zinc-500 font-bold uppercase tracking-tight">Stock Limité</p>
                 </div>
               </motion.div>
-
-              {/* Ambient glow */}
-              <div className="absolute -inset-6 bg-[color:var(--color-primary)]/4 blur-3xl rounded-full -z-10" />
+              <div className="absolute -inset-10 bg-[color:var(--color-primary)]/5 blur-[80px] rounded-full -z-10" />
             </motion.div>
           </AnimatePresence>
 
-          {/* Slider controls */}
           {products.length > 1 && (
-            <div className="absolute -bottom-14 left-1/2 -translate-x-1/2 flex items-center gap-3 z-30">
+            <div className="absolute -bottom-20 left-1/2 -translate-x-1/2 flex items-center gap-4 z-30">
               <button
                 onClick={() => paginate(-1)}
-                aria-label="Précédent"
-                className="w-10 h-10 rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-bg)]/60 backdrop-blur-sm flex items-center justify-center text-[color:var(--color-text-muted)] hover:text-[color:var(--color-primary)] hover:border-[color:var(--color-primary)]/40 transition-all"
+                className="w-12 h-12 rounded-2xl border border-white/10 bg-black/40 backdrop-blur-sm flex items-center justify-center text-white/40 hover:text-[color:var(--color-primary)] hover:border-[color:var(--color-primary)]/30 transition-all"
               >
-                <ChevronLeft size={16} />
+                <ChevronLeft size={20} />
               </button>
-
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-2">
                 {products.map((_, i) => (
                   <button
                     key={i}
                     onClick={() => { setDirection(i > currentIndex ? 1 : -1); setCurrentIndex(i); }}
-                    aria-label={`Produit ${i + 1}`}
-                    className={`h-1.5 rounded-full transition-all duration-300 ${i === currentIndex
-                        ? 'w-6 bg-[color:var(--color-primary)]'
-                        : 'w-1.5 bg-[color:var(--color-border)] hover:bg-[color:var(--color-text-muted)]'
-                      }`}
+                    className={`h-1.5 rounded-full transition-all duration-500 ${i === currentIndex ? 'w-8 bg-[color:var(--color-primary)]' : 'w-2 bg-white/20'}`}
                   />
                 ))}
               </div>
-
               <button
                 onClick={() => paginate(1)}
-                aria-label="Suivant"
-                className="w-10 h-10 rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-bg)]/60 backdrop-blur-sm flex items-center justify-center text-[color:var(--color-text-muted)] hover:text-[color:var(--color-primary)] hover:border-[color:var(--color-primary)]/40 transition-all"
+                className="w-12 h-12 rounded-2xl border border-white/10 bg-black/40 backdrop-blur-sm flex items-center justify-center text-white/40 hover:text-[color:var(--color-primary)] hover:border-[color:var(--color-primary)]/30 transition-all"
               >
-                <ChevronRight size={16} />
+                <ChevronRight size={20} />
               </button>
             </div>
           )}
         </div>
       </motion.div>
 
-      {/* Trust bar */}
-      <div className="relative z-10 w-full max-w-7xl mx-auto px-6 lg:px-12 mt-16 lg:mt-24 pb-8 border-t border-[color:var(--color-border)] pt-8">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+      <div className="relative z-10 w-full max-w-screen-2xl mx-auto px-6 lg:px-12 mt-24 pb-12">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 py-10 border-t border-white/5">
           {TRUST.map(({ icon: Icon, label, sub }, i) => (
             <motion.div
               key={label}
-              initial={{ opacity: 0, y: 8 }}
+              initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.7 + i * 0.08 }}
-              className="flex items-center gap-3 group"
+              transition={{ delay: 0.8 + i * 0.1 }}
+              className="flex items-center gap-4 group"
             >
-              <div className="h-9 w-9 rounded-lg bg-[color:var(--color-card)] border border-[color:var(--color-border)] flex items-center justify-center shrink-0 group-hover:border-[color:var(--color-primary)]/30 group-hover:bg-[color:var(--color-primary)]/5 transition-all">
-                <Icon size={15} className="text-[color:var(--color-text-subtle)] group-hover:text-[color:var(--color-primary)] transition-colors" />
+              <div className="h-11 w-11 rounded-2xl bg-white/5 border border-white/5 flex items-center justify-center shrink-0 group-hover:border-[color:var(--color-primary)]/40 transition-all">
+                <Icon size={18} className="text-zinc-500 group-hover:text-[color:var(--color-primary)] transition-colors" />
               </div>
               <div>
-                <p className="text-[9px] font-black uppercase tracking-widest text-[color:var(--color-text-muted)]">{label}</p>
-                <p className="text-[9px] text-[color:var(--color-text-subtle)]/60 font-semibold">{sub}</p>
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">{label}</p>
+                <p className="text-[10px] text-zinc-600 font-bold">{sub}</p>
               </div>
             </motion.div>
           ))}
         </div>
       </div>
-
-      {/* Scroll indicator */}
-      <motion.div
-        animate={{ y: [0, 8, 0] }}
-        transition={{ duration: 2.5, repeat: Infinity }}
-        className="absolute bottom-6 left-1/2 -translate-x-1/2 hidden lg:flex flex-col items-center gap-1 opacity-20 hover:opacity-60 transition-opacity cursor-default"
-      >
-        <span className="text-[8px] font-black uppercase tracking-[0.35em] text-[color:var(--color-text-muted)]">Défiler</span>
-        <div className="w-px h-8 bg-gradient-to-b from-[color:var(--color-primary)] to-transparent" />
-      </motion.div>
     </section>
   );
 }
+
