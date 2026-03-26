@@ -5,15 +5,31 @@ import { QuizStep } from './budtenderSettings';
 // Charge les fichiers .md de manière dynamique via Vite
 const skillsFiles = import.meta.glob('../skills/*.md', { query: '?raw', eager: true, import: 'default' });
 
-const _buildSkillsContext = () => {
+const _buildSkillsContext = (mode?: 'vocal' | 'chat') => {
   const filePaths = Object.keys(skillsFiles);
   if (filePaths.length === 0) return '';
   
   let context = '## COMPÉTENCES SPÉCIALISÉES (SKILLS)\nTu possèdes les instructions et les compétences supplémentaires suivantes :\n\n';
   
   for (const path of filePaths) {
-    const skillName = path.split('/').pop()?.replace('.md', '') || 'Skill';
-    const content = skillsFiles[path] as string;
+    const fileName = path.split('/').pop() || '';
+    const skillName = fileName.replace('.md', '');
+    
+    // Filtrage intelligent par canal
+    if (mode === 'vocal' && fileName === 'chat_actions.md') continue;
+    if (mode === 'chat' && fileName === 'vocal_actions.md') continue;
+
+    let content = skillsFiles[path] as string;
+    
+    // Minification pour la voix (réduit la taille du prompt de ~30%)
+    if (mode === 'vocal') {
+      content = content
+        .replace(/>\s.*?\n/g, '') // Supprime les citations/notes de bloc
+        .replace(/<!--.*?-->/gs, '') // Supprime les commentaires HTML
+        .replace(/\n\s*\n/g, '\n') // Supprime les doubles retours à la ligne
+        .trim();
+    }
+
     context += `### ${skillName.toUpperCase()}\n${content}\n\n`;
   }
   
@@ -180,7 +196,7 @@ Tes réponses doivent être fluides et courtes (max 2-3 phrases) :
 2. **Argument de qualité** : "C'est une pépite de notre catalogue pour sa culture organique et sa puissance naturelle..."
 3. **Question de validation** : Termine TOUJOURS par une question ouverte — "Est-ce que ce type d'arôme fruité t'attire ?", "C'est ce niveau de relaxation que tu recherches ?".
 
-${_buildSkillsContext()}
+${_buildSkillsContext('chat')}
 
 ### Catalogue Exclusif
 Suggère UNIQUEMENT depuis le catalogue autorisé ci-dessous. Ne fabrique jamais de produit fictif.
@@ -414,9 +430,9 @@ export const getVoicePrompt = (
     _buildIdentity(budtenderName, storeName),
     VOICE_FORMAT_RULES,
     _buildAnalysisProtocol(userName),
-    _buildSkillsContext(),
+    _buildSkillsContext('vocal'),
     `## CONTEXTE CLIENT\n${clientContext}`,
-    `## EXTRAIT DU CATALOGUE\n${_buildCatalog(products)}`,
+    `## EXTRAIT DU CATALOGUE\n${_buildCatalog(products, 10)}`,
     customPrompt?.trim() ? `## INSTRUCTIONS SPÉCIFIQUES\n${customPrompt.trim()}` : '',
   ].filter(Boolean).join('\n\n');
 };
