@@ -1,0 +1,88 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - button "Passer" [ref=e4]:
+      - img [ref=e5]
+      - text: Passer
+    - generic [ref=e8]:
+      - generic [ref=e9]:
+        - img [ref=e12]
+        - generic [ref=e14]: Bienvenue
+        - heading "BudTender Experience" [level=2] [ref=e15]
+        - paragraph [ref=e16]: L'innovation au bout des doigts
+        - paragraph [ref=e17]: Explorez une sélection ultra-premium d'équipements tech et lifestyle, curés par nos algorithmes pour l'excellence.
+        - button "Suivant" [ref=e18]:
+          - text: Suivant
+          - img [ref=e19]
+      - generic [ref=e21]:
+        - button [ref=e22]
+        - button [ref=e23]
+        - button [ref=e24]
+        - button [ref=e25]
+        - button [ref=e26]
+  - main [ref=e28]:
+    - generic [ref=e29]:
+      - generic [ref=e33]:
+        - img "GreenMood" [ref=e35]
+        - generic [ref=e37]:
+          - generic [ref=e42]: Espace membre
+          - heading "Votre compte, tout en un endroit" [level=2] [ref=e43]:
+            - text: Votre compte,
+            - text: tout en un endroit
+          - paragraph [ref=e44]: Suivez vos commandes, cumulez vos points de fidélité et retrouvez vos favoris — où que vous soyez.
+        - generic [ref=e45]:
+          - img [ref=e46]
+          - generic [ref=e49]: Votre satisfaction, notre priorité
+      - generic [ref=e51]:
+        - generic [ref=e53]:
+          - heading "Connectez-vous 👋" [level=1] [ref=e54]
+          - paragraph [ref=e55]: Retrouvez votre espace client ici.
+        - generic [ref=e56]:
+          - generic [ref=e58]:
+            - generic [ref=e59]:
+              - button "Connexion" [ref=e60]: Connexion
+              - button "Inscription" [ref=e62]
+            - generic [ref=e63]:
+              - generic [ref=e64]:
+                - img
+                - textbox "Adresse email" [ref=e65]:
+                  - /placeholder: " "
+                  - text: fake@example.com
+                - generic: Adresse email
+              - generic [ref=e67]:
+                - img
+                - textbox "Mot de passe" [active] [ref=e68]:
+                  - /placeholder: " "
+                  - text: wrongpassword
+                - generic: Mot de passe
+                - button [ref=e70]:
+                  - img [ref=e71]
+              - generic [ref=e74]:
+                - generic [ref=e75] [cursor=pointer]:
+                  - checkbox "Se souvenir de moi" [checked] [ref=e76]:
+                    - img [ref=e77]
+                  - generic [ref=e79]: Se souvenir de moi
+                - link "Mot de passe oublié ?" [ref=e80] [cursor=pointer]:
+                  - /url: /mot-de-passe-oublie
+              - button "Se connecter" [ref=e82]:
+                - generic [ref=e84]:
+                  - text: Se connecter
+                  - img [ref=e85]
+          - paragraph [ref=e88]:
+            - text: En créant un compte, vous acceptez nos
+            - link "conditions générales" [ref=e89] [cursor=pointer]:
+              - /url: /mentions-legales
+            - text: . Vous devez avoir 18 ans ou plus.
+        - generic [ref=e90]:
+          - generic [ref=e92]:
+            - img [ref=e93]
+            - generic [ref=e95]: SSL
+          - generic [ref=e98]:
+            - img [ref=e99]
+            - generic [ref=e102]: RGPD
+          - generic [ref=e105]:
+            - img [ref=e106]
+            - generic [ref=e109]: IA Certifiée
+```
