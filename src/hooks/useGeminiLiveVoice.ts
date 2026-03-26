@@ -316,6 +316,8 @@ export function useGeminiLiveVoice({
   const bargeInStartRef = useRef(0);
   const bargeInFramesRef = useRef(0);
   const voiceStateRef = useRef<VoiceState>('idle');
+  const errorRef = useRef<string | null>(null);
+  const prewarmKeyRef = useRef<string | null>(null);
   // Am4: adaptive noise floor
   const adaptiveBargeInThresholdRef = useRef(BARGE_IN_RMS_THRESHOLD_FALLBACK);
   const noiseSamplesRef = useRef<number[]>([]);
@@ -331,6 +333,21 @@ export function useGeminiLiveVoice({
   useEffect(() => {
     voiceStateRef.current = voiceState;
   }, [voiceState]);
+  useEffect(() => {
+    errorRef.current = error;
+  }, [error]);
+
+  const setVoiceStateSafe = useCallback((next: VoiceState) => {
+    if (voiceStateRef.current === next) return;
+    voiceStateRef.current = next;
+    setVoiceState(next);
+  }, []);
+
+  const setErrorSafe = useCallback((next: string | null) => {
+    if (errorRef.current === next) return;
+    errorRef.current = next;
+    setError(next);
+  }, []);
 
   // ── Unified product lookup with 4 fallback levels ────────────────────────
   // Level 1: exact name match
@@ -397,7 +414,7 @@ export function useGeminiLiveVoice({
     return typeof WebSocket === 'undefined' || ws.readyState === WebSocket.OPEN;
   }, []);
 
-  const buildSystemPrompt = useCallback((): string => {
+  const systemPrompt = useMemo(() => {
     const effectiveCustomPrompt = [globalSettings.budtender_base_prompt?.trim(), customPrompt?.trim()].filter(Boolean).join('\n\n');
     const prompt = getVoicePrompt(
       productsRef.current, savedPrefs, userName, pastProducts, pastOrders,
@@ -413,8 +430,7 @@ export function useGeminiLiveVoice({
 
   const fetchEphemeralToken = useCallback(async (forceRefresh: boolean = false): Promise<{ token: string }> => {
     const now = Date.now();
-    const voiceSystemPrompt = buildSystemPrompt();
-    const cacheKey = `${voiceSystemPrompt}:${globalSettings.budtender_voice_name}`;
+    const cacheKey = `${systemPrompt}:${globalSettings.budtender_voice_name}`;
     const cached = cachedTokenRef.current;
     if (!forceRefresh && cached && cached.expireAtMs - now > TOKEN_PREFETCH_MAX_AGE_MS && cached.promptHash === cacheKey) {
       return { token: cached.token };
@@ -431,7 +447,7 @@ export function useGeminiLiveVoice({
         try {
           const body = {
             model: LIVE_MODEL,
-            systemInstruction: voiceSystemPrompt,
+            systemInstruction: systemPrompt,
             voiceName: globalSettings.budtender_voice_name || 'Puck',
             assistantType: 'budtender',
           };
@@ -489,15 +505,18 @@ export function useGeminiLiveVoice({
         tokenInFlightRef.current = null;
       }
     }
-  }, [buildSystemPrompt, globalSettings.budtender_voice_name]);
+  }, [globalSettings.budtender_voice_name, systemPrompt]);
 
   useEffect(() => {
     // Only prewarm if not already in a session to avoid overhead/concurrency issues
     if (!prewarmToken || sessionRef.current) return;
+    const prewarmKey = `${globalSettings.budtender_voice_name || 'Puck'}:${systemPrompt.length}`;
+    if (prewarmKeyRef.current === prewarmKey) return;
+    prewarmKeyRef.current = prewarmKey;
     fetchEphemeralToken().catch((err) => {
       console.warn('[Voice] Token prewarm failed:', err);
     });
-  }, [prewarmToken, fetchEphemeralToken]);
+  }, [prewarmToken, fetchEphemeralToken, globalSettings.budtender_voice_name, systemPrompt.length]);
 
   const stopAllPlayback = useCallback((fadeMs = 0) => {
     interruptedRef.current = true;
@@ -677,9 +696,10 @@ export function useGeminiLiveVoice({
   const stopSession = useCallback(() => {
     retryCountRef.current = 0;
     cleanup();
-    setVoiceState('idle');
+    setVoiceStateSafe('idle');
     setIsMuted(false);
-  }, [cleanup]);
+    setErrorSafe(null);
+  }, [cleanup, setErrorSafe, setVoiceStateSafe]);
 
   const playPcmChunk = useCallback((base64: string) => {
     // Guard: discard any audio chunks that arrive after an interruption
@@ -700,14 +720,14 @@ export function useGeminiLiveVoice({
     source.start(startAt);
     scheduledUntilRef.current = startAt + buffer.duration;
     activeSourcesRef.current.add(source);
-    setVoiceState('speaking');
+    setVoiceStateSafe('speaking');
     source.onended = () => {
       activeSourcesRef.current.delete(source);
       if (!interruptedRef.current && ctx.currentTime >= scheduledUntilRef.current - 0.05) {
-        setVoiceState('listening');
+        setVoiceStateSafe('listening');
       }
     };
-  }, []);
+  }, [setVoiceStateSafe]);
 
   // Am4: sample ambient noise then set an adaptive barge-in threshold
   const calibrateNoise = useCallback(() => {
@@ -791,7 +811,7 @@ export function useGeminiLiveVoice({
               stopAllPlayback(80); // soft fade-out
               // Small delay before switching to listening to avoid audio feedback loop
               setTimeout(() => {
-                if (voiceStateRef.current !== 'idle') setVoiceState('listening');
+                if (voiceStateRef.current !== 'idle') setVoiceStateSafe('listening');
               }, 100);
             }
           } else {
@@ -835,12 +855,16 @@ export function useGeminiLiveVoice({
     source.connect(worklet);
     worklet.connect(silent);
     silent.connect(ctx.destination);
-  }, [canSendRealtimeInput, stopAllPlayback]);
+  }, [canSendRealtimeInput, setVoiceStateSafe, stopAllPlayback]);
 
   // Forward declaration so startSession can call itself for retry
   const startSessionRef = useRef<((forceFresh?: boolean) => Promise<void>) | undefined>(undefined);
 
   const startSession = useCallback(async (forceFreshToken: boolean = false) => {
+    if (!forceFreshToken && (startInFlightRef.current || sessionRef.current || voiceStateRef.current === 'connecting')) {
+      console.info('[Voice] startSession skipped (already connecting/connected).');
+      return;
+    }
     if (startInFlightRef.current) return;
     cleanup();
     isManualCloseRef.current = false;
@@ -849,20 +873,20 @@ export function useGeminiLiveVoice({
     sessionIdRef.current = sid;
 
     if (compatibilityError) {
-      setError(compatibilityError);
-      setVoiceState('error');
+      setErrorSafe(compatibilityError);
+      setVoiceStateSafe('error');
       return;
     }
 
     startInFlightRef.current = true;
-    setVoiceState('connecting');
-    setError(null);
+    setVoiceStateSafe('connecting');
+    setErrorSafe(null);
 
     // ── Connection timeout ────────────────────────────────────────────────────
     setupTimeoutRef.current = window.setTimeout(() => {
       if (sessionIdRef.current === sid && startInFlightRef.current) {
         console.warn('[Voice] Connection timeout after', CONNECTION_TIMEOUT_MS, 'ms');
-        setError('Délai de connexion dépassé. Vérifiez votre connexion internet.');
+        setErrorSafe('Délai de connexion dépassé. Vérifiez votre connexion internet.');
         stopSession();
       }
     }, CONNECTION_TIMEOUT_MS);
@@ -892,7 +916,7 @@ export function useGeminiLiveVoice({
             const isRetry = retryCountRef.current > 0; // Capture BEFORE resetting
             retryCountRef.current = 0; // Reset retry count on successful connection
             console.info('[Voice] Gemini Live: Setup Complete');
-            setVoiceState('listening');
+            setVoiceStateSafe('listening');
             await startMicCapture(stream);
             startInFlightRef.current = false;
             playbackCtxRef.current = new AudioContext({ sampleRate: OUTPUT_SAMPLE_RATE });
@@ -985,8 +1009,8 @@ export function useGeminiLiveVoice({
               const jitter = Math.floor(Math.random() * 500);
               const delay = RETRY_DELAY_MS * attempt + jitter; // Exponential-ish back-off with jitter
               console.info(`[Voice] Auto-retry ${attempt}/${MAX_AUTO_RETRIES} in ${delay}ms (code ${e.code})`);
-              setError(`Reconnexion automatique (${attempt}/${MAX_AUTO_RETRIES})…`);
-              setVoiceState('connecting');
+              setErrorSafe(`Reconnexion automatique (${attempt}/${MAX_AUTO_RETRIES})…`);
+              setVoiceStateSafe('connecting');
 
               // Re-use the stream already acquired so we don't need to re-prompt for mic permission
               retryTimerRef.current = window.setTimeout(() => {
@@ -1015,8 +1039,8 @@ export function useGeminiLiveVoice({
             } else {
               // Max retries exceeded or non-retryable code
               const reason = e.reason ? `(${e.reason})` : `(code ${e.code})`;
-              setError(`Session interrompue ${reason}. Appuyez sur "Réessayer".`);
-              setVoiceState('error');
+              setErrorSafe(`Session interrompue ${reason}. Appuyez sur "Réessayer".`);
+              setVoiceStateSafe('error');
               cleanup();
             }
           },
@@ -1031,7 +1055,7 @@ export function useGeminiLiveVoice({
 
             const setupTurn = () => {
               scheduledUntilRef.current = playbackCtxRef.current?.currentTime ?? 0;
-              setVoiceState('listening');
+              setVoiceStateSafe('listening');
             };
 
             if (msg.serverContent) {
@@ -1760,10 +1784,10 @@ export function useGeminiLiveVoice({
       } else {
         console.error('[Voice] Session setup failed:', err);
       }
-      setError(userMessage);
-      setVoiceState('error');
+      setErrorSafe(userMessage);
+      setVoiceStateSafe('error');
     }
-  }, [cleanup, buildSystemPrompt, compatibilityError, globalSettings.budtender_voice_name, playPcmChunk, startMicCapture, stopAllPlayback, stopSession]);
+  }, [cleanup, compatibilityError, playPcmChunk, setErrorSafe, setVoiceStateSafe, startMicCapture, stopAllPlayback, stopSession]);
 
   // Keep startSession accessible inside the onclose retry callback via ref
   useEffect(() => {
