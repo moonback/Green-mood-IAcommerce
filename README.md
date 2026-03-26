@@ -1,5 +1,5 @@
 <div align="center">
-<!-- <img src="public/header.png" alt="Green-mood Banner" width="100%" /> -->
+<img src="public/header.png" alt="Green-mood Banner" width="100%" />
 
 # 🚀 Green-mood
 ### L’E-commerce "AI-First" spécialisé CBD & Bien-être Premium.
