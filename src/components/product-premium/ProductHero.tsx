@@ -162,22 +162,29 @@ export default function ProductHero({ product, quantity, onQuantityChange, onAdd
             )}
 
             {/* Quick Tech Specs Bar */}
-            <div className="grid grid-cols-2 sm:grid-cols-2 gap-3 bg-[color:var(--color-card)]/30 backdrop-blur-sm border border-[color:var(--color-border)] rounded-2xl p-4 shadow-inner">
+            <div className="grid grid-cols-2 gap-3">
               {(product.productSpecs || []).slice(0, 4).map((spec) => (
-                <div key={spec.name} className="flex flex-col gap-1">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-[color:var(--color-text-subtle)] flex items-center gap-1.5 opacity-70">
-                    <span className="text-sm">{spec.icon}</span> {spec.name}
+                <div 
+                  key={spec.name} 
+                  className="flex flex-col gap-2 p-3.5 rounded-2xl bg-[color:var(--color-card)]/40 backdrop-blur-md border border-[color:var(--color-border)] hover:border-[color:var(--color-primary)]/40 transition-all duration-300 shadow-sm relative overflow-hidden group hover:shadow-[0_4px_20px_rgba(var(--theme-primary-rgb),0.05)] hover:-translate-y-0.5"
+                >
+                  <div className="absolute inset-0 bg-gradient-to-br from-[color:var(--color-primary)]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+                  <span className="text-[9px] font-black uppercase tracking-[0.2em] text-[color:var(--color-text-subtle)] flex items-center gap-2 relative z-10">
+                    <span className="flex items-center justify-center w-5 h-5 rounded-md bg-[color:var(--color-bg-elevated)] border border-[color:var(--color-border)] text-xs text-[color:var(--color-text)] group-hover:bg-[color:var(--color-primary)]/10 group-hover:text-[color:var(--color-primary)] group-hover:border-[color:var(--color-primary)]/30 transition-colors shadow-inner">
+                      {spec.icon}
+                    </span>
+                    <span className="truncate">{spec.name}</span>
                   </span>
-                  <p className="text-xs font-black text-[color:var(--color-text)] ">
+                  <p className="text-[11px] font-medium text-[color:var(--color-text)] leading-relaxed relative z-10 break-words line-clamp-2">
                     {spec.description?.split(':').pop()?.trim() || spec.description}
                   </p>
                 </div>
               ))}
               {/* Fallback if no specs are found */}
               {((product.productSpecs || []).length === 0) && (
-                <div className="col-span-4 flex items-center justify-center py-2">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-[color:var(--color-text-subtle)] flex items-center gap-2">
-                    <BookOpen className="w-3 h-3" /> Fiche détaillée en cours de création
+                <div className="col-span-2 flex items-center justify-center p-6 rounded-2xl bg-[color:var(--color-card)]/20 backdrop-blur-sm border border-[color:var(--color-border)] border-dashed">
+                  <span className="text-[10px] font-black uppercase tracking-widest text-[color:var(--color-text-subtle)] flex items-center gap-2 opacity-60">
+                    <BookOpen className="w-4 h-4" /> Fiche technique en cours d'élaboration...
                   </span>
                 </div>
               )}
