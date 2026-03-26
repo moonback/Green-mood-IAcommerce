@@ -174,17 +174,30 @@ Réponse audio BudTender (24kHz PCM) ──► AudioContext
 
 ### Prompt System (`src/lib/budtenderPrompts.ts`)
 
-Architecture modulaire — `getVoicePrompt()` compose ces fonctions privées :
+Architecture modulaire et dynamique — `getVoicePrompt()` et `getChatPrompt()` composent le prompt en chargeant automatiquement les fichiers Markdown depuis `src/skills/*.md`.
 
-| Fonction | Contenu |
-|---|---|
-| `_buildIdentity()` | Nom IA, nom boutique, rôle et posture |
-| `_buildAnalysisProtocol()` | Règles de raisonnement silencieux |
-| `_buildResponseLogic()` | Structure adaptative, règles TTS |
-| `_buildGoldenRules()` | Anti-hallucination, upsell, récupération d'hésitation, bundle |
-| `_buildToolsTable()` | Référence des outils disponibles |
-| `_buildClientContext()` | Données utilisateur personnalisées |
-| `_buildCatalog()` | 25 produits max de l'inventaire actuel |
+| Composant | Rôle |
+| :--- | :--- |
+| `_buildIdentity()` | Nom IA, boutique, rôle (Sommelier du Chanvre) |
+| `_buildAnalysisProtocol()` | Règles de réflexion silencieuse avant réponse |
+| `_buildSkillsContext()` | **Moteur de Skills** : Importe dynamiquement les modules `.md` |
+| `_buildClientContext()` | Données utilisateur (panier, historique, points) |
+| `_buildCatalog()` | Extrait intelligent du catalogue (limité pour la performance) |
+
+#### 📂 Modules de Compétences (`src/skills/`)
+Le comportement de l'IA est maintenant découplé du code et piloté par des fichiers Markdown spécialisés :
+
+- **`skill.md`** : Définition et règles d'usage des Action Tools.
+- **`vocal_actions.md`** : Protocole de feedback audio et séquençage (exclusif Vocal).
+- **`chat_actions.md`** : Règles de qualification et d'affichage (exclusif Chat).
+- **`botanique_expert.md`** : Connaissances approfondies (terpènes, cannabinoïdes).
+- **`objections.md`** : Stratégies de rassurance et levée de doutes sur le prix/qualité.
+- **`fidelite.md`** : Engagement autour du programme Carats.
+- **`cross_selling.md`** : Recommandations de packs et routines bien-être.
+- **`legal_confidentialite.md`** : Disclaimer médical et conformité THC < 0.3%.
+- **`faq_boutique.md`** : Réponses sur la logistique, paiements et retours.
+
+> **Optimisation intelligente** : Le système filtre automatiquement les skills selon le canal (ex: l'assistant vocal ne reçoit pas les règles de mise en forme du chat) pour garantir des performances optimales et une stabilité WebRTC.
 
 **`VOICE_FORMAT_RULES`** : interdit le markdown, les emojis, les puces et tout caractère qui serait lu par la synthèse vocale. Tout output doit être du français oral naturel.
 
