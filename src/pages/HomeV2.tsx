@@ -72,28 +72,7 @@ const DEMO_CONVERSATIONS = [
 const DEMO_STEP_TIMINGS = { user: 0, thinking: 1200, ai: 2400, actions: 3800, hold: 8000 };
 const TOTAL_CYCLE_MS = DEMO_STEP_TIMINGS.hold;
 
-const ADVANTAGES = [
-  {
-    title: 'Extraction Noble',
-    description: 'Procédés au CO2 supercritique pour une pureté absolue et un spectre complet.',
-    Icon: FlaskConical,
-  },
-  {
-    title: 'Discrétion Totale',
-    description: 'Colis neutres sans odeur. Livraison confidentielle en 24/48h partout en Europe.',
-    Icon: EyeOff,
-  },
-  {
-    title: 'IA BudTender',
-    description: 'Votre sommelier du chanvre disponible en vocal pour un conseil sur-mesure.',
-    Icon: Mic,
-  },
-  {
-    title: 'Légalité & Pureté',
-    description: 'Taux de THC < 0.3% certifié en laboratoire indépendant. Agriculture 100% bio.',
-    Icon: Scale,
-  },
-] as const;
+
 
 const TESTIMONIALS = [
   {
@@ -195,7 +174,7 @@ export default function HomeV2() {
             return children.some(c => hasProducts(c.id));
           };
           filteredCats = catData.filter(c => hasProducts(c.id));
-          setCategories(filteredCats.slice(0, 10));
+          setCategories(filteredCats);
         }
 
         // Fetch Best Sellers (Featured products or just popular active ones)
@@ -287,31 +266,8 @@ export default function HomeV2() {
         {/* 1. HERO SECTION (WITH PRODUCT SLIDER) */}
         <Hero />
 
-        {/* 2. ADVANTAGES STRIP */}
-        <section className="relative z-30 border-y border-[color:var(--color-border)] bg-black/40 backdrop-blur-xl">
-          <div className="mx-auto max-w-screen-2xl px-4 lg:px-8">
-            <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-white/5">
-              {ADVANTAGES.map((adv, i) => (
-                <motion.div
-                  key={adv.title}
-                  initial={{ opacity: 0, y: 10 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.1 }}
-                  className="flex flex-col gap-4 p-8 group hover:bg-white/[0.02] transition-colors"
-                >
-                  <div className="h-10 w-10 flex items-center justify-center rounded-xl bg-[color:var(--color-primary)]/10 text-[color:var(--color-primary)] border border-[color:var(--color-primary)]/20 transition-transform group-hover:scale-110">
-                    <adv.Icon size={18} />
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-black uppercase tracking-wider text-white mb-1">{adv.title}</h3>
-                    <p className="text-[11px] text-[color:var(--color-text-muted)] leading-relaxed">{adv.description}</p>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          </div>
-        </section>
+
+
 
         {/* 3. CATEGORIES GRID */}
         <section className="relative z-10 py-24 px-4 lg:px-8">
@@ -329,43 +285,68 @@ export default function HomeV2() {
               </Link>
             </div>
 
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-              {isLoading ? (
-                Array.from({ length: 4 }).map((_, i) => (
-                  <div key={i} className="aspect-[4/5] animate-pulse rounded-[2.5rem] bg-white/5 border border-white/5" />
-                ))
-              ) : (
-                categories.slice(0, 4).map((cat, idx) => (
-                  <motion.div
-                    key={cat.id}
-                    initial={{ opacity: 0, y: 30 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: idx * 0.1 }}
-                  >
-                    <Link
-                      to={`/catalogue?category=${cat.slug}`}
-                      className="group relative flex flex-col items-center justify-end aspect-[4/5] rounded-[2.5rem] overflow-hidden border border-white/10 transition-all hover:border-[color:var(--color-primary)]/40 hover:scale-[1.02]"
-                    >
-                      <div className="absolute inset-0 z-0">
-                        {cat.image_url ? (
-                          <img src={cat.image_url} alt={cat.name} className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity duration-700" />
-                        ) : (
-                          <div className="w-full h-full bg-gradient-to-br from-zinc-800 to-black flex items-center justify-center">
-                            <Leaf className="w-16 h-16 text-white/10" />
-                          </div>
-                        )}
-                        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent z-10" />
-                      </div>
+            <div className="relative overflow-hidden group">
+              {/* Fade edges */}
+              <div className="absolute inset-y-0 left-0 w-32 bg-gradient-to-r from-[color:var(--color-bg)] to-transparent z-20 pointer-events-none" />
+              <div className="absolute inset-y-0 right-0 w-32 bg-gradient-to-l from-[color:var(--color-bg)] to-transparent z-20 pointer-events-none" />
 
-                      <div className="relative z-20 w-full p-8 text-center space-y-2">
-                        <span className="text-[10px] font-black uppercase tracking-[0.3em] text-[color:var(--color-primary)] opacity-0 group-hover:opacity-100 transition-opacity">Découvrir</span>
-                        <h3 className="text-xl font-black uppercase text-white drop-shadow-lg">{cat.name}</h3>
-                      </div>
-                    </Link>
-                  </motion.div>
-                ))
-              )}
+              <div className="flex overflow-hidden">
+                {isLoading ? (
+                  <div className="flex gap-6 animate-pulse px-4">
+                    {Array.from({ length: 6 }).map((_, i) => (
+                      <div key={i} className="w-48 h-64 rounded-[2rem] bg-white/5 border border-white/5 shrink-0" />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="relative overflow-hidden w-full group/marquee">
+                    <style dangerouslySetInnerHTML={{ __html: `
+                      @keyframes marquee-scroll {
+                        from { transform: translateX(0); }
+                        to { transform: translateX(-50%); }
+                      }
+                      .animate-marquee-pause:hover {
+                        animation-play-state: paused;
+                      }
+                    ` }} />
+                    <div
+                      className="flex gap-6 py-4 px-4 animate-marquee-pause"
+                      style={{
+                        animation: 'marquee-scroll 40s linear infinite',
+                        width: 'max-content'
+                      }}
+                    >
+                      {/* Duplicate the list enough times to ensure seamless wrap around */}
+                      {[...categories, ...categories, ...categories].map((cat, idx) => (
+                        <div
+                          key={`${cat.id}-${idx}`}
+                          className="shrink-0"
+                        >
+                          <Link
+                            to={`/catalogue?category=${cat.slug}`}
+                            className="group relative flex flex-col items-center justify-end w-48 h-64 rounded-[2rem] overflow-hidden border border-white/10 transition-all hover:border-[color:var(--color-primary)]/40 hover:scale-[1.05]"
+                          >
+                            <div className="absolute inset-0 z-0">
+                              {cat.image_url ? (
+                                <img src={cat.image_url} alt={cat.name} className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity duration-700" />
+                              ) : (
+                                <div className="w-full h-full bg-gradient-to-br from-zinc-800 to-black flex items-center justify-center">
+                                  <Leaf className="w-10 h-10 text-white/10" />
+                                </div>
+                              )}
+                              <div className="absolute inset-0 bg-gradient-to-t from-black via-black/10 to-transparent z-10" />
+                            </div>
+
+                            <div className="relative z-20 w-full p-6 text-center space-y-1">
+                              <span className="text-[8px] font-black uppercase tracking-[0.3em] text-[color:var(--color-primary)] opacity-0 group-hover:opacity-100 transition-opacity">Découvrir</span>
+                              <h3 className="text-sm font-black uppercase text-white drop-shadow-md truncate px-2">{cat.name}</h3>
+                            </div>
+                          </Link>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </section>
@@ -545,7 +526,7 @@ export default function HomeV2() {
                                     />
                                   )}
                                 </AnimatePresence>
-                                
+
                                 <div className="flex items-center gap-2 mb-2">
                                   {currentDemo.thinkingText.toLowerCase().includes('navigation') ? (
                                     <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-[8px] font-black text-cyan-400 uppercase tracking-widest">
