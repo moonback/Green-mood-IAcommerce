@@ -178,13 +178,31 @@ npx tsx scripts/generate-sitemap.ts
 |--------|------|---------------|
 | **Storefront** | Pages publiques, catalogue, panier, commandes | `src/pages/*.tsx` |
 | **Admin Panel** | Dashboard, CRUD, analytics, configuration | `src/components/admin/` |
-| **BudTender AI** | Conseiller IA chat + voix | `src/components/budtender/`, `src/hooks/useBudTender*.ts` |
+| **BudTender AI** | Conseiller IA chat + voix (Moteur de Skills) | `src/skills/`, `src/lib/budtenderPrompts.ts` |
 | **POS System** | Terminal de caisse physique | `src/components/admin/pos/`, `src/pages/POSPage.tsx` |
 | **State Management** | Stores Zustand globaux | `src/store/*.ts` |
 | **Supabase Layer** | Requêtes DB, auth, storage | `src/lib/supabase.ts` |
 | **Settings Service** | Sauvegarde centralisée des paramètres boutique | `src/lib/settingsService.ts` |
 | **AI Utilities** | Prompts, embeddings, cache | `src/lib/budtender/`, `src/lib/embeddings.ts` |
 | **SEO Engine** | Meta tags, JSON-LD, Open Graph | `src/lib/seo/`, `src/components/SEO.tsx` |
+
+### 📂 Architecture BudTender Skills (`src/skills/`)
+
+Le comportement de l'IA (Melina) est piloté par un système modulaire de fichiers Markdown :
+
+1. **Chargement Dynamique** : `import.meta.glob` dans `budtenderPrompts.ts`.
+2. **Filtrage Intelligent** : Les skills sont injectés selon le canal (`vocal` vs `chat`).
+3. **Minification Audio** : Nettoyage automatique des marqueurs de mise en forme pour une lecture TTS fluide.
+
+| Skill | Rôle Technique | Canal |
+|-------|----------------|-------|
+| `skill.md` | Déclaration et orchestrations des **Action Tools** | Vocal |
+| `vocal_actions.md` | Feedback audio simultané et gestion du délai | Vocal |
+| `chat_actions.md` | Règles d'affichage Markdown et qualification | Chat |
+| `botanique_expert.md` | Expertise RAG (Terpènes, Cannabinoïdes) | Hybride |
+| `objections.md` | Logique de levée de doute et techniques de vente | Hybride |
+| `fidelite.md` | Promotion active du programme de points Carats | Hybride |
+| `legal_confidentialite` | Disclaimers et conformité légale automatique | Hybride |
 
 ---
 
@@ -522,8 +540,9 @@ Accessible depuis le Dashboard, l'overlay wizard guide en **8 étapes** :
 - **Localisation** : `src/hooks/useGeminiLiveVoice.ts`
 - API : Google Gemini Live (bidirectionnel, < 500ms)
 - Token fetching via Edge Function `gemini-token`
-- **Outils Intégrés** : Recherche catalogue (fleurs, huiles, accessoires), affichage produit, ajout au panier, navigation, **gestion des favoris**, base de connaissances experte CBD.
-- Contexte injecté : catalogue (variétés, taux de CBD/THC), préférences, historique, panier.
+- **Outils Intégrés** : Recherche catalogue (fleurs, huiles, accessoires), affichage produit, ajout au panier, navigation, gestion des favoris, base de connaissances experte CBD.
+- **Moteur de Skills** : Injection dynamique de fichiers `.md` (minifiés pour le TTS) permettant d'ajouter des comportements métier sans modifier le code source.
+- **Contexte injecté** : Catalogue (variétés, taux de CBD/THC), préférences, historique, panier.
 
 ### Admin Voice Commands
 - **Localisation** : `src/hooks/useGeminiAdminVoice.ts`
