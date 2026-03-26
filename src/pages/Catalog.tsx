@@ -30,18 +30,18 @@ import ThemeToggle from '../components/ThemeToggle';
 import { Badge } from '../components/ui/Badge';
 
 /* ─── Collapsible sidebar section ─── */
-function FilterSection({ 
-  title, 
-  icon: Icon, 
-  children, 
-  defaultOpen = true, 
-  activeCount = 0, 
-  onClear 
-}: { 
-  title: string; 
+function FilterSection({
+  title,
+  icon: Icon,
+  children,
+  defaultOpen = true,
+  activeCount = 0,
+  onClear
+}: {
+  title: string;
   icon?: any;
-  children: React.ReactNode; 
-  defaultOpen?: boolean; 
+  children: React.ReactNode;
+  defaultOpen?: boolean;
   activeCount?: number;
   onClear?: () => void;
 }) {
@@ -69,7 +69,7 @@ function FilterSection({
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
           {activeCount > 0 && open && (
-            <button 
+            <button
               onClick={(e) => { e.stopPropagation(); onClear?.(); }}
               className="text-[9px] font-bold text-red-500 hover:underline px-1"
             >
@@ -173,7 +173,7 @@ export default function Catalog() {
       ]);
       if (cats && prods) {
         const activeCatIds = new Set(prods.map((p: any) => p.category_id).filter(Boolean));
-        
+
         const catMap = new Map((cats as Category[]).map(c => [c.id, c]));
         const keptIds = new Set<string>();
 
@@ -205,7 +205,7 @@ export default function Catalog() {
         const minP = prices.length > 0 ? Math.floor(Math.min(...prices)) : 0;
         const maxP = prices.length > 0 ? Math.ceil(Math.max(...prices)) : 100;
         setPriceBounds({ min: minP, max: maxP });
-        
+
         if (!searchParams.get('minPrice')) setPriceMin(minP);
         if (!searchParams.get('maxPrice')) setPriceMax(maxP);
       } else if (cats) {
@@ -278,8 +278,8 @@ export default function Catalog() {
       const next: Record<string, string[]> = {};
       Object.entries(prev).forEach(([label, values]) => {
         if (specsMap[label]) {
-           const validValues = values.filter(v => specsMap[label].has(v));
-           if (validValues.length > 0) next[label] = validValues;
+          const validValues = values.filter(v => specsMap[label].has(v));
+          if (validValues.length > 0) next[label] = validValues;
         }
       });
       return next;
@@ -506,9 +506,9 @@ export default function Catalog() {
       <div className="space-y-1 divide-y divide-[color:var(--color-border)]/20">
 
         {/* Departments — hierarchical accordion */}
-        <FilterSection 
-          title="Catégories" 
-          icon={LayoutGrid} 
+        <FilterSection
+          title="Catégories"
+          icon={LayoutGrid}
           activeCount={selectedCategory ? 1 : 0}
           onClear={() => setSelectedCategory(null)}
         >
@@ -557,9 +557,9 @@ export default function Catalog() {
         </FilterSection>
 
         {/* Customer ratings */}
-        <FilterSection 
-          title="Note clients" 
-          icon={Star} 
+        <FilterSection
+          title="Note clients"
+          icon={Star}
           activeCount={selectedMinRating ? 1 : 0}
           onClear={() => setSelectedMinRating(null)}
           defaultOpen={false}
@@ -575,9 +575,9 @@ export default function Catalog() {
         </FilterSection>
 
         {/* Price */}
-        <FilterSection 
-          title="Budget" 
-          icon={Euro} 
+        <FilterSection
+          title="Budget"
+          icon={Euro}
           activeCount={(priceMin > priceBounds.min || priceMax < priceBounds.max) ? 1 : 0}
           onClear={() => { setPriceMin(priceBounds.min); setPriceMax(priceBounds.max); }}
         >
@@ -621,9 +621,9 @@ export default function Catalog() {
 
         {/* Caractéristiques techniques ou pratiques */}
         {impacts.length > 0 && (
-          <FilterSection 
-            title="Effets & Bienfaits" 
-            icon={Sparkles} 
+          <FilterSection
+            title="Effets & Bienfaits"
+            icon={Sparkles}
             defaultOpen={false}
             activeCount={selectedBenefit ? 1 : 0}
             onClear={() => setSelectedBenefit(null)}
@@ -652,9 +652,9 @@ export default function Catalog() {
         )}
 
         {aromas.length > 0 && (
-          <FilterSection 
-            title="Profil Aromatique" 
-            icon={Wind} 
+          <FilterSection
+            title="Profil Aromatique"
+            icon={Wind}
             defaultOpen={false}
             activeCount={selectedAroma ? 1 : 0}
             onClear={() => setSelectedAroma(null)}
@@ -664,11 +664,10 @@ export default function Catalog() {
                 <button
                   key={aroma}
                   onClick={() => setSelectedAroma(selectedAroma === aroma ? null : aroma)}
-                  className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider transition-all border ${
-                    selectedAroma === aroma 
-                      ? 'bg-green-neon border-green-neon text-black shadow-[0_4px_12px_var(--theme-neon-transparent)]' 
+                  className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider transition-all border ${selectedAroma === aroma
+                      ? 'bg-green-neon border-green-neon text-black shadow-[0_4px_12px_var(--theme-neon-transparent)]'
                       : 'border-[color:var(--color-border)] text-[color:var(--color-text-muted)] hover:border-green-neon/50 hover:text-[color:var(--color-text)]'
-                  }`}
+                    }`}
                 >
                   {stripHtml(aroma)}
                 </button>
@@ -687,18 +686,18 @@ export default function Catalog() {
           const isMultiColumn = valsArray.length > 6 && !isConcentration && !isTerpene;
 
           return (
-            <FilterSection 
-              key={label} 
-              title={label} 
-              icon={getIconForSpec(label)} 
-              defaultOpen={isConcentration || isTerpene} 
+            <FilterSection
+              key={label}
+              title={label}
+              icon={getIconForSpec(label)}
+              defaultOpen={isConcentration || isTerpene}
               activeCount={selectedSpecs[label]?.length || 0}
               onClear={() => setSelectedSpecs(prev => { const n = { ...prev }; delete n[label]; return n; })}
             >
               <div className={`scrollbar-thin pr-1 ${isConcentration || isTerpene ? 'space-y-1' : isMultiColumn ? 'flex flex-wrap gap-1.5' : 'space-y-1'}`}>
                 {valsArray.map((val) => {
                   const isChecked = selectedSpecs[label]?.includes(val);
-                  
+
                   if (isTerpene) {
                     return (
                       <label key={val} className={`group/spec flex items-start gap-3 px-3 py-2.5 rounded-2xl cursor-pointer transition-all border ${isChecked ? 'bg-green-neon/10 border-green-neon/30 shadow-[0_4px_15px_var(--theme-neon-transparent)]' : 'bg-[color:var(--color-bg-muted)]/50 border-transparent hover:border-[color:var(--color-border)] hover:bg-[color:var(--color-bg-elevated)]/80'}`}>
@@ -764,9 +763,9 @@ export default function Catalog() {
         })}
 
         {/* Statut */}
-        <FilterSection 
-          title="Disponibilité" 
-          icon={CheckCircle2} 
+        <FilterSection
+          title="Disponibilité"
+          icon={CheckCircle2}
           defaultOpen={false}
           activeCount={[inStockOnly, featuredOnly, subscribableOnly].filter(Boolean).length}
           onClear={() => { setInStockOnly(false); setFeaturedOnly(false); setSubscribableOnly(false); }}
@@ -1057,7 +1056,7 @@ export default function Catalog() {
                     <button onClick={() => setSelectedMinRating(null)} className="hover:opacity-70"><X className="w-3 h-3" /></button>
                   </span>
                 )}
-                {Object.entries(selectedSpecs).map(([label, values]) => 
+                {Object.entries(selectedSpecs).map(([label, values]) =>
                   values.map(val => (
                     <span key={`${label}-${val}`} className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-[color:var(--color-border)] bg-[color:var(--color-card)] text-[color:var(--color-text)] text-[11px]">
                       {label} : {val}
@@ -1228,50 +1227,6 @@ export default function Catalog() {
               </>
             )}
 
-            {/* ─── PlayAdvisor IA CTA ─── */}
-            {user && (
-              <motion.div
-                initial={{ opacity: 0, y: 40 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                className="mt-20 relative rounded-[2rem] overflow-hidden"
-              >
-                <div className="absolute inset-0 bg-[color:var(--color-card)]/80 backdrop-blur-3xl border border-[color:var(--color-border)] rounded-[2rem]" />
-                <div className="absolute -top-24 right-0 w-80 h-80 bg-green-neon/5 rounded-full blur-[80px] pointer-events-none" />
-                <div className="absolute -bottom-24 left-0 w-64 h-64 bg-emerald-500/5 rounded-full blur-[60px] pointer-events-none" />
-                <div className="relative z-10 p-8 md:p-14 flex flex-col lg:flex-row items-center justify-between gap-10">
-                  <div className="space-y-5 text-center lg:text-left max-w-lg">
-                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-green-neon/10 border border-green-neon/25 text-green-neon text-[10px] font-bold uppercase tracking-[0.3em] glow-green">
-                      <Sparkles className="w-3 h-3" /> PlayAdvisor IA
-                    </div>
-                    <h3 className="text-4xl md:text-5xl font-['Inter',sans-serif] font-black leading-[0.9] tracking-tighter uppercase">
-                      TROUVEZ VOTRE PROCHAIN<br />
-                      <span className="text-green-neon glow-green">PRODUIT MALIN.</span>
-                    </h3>
-                    <p className="text-[color:var(--color-text-muted)] font-light leading-relaxed">
-                      Notre intelligence artificielle recherche parmi des millions de références pour dénicher le produit idéal, parfaitement adapté à vos besoins et à votre budget.
-                    </p>
-                  </div>
-                  <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
-                    <Button
-                      variant="primary"
-                      size="xl"
-                      asMotion
-                      onClick={() => { const btn = document.getElementById('budtender-widget-btn') as HTMLButtonElement; if (btn) btn.click(); }}
-                      className="flex-1 lg:flex-none px-8 py-4 uppercase tracking-widest text-sm shadow-[0_0_30px_var(--theme-neon,rgba(37,99,235,0.45))]"
-                    >
-                      Démarrer le Diagnostic
-                    </Button>
-                    <Link
-                      to="/contact"
-                      className="flex-1 lg:flex-none px-8 py-4 bg-[color:var(--color-card)] border border-[color:var(--color-border)] text-[color:var(--color-text)] font-bold uppercase tracking-widest rounded-2xl hover:bg-[color:var(--color-bg-elevated)] hover:border-[color:var(--color-border-strong)] transition-all text-sm text-center"
-                    >
-                      Expert en direct
-                    </Link>
-                  </div>
-                </div>
-              </motion.div>
-            )}
 
             {/* ─── Compliance footer ─── */}
             <div className="mt-16 pt-10 border-t border-[color:var(--color-border)] grid grid-cols-1 md:grid-cols-3 gap-8">
