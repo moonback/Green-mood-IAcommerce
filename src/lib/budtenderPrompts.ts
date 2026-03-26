@@ -8,31 +8,46 @@ const skillsFiles = import.meta.glob('../skills/*.md', { query: '?raw', eager: t
 const _buildSkillsContext = (mode?: 'vocal' | 'chat') => {
   const filePaths = Object.keys(skillsFiles);
   if (filePaths.length === 0) return '';
-  
+
+  // skill.md (définitions des outils) doit toujours être injecté EN PREMIER
+  // pour que les autres skills puissent y référer sans ambiguïté.
+  const sorted = [...filePaths].sort((a, b) => {
+    const fa = a.split('/').pop() || '';
+    const fb = b.split('/').pop() || '';
+    if (fa === 'skill.md') return -1;
+    if (fb === 'skill.md') return 1;
+    return fa.localeCompare(fb);
+  });
+
   let context = '## COMPÉTENCES SPÉCIALISÉES (SKILLS)\nTu possèdes les instructions et les compétences supplémentaires suivantes :\n\n';
-  
-  for (const path of filePaths) {
+
+  for (const path of sorted) {
     const fileName = path.split('/').pop() || '';
     const skillName = fileName.replace('.md', '');
-    
-    // Filtrage intelligent par canal
+
+    // Filtrage par canal
     if (mode === 'vocal' && fileName === 'chat_actions.md') continue;
     if (mode === 'chat' && fileName === 'vocal_actions.md') continue;
+    // skill.md décrit les outils vocaux — inutile et trompeur en mode chat
+    if (mode === 'chat' && fileName === 'skill.md') continue;
 
     let content = skillsFiles[path] as string;
-    
-    // Minification pour la voix (réduit la taille du prompt de ~30%)
+
+    // Minification pour la voix : supprime le markdown que le TTS lirait mot à mot
     if (mode === 'vocal') {
       content = content
-        .replace(/>\s.*?\n/g, '') // Supprime les citations/notes de bloc
-        .replace(/<!--.*?-->/gs, '') // Supprime les commentaires HTML
-        .replace(/\n\s*\n/g, '\n') // Supprime les doubles retours à la ligne
+        .replace(/\*\*(.+?)\*\*/g, '$1')   // **gras** → texte brut
+        .replace(/\*([^*\n]+?)\*/g, '$1')   // *italique* → texte brut (sans croiser les sauts de ligne)
+        .replace(/`([^`\n]+?)`/g, '$1')     // `code` → texte brut
+        .replace(/^>\s.*/gm, '')            // citations de bloc
+        .replace(/<!--[\s\S]*?-->/g, '')    // commentaires HTML
+        .replace(/\n{2,}/g, '\n')           // doubles sauts de ligne → simple
         .trim();
     }
 
     context += `### ${skillName.toUpperCase()}\n${content}\n\n`;
   }
-  
+
   return context;
 };
 
