@@ -221,9 +221,9 @@ function ProductCardV2({
                         onError={applyProductImageFallback}
                     />
                 </div>
-                
+
                 <div className="absolute inset-0 bg-gradient-to-t from-[color:var(--color-primary)]/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
-                
+
                 {isOutOfStock && (
                     <div className="absolute inset-0 bg-[color:var(--color-card)]/80 backdrop-blur-sm flex items-center justify-center z-30">
                         <span className="text-xs font-bold uppercase tracking-widest text-[color:var(--color-text-muted)] bg-[color:var(--color-card)]/90 px-3 py-1.5 rounded-full border border-[color:var(--color-border)]">
@@ -257,7 +257,7 @@ function ProductCardV2({
                 )}
                 {product.description && (
                     <p className="text-[11px] text-[color:var(--color-text-subtle)] line-clamp-2 leading-relaxed -mt-0.5">
-                        {product.description}
+                        <span dangerouslySetInnerHTML={{ __html: product.description }} />
                     </p>
                 )}
                 {(() => {

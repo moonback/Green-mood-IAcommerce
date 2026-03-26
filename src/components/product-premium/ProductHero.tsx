@@ -162,22 +162,22 @@ export default function ProductHero({ product, quantity, onQuantityChange, onAdd
             )}
 
             {/* Quick Tech Specs Bar */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-[color:var(--color-card)]/30 backdrop-blur-sm border border-[color:var(--color-border)] rounded-2xl p-4 shadow-inner">
-              {(product.productSpecs || []).filter(s => ['Culture', 'CBD', 'THC', 'Effets'].includes(s.name)).slice(0, 4).map((spec) => (
+            <div className="grid grid-cols-2 sm:grid-cols-2 gap-3 bg-[color:var(--color-card)]/30 backdrop-blur-sm border border-[color:var(--color-border)] rounded-2xl p-4 shadow-inner">
+              {(product.productSpecs || []).slice(0, 4).map((spec) => (
                 <div key={spec.name} className="flex flex-col gap-1">
                   <span className="text-[10px] font-black uppercase tracking-widest text-[color:var(--color-text-subtle)] flex items-center gap-1.5 opacity-70">
                     <span className="text-sm">{spec.icon}</span> {spec.name}
                   </span>
-                  <p className="text-xs font-black text-[color:var(--color-text)] truncate max-w-[120px]">
+                  <p className="text-xs font-black text-[color:var(--color-text)] ">
                     {spec.description?.split(':').pop()?.trim() || spec.description}
                   </p>
                 </div>
               ))}
-              {/* Fallback if none of the above are found */}
-              {((product.productSpecs || []).filter(s => ['Culture', 'CBD', 'THC', 'Effets'].includes(s.name)).length === 0) && (
+              {/* Fallback if no specs are found */}
+              {((product.productSpecs || []).length === 0) && (
                 <div className="col-span-4 flex items-center justify-center py-2">
                   <span className="text-[10px] font-black uppercase tracking-widest text-[color:var(--color-text-subtle)] flex items-center gap-2">
-                    <BookOpen className="w-3 h-3" /> Fiche produit complète disponible
+                    <BookOpen className="w-3 h-3" /> Fiche détaillée en cours de création
                   </span>
                 </div>
               )}
