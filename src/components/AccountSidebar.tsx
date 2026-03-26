@@ -51,7 +51,7 @@ export default function AccountSidebar() {
   ].filter(l => l.enabled !== false);
 
   return (
-    <aside className="hidden lg:flex flex-col w-72 shrink-0 space-y-2">
+    <aside className="hidden lg:flex flex-col w-72 shrink-0 space-y-2 sticky top-24 self-start">
       <div className="bg-[color:var(--color-card)]/80 border border-[color:var(--color-border)] shadow-sm rounded-[2.5rem] p-6 space-y-1">
         <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[color:var(--color-text-muted)] mb-6 px-4">
           Navigation Compte
