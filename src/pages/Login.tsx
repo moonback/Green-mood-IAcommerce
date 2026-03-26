@@ -4,7 +4,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Mail, Lock, User, Eye, EyeOff, Shield, ArrowRight, Gift,
-  Check, X, Sparkles, ChevronRight,
+  Check, X, Sparkles, ChevronRight, Leaf
 } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import SEO from '../components/SEO';
@@ -25,13 +25,13 @@ const GlowInput = ({
   state?: 'default' | 'success' | 'error';
 }) => {
   const ring =
-    state === 'success' ? 'border-violet-400/50 ring-2 ring-violet-500/15' :
+    state === 'success' ? 'border-emerald-400/50 ring-2 ring-emerald-500/15' :
       state === 'error' ? 'border-red-400/50 ring-2 ring-red-500/15' :
-        'border-white/10 focus-within:border-violet-400/50 focus-within:ring-2 focus-within:ring-violet-500/15';
+        'border-white/10 focus-within:border-emerald-400/50 focus-within:ring-2 focus-within:ring-emerald-500/15';
 
   return (
     <div className={`relative group rounded-2xl border bg-white/[0.04] transition-all duration-300 ${ring}`}>
-      <Icon className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/25 group-focus-within:text-violet-400 transition-colors duration-200 z-10 pointer-events-none" />
+      <Icon className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/25 group-focus-within:text-emerald-400 transition-colors duration-200 z-10 pointer-events-none" />
       <input
         id={id} type={type} value={value} onChange={onChange}
         placeholder=" " autoComplete={autoComplete}
@@ -41,7 +41,7 @@ const GlowInput = ({
       <label
         htmlFor={id}
         className="absolute left-11 top-4 text-white/30 text-sm transition-all duration-200 pointer-events-none
-          peer-focus:top-[9px] peer-focus:text-[10px] peer-focus:text-violet-400 peer-focus:font-bold peer-focus:uppercase peer-focus:tracking-wider
+          peer-focus:top-[9px] peer-focus:text-[10px] peer-focus:text-emerald-400 peer-focus:font-bold peer-focus:uppercase peer-focus:tracking-wider
           peer-[:not(:placeholder-shown)]:top-[9px] peer-[:not(:placeholder-shown)]:text-[10px] peer-[:not(:placeholder-shown)]:text-white/40 peer-[:not(:placeholder-shown)]:font-bold peer-[:not(:placeholder-shown)]:uppercase peer-[:not(:placeholder-shown)]:tracking-wider"
       >
         {label}
@@ -59,7 +59,7 @@ const AIScanLine = () => (
     initial={{ scaleX: 0, opacity: 0 }}
     animate={{ scaleX: [0, 1, 1, 0], opacity: [0, 1, 1, 0] }}
     transition={{ duration: 1.8, ease: 'easeInOut', times: [0, 0.3, 0.7, 1] }}
-    className="absolute inset-x-0 top-0 h-[2px] origin-left bg-gradient-to-r from-transparent via-violet-400 to-blue-400 rounded-full"
+    className="absolute inset-x-0 top-0 h-[2px] origin-left bg-gradient-to-r from-transparent via-emerald-400 to-cyan-400 rounded-full"
   />
 );
 
@@ -100,7 +100,7 @@ export default function Login() {
   const hasNumber = /\d/.test(password);
   const passwordScore = [hasMinPasswordLength, hasLetter, hasNumber].filter(Boolean).length;
   const strengthLabel = password.length === 0 ? null : passwordScore === 1 ? 'Faible' : passwordScore === 2 ? 'Moyen' : 'Fort';
-  const strengthColor = passwordScore === 1 ? 'bg-red-500' : passwordScore === 2 ? 'bg-yellow-400' : 'bg-violet-400';
+  const strengthColor = passwordScore === 1 ? 'bg-red-500' : passwordScore === 2 ? 'bg-amber-400' : 'bg-emerald-400';
   const passwordsMatch = confirmPassword.length > 0 && password === confirmPassword;
 
   const resetFeedback = () => { setError(''); setSuccess(''); };
@@ -147,10 +147,10 @@ export default function Login() {
     <>
       <SEO
         title={mode === 'login' ? `Connexion — ${settings.store_name}` : `Créer un compte — ${settings.store_name}`}
-        description="Connectez-vous ou créez un compte pour accéder à votre espace NeuroCart."
+        description={`Connectez-vous ou créez un compte pour accéder à votre sanctuaire bien-être ${settings.store_name}.`}
       />
 
-      <div className="min-h-screen flex flex-col lg:flex-row overflow-hidden bg-[#0a0a12] text-white">
+      <div className="min-h-screen flex flex-col lg:flex-row overflow-hidden bg-[#020306] text-white">
 
         {/* ══════════════════════════════════════
             LEFT PANEL — Immersive AI Hero
@@ -158,30 +158,30 @@ export default function Login() {
         <div className="hidden lg:flex lg:w-[52%] xl:w-[55%] relative flex-col shrink-0 overflow-hidden">
 
           {/* Deep background */}
-          <div className="absolute inset-0 bg-gradient-to-br from-[#0d0a1f] via-[#0a0a18] to-[#080d1a]" />
+          <div className="absolute inset-0 bg-gradient-to-br from-[#020504] via-[#020306] to-[#010906]" />
 
           {/* Animated gradient blobs */}
           <motion.div
             animate={{ scale: [1, 1.15, 1], opacity: [0.4, 0.6, 0.4] }}
             transition={{ duration: 12, repeat: Infinity, ease: 'easeInOut' }}
-            className="absolute -top-32 -left-32 w-[600px] h-[600px] rounded-full bg-violet-600/15 blur-[120px] pointer-events-none"
+            className="absolute -top-32 -left-32 w-[600px] h-[600px] rounded-full bg-emerald-600/15 blur-[120px] pointer-events-none"
           />
           <motion.div
             animate={{ scale: [1.1, 1, 1.1], opacity: [0.3, 0.5, 0.3] }}
             transition={{ duration: 15, repeat: Infinity, ease: 'easeInOut', delay: 3 }}
-            className="absolute -bottom-40 -right-20 w-[500px] h-[500px] rounded-full bg-blue-600/12 blur-[140px] pointer-events-none"
+            className="absolute -bottom-40 -right-20 w-[500px] h-[500px] rounded-full bg-green-600/12 blur-[140px] pointer-events-none"
           />
           <motion.div
             animate={{ y: [0, -30, 0] }}
             transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut', delay: 1.5 }}
-            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 rounded-full bg-violet-500/8 blur-[100px] pointer-events-none"
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 rounded-full bg-emerald-500/8 blur-[100px] pointer-events-none"
           />
 
           {/* Cyber grid overlay */}
           <div
-            className="absolute inset-0 pointer-events-none opacity-[0.025]"
+            className="absolute inset-0 pointer-events-none opacity-[0.02]"
             style={{
-              backgroundImage: `linear-gradient(rgba(163,108,190,0.8) 1px, transparent 1px), linear-gradient(90deg, rgba(163,108,190,0.8) 1px, transparent 1px)`,
+              backgroundImage: `linear-gradient(rgba(16,185,129,0.8) 1px, transparent 1px), linear-gradient(90deg, rgba(16,185,129,0.8) 1px, transparent 1px)`,
               backgroundSize: '48px 48px',
             }}
           />
@@ -190,17 +190,17 @@ export default function Login() {
           <motion.div
             animate={{ y: ['0%', '100%'] }}
             transition={{ duration: 9, repeat: Infinity, ease: 'linear', repeatDelay: 4 }}
-            className="absolute left-0 right-0 h-px bg-gradient-to-r from-transparent via-violet-400/30 to-transparent z-20 pointer-events-none"
+            className="absolute left-0 right-0 h-px bg-gradient-to-r from-transparent via-emerald-400/30 to-transparent z-20 pointer-events-none"
           />
 
           {/* Corner brackets */}
-          <div className="absolute top-10 left-10 w-12 h-12 border-l-2 border-t-2 border-violet-400/20 pointer-events-none" />
-          <div className="absolute top-10 right-10 w-12 h-12 border-r-2 border-t-2 border-blue-400/20 pointer-events-none" />
-          <div className="absolute bottom-10 left-10 w-12 h-12 border-l-2 border-b-2 border-violet-400/20 pointer-events-none" />
-          <div className="absolute bottom-10 right-10 w-12 h-12 border-r-2 border-b-2 border-blue-400/20 pointer-events-none" />
+          <div className="absolute top-10 left-10 w-12 h-12 border-l-2 border-t-2 border-emerald-400/20 pointer-events-none" />
+          <div className="absolute top-10 right-10 w-12 h-12 border-r-2 border-t-2 border-green-400/20 pointer-events-none" />
+          <div className="absolute bottom-10 left-10 w-12 h-12 border-l-2 border-b-2 border-emerald-400/20 pointer-events-none" />
+          <div className="absolute bottom-10 right-10 w-12 h-12 border-r-2 border-b-2 border-green-400/20 pointer-events-none" />
 
           {/* Right edge glow */}
-          <div className="absolute inset-y-0 right-0 w-px bg-gradient-to-b from-transparent via-violet-500/20 to-transparent" />
+          <div className="absolute inset-y-0 right-0 w-px bg-gradient-to-b from-transparent via-emerald-500/20 to-transparent" />
 
           {/* ── Content ── */}
           <div className="relative z-10 flex flex-col h-full p-12 xl:p-16 justify-between">
@@ -212,7 +212,7 @@ export default function Login() {
               transition={{ duration: 0.6, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
               className="flex items-center gap-3"
             >
-              <img src={logoUrl} alt={settings.store_name} className="h-15 w-auto object-contain" />
+              <img src={logoUrl} alt={settings.store_name} className="h-16 w-auto object-contain" />
             </motion.div>
 
             {/* Main headline */}
@@ -226,24 +226,24 @@ export default function Login() {
                 {/* Live indicator */}
                 <div className="flex items-center gap-2.5 mb-5">
                   <span className="relative flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-violet-400 opacity-75" />
-                    <span className="relative inline-flex h-2 w-2 rounded-full bg-violet-400 shadow-[0_0_8px_rgba(163,108,190,0.9)]" />
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                    <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.9)]" />
                   </span>
-                  <span className="text-violet-300/70 text-[11px] font-bold uppercase tracking-[0.28em]">
-                    Espace membre
+                  <span className="text-emerald-300/70 text-[11px] font-bold uppercase tracking-[0.28em]">
+                    VOTRE SANCTUAIRE
                   </span>
                 </div>
 
                 <h2 className="text-5xl xl:text-6xl font-black leading-[0.92] tracking-tighter mb-6">
-                  <span className="text-white">Votre compte,</span>
+                  <span className="text-white">Cultivez votre</span>
                   <br />
-                  <span className="bg-gradient-to-r from-violet-400 via-purple-300 to-blue-400 bg-clip-text text-transparent">
-                    tout en un endroit
+                  <span className="bg-gradient-to-r from-emerald-400 via-green-300 to-emerald-600 bg-clip-text text-transparent italic">
+                    Bien-être.
                   </span>
                 </h2>
 
                 <p className="text-white/45 text-base xl:text-lg leading-relaxed max-w-md font-medium">
-                  Suivez vos commandes, cumulez vos points de fidélité et retrouvez vos favoris — où que vous soyez.
+                  Rejoignez la communauté Green Mood. Suivez vos commandes, cumulez vos points de fidélité et retrouvez vos fleurs favorites.
                 </p>
               </motion.div>
             </div>
@@ -255,9 +255,9 @@ export default function Login() {
               transition={{ duration: 0.6, delay: 1.1 }}
               className="flex items-center gap-2"
             >
-              <Sparkles className="w-3.5 h-3.5 text-violet-400/50" />
+              <Leaf className="w-3.5 h-3.5 text-emerald-400/50" />
               <span className="text-white/25 text-[11px] font-semibold tracking-widest uppercase">
-                Votre satisfaction, notre priorité
+                Botanique & Intelligence
               </span>
             </motion.div>
           </div>
@@ -266,15 +266,15 @@ export default function Login() {
         {/* ══════════════════════════════════════
             RIGHT PANEL — Login Form
         ══════════════════════════════════════ */}
-        <div className="w-full lg:flex-1 flex items-center justify-center px-4 sm:px-6 lg:px-10 py-12 relative lg:sticky lg:top-0 lg:h-screen lg:overflow-y-auto no-scrollbar bg-[#080910]">
+        <div className="w-full lg:flex-1 flex items-center justify-center px-4 sm:px-6 lg:px-10 py-12 relative lg:sticky lg:top-0 lg:h-screen lg:overflow-y-auto no-scrollbar bg-[#020305]">
 
           {/* Subtle radial glow */}
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_60%_at_50%_30%,rgba(163,108,190,0.06),transparent)] pointer-events-none" />
-          <div className="absolute -top-20 -right-20 w-72 h-72 rounded-full bg-violet-600/8 blur-[100px] pointer-events-none" />
-          <div className="absolute -bottom-20 -left-20 w-80 h-80 rounded-full bg-blue-600/8 blur-[120px] pointer-events-none" />
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_60%_60%_at_50%_30%,rgba(16,185,129,0.06),transparent)] pointer-events-none" />
+          <div className="absolute -top-20 -right-20 w-72 h-72 rounded-full bg-emerald-600/8 blur-[100px] pointer-events-none" />
+          <div className="absolute -bottom-20 -left-20 w-80 h-80 rounded-full bg-green-600/8 blur-[120px] pointer-events-none" />
 
           {/* Mobile bg */}
-          <div className="lg:hidden absolute inset-0 bg-gradient-to-br from-violet-950/30 via-[#080910] to-blue-950/20 pointer-events-none" />
+          <div className="lg:hidden absolute inset-0 bg-gradient-to-br from-emerald-950/30 via-[#020306] to-green-950/20 pointer-events-none" />
 
           <motion.div
             initial={{ opacity: 0, y: 24 }}
@@ -318,10 +318,10 @@ export default function Login() {
             <div className="relative bg-white/[0.03] backdrop-blur-2xl border border-white/[0.08] rounded-3xl overflow-hidden shadow-[0_0_60px_rgba(163,108,190,0.07),0_4px_40px_rgba(0,0,0,0.4)]">
 
               {/* Top gradient accent line */}
-              <div className="h-px bg-gradient-to-r from-transparent via-violet-400/70 to-transparent" />
+              <div className="h-px bg-gradient-to-r from-transparent via-emerald-400/70 to-transparent" />
 
               {/* Inner glow */}
-              <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_40%_at_50%_0%,rgba(163,108,190,0.06),transparent)] pointer-events-none" />
+              <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_40%_at_50%_0%,rgba(16,185,129,0.06),transparent)] pointer-events-none" />
 
               <div className="p-6 sm:p-8 relative z-10">
 
@@ -338,7 +338,7 @@ export default function Login() {
                       {mode === m && (
                         <motion.div
                           layoutId="tab-pill"
-                          className="absolute inset-0 bg-gradient-to-r from-violet-600 to-blue-600 rounded-xl shadow-[0_0_20px_rgba(163,108,190,0.3)]"
+                          className="absolute inset-0 bg-gradient-to-r from-emerald-600 to-green-700 rounded-xl shadow-[0_0_20px_rgba(16,185,129,0.3)]"
                           transition={{ type: 'spring', bounce: 0.22, duration: 0.4 }}
                         />
                       )}
@@ -359,10 +359,10 @@ export default function Login() {
                       transition={{ duration: 0.28 }}
                       className="overflow-hidden"
                     >
-                      <div className="flex items-center gap-3 bg-violet-500/10 border border-violet-500/20 rounded-xl px-4 py-3">
-                        <Gift className="w-4 h-4 text-violet-400 shrink-0" />
+                      <div className="flex items-center gap-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl px-4 py-3">
+                        <Gift className="w-4 h-4 text-emerald-400 shrink-0" />
                         <div>
-                          <p className="text-xs font-bold text-violet-300">Invitation parrainage</p>
+                          <p className="text-xs font-bold text-emerald-300">Invitation parrainage</p>
                           <p className="text-[11px] text-white/40 mt-0.5">
                             Code <span className="font-mono font-bold text-white">{refCode}</span> — {settings.loyalty_currency_name} bonus à l'inscription
                           </p>
@@ -382,10 +382,10 @@ export default function Login() {
                       transition={{ duration: 0.24 }}
                       className="overflow-hidden"
                     >
-                      <div className="rounded-xl border border-violet-400/15 bg-violet-500/8 px-4 py-3 flex items-start gap-2">
-                        <ChevronRight className="w-3.5 h-3.5 text-violet-400 shrink-0 mt-0.5" />
+                      <div className="rounded-xl border border-emerald-400/15 bg-emerald-500/8 px-4 py-3 flex items-start gap-2">
+                        <ChevronRight className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
                         <p className="text-[11px] text-white/50 leading-relaxed">
-                          Après connexion → <span className="text-violet-300 font-semibold">{redirectLabel}</span>
+                          Après connexion → <span className="text-emerald-300 font-semibold">{redirectLabel}</span>
                         </p>
                       </div>
                     </motion.div>
@@ -464,7 +464,7 @@ export default function Login() {
                                 />
                               ))}
                             </div>
-                            <span className={`text-[10px] font-bold uppercase tracking-wider shrink-0 ${passwordScore === 1 ? 'text-red-400' : passwordScore === 2 ? 'text-yellow-400' : 'text-violet-400'}`}>
+                            <span className={`text-[10px] font-bold uppercase tracking-wider shrink-0 ${passwordScore === 1 ? 'text-red-400' : passwordScore === 2 ? 'text-amber-400' : 'text-emerald-400'}`}>
                               {strengthLabel}
                             </span>
                           </div>
@@ -476,7 +476,7 @@ export default function Login() {
                             ].map((rule) => (
                               <span
                                 key={rule.label}
-                                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold border transition-all duration-300 ${rule.ok ? 'bg-violet-500/15 border-violet-400/20 text-violet-300' : 'bg-white/[0.03] border-white/[0.08] text-white/25'}`}
+                                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold border transition-all duration-300 ${rule.ok ? 'bg-emerald-500/15 border-emerald-400/20 text-emerald-300' : 'bg-white/[0.03] border-white/[0.08] text-white/25'}`}
                               >
                                 {rule.ok ? <Check className="w-2.5 h-2.5" /> : <X className="w-2.5 h-2.5" />}
                                 {rule.label}
@@ -556,7 +556,7 @@ export default function Login() {
                             role="checkbox"
                             aria-checked={rememberMe}
                             onClick={() => setRememberMe(!rememberMe)}
-                            className={`w-4 h-4 rounded flex items-center justify-center border transition-all duration-200 shrink-0 ${rememberMe ? 'bg-gradient-to-br from-violet-500 to-blue-500 border-violet-400/60' : 'border-white/20 group-hover:border-white/40'}`}
+                            className={`w-4 h-4 rounded flex items-center justify-center border transition-all duration-200 shrink-0 ${rememberMe ? 'bg-gradient-to-br from-emerald-500 to-green-500 border-emerald-400/60' : 'border-white/20 group-hover:border-white/40'}`}
                           >
                             {rememberMe && <Check className="w-2.5 h-2.5 text-white" strokeWidth={3} />}
                           </button>
@@ -566,7 +566,7 @@ export default function Login() {
                         </label>
                         <Link
                           to="/mot-de-passe-oublie"
-                          className="text-xs text-white/25 hover:text-violet-400 transition-colors duration-200"
+                          className="text-xs text-white/25 hover:text-emerald-400 transition-colors duration-200"
                         >
                           Mot de passe oublié ?
                         </Link>
@@ -594,10 +594,10 @@ export default function Login() {
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.97 }}
                         transition={{ duration: 0.22 }}
-                        className="flex items-start gap-2.5 bg-violet-500/10 border border-violet-500/20 rounded-xl px-4 py-3"
+                        className="flex items-start gap-2.5 bg-emerald-500/10 border border-emerald-500/20 rounded-xl px-4 py-3"
                       >
-                        <Check className="w-4 h-4 text-violet-400 shrink-0 mt-0.5" />
-                        <p className="text-violet-300 text-sm">{success}</p>
+                        <Check className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                        <p className="text-emerald-300 text-sm">{success}</p>
                       </motion.div>
                     )}
                   </AnimatePresence>
@@ -611,15 +611,15 @@ export default function Login() {
                       whileTap={isLoading ? {} : { scale: 0.98 }}
                       className="relative w-full overflow-hidden rounded-2xl py-4 font-black text-[13px] uppercase tracking-wider text-white disabled:opacity-60 disabled:cursor-not-allowed group"
                       style={{
-                        background: 'linear-gradient(135deg, #7c3aed, #a36cbe, #3b82f6)',
+                        background: 'linear-gradient(135deg, #059669, #10b981, #047857)',
                         backgroundSize: '200% 200%',
-                        boxShadow: '0 0 30px rgba(163,108,190,0.25), 0 4px 20px rgba(59,130,246,0.15)',
+                        boxShadow: '0 0 30px rgba(16,185,129,0.25), 0 4px 20px rgba(4,120,87,0.15)',
                       }}
                       onMouseEnter={(e) => {
-                        (e.currentTarget as HTMLElement).style.boxShadow = '0 0 50px rgba(163,108,190,0.45), 0 4px 30px rgba(59,130,246,0.25)';
+                        (e.currentTarget as HTMLElement).style.boxShadow = '0 0 50px rgba(16,185,129,0.45), 0 4px 30px rgba(4,120,87,0.25)';
                       }}
                       onMouseLeave={(e) => {
-                        (e.currentTarget as HTMLElement).style.boxShadow = '0 0 30px rgba(163,108,190,0.25), 0 4px 20px rgba(59,130,246,0.15)';
+                        (e.currentTarget as HTMLElement).style.boxShadow = '0 0 30px rgba(16,185,129,0.25), 0 4px 20px rgba(4,120,87,0.15)';
                       }}
                     >
                       {/* Shimmer */}
@@ -647,7 +647,7 @@ export default function Login() {
               <div className="px-6 sm:px-8 pb-6 border-t border-white/[0.05] pt-4 relative z-10">
                 <p className="text-center text-white/20 text-xs leading-relaxed">
                   En créant un compte, vous acceptez nos{' '}
-                  <Link to="/mentions-legales" className="text-violet-400/60 hover:text-violet-400 transition-colors duration-200 hover:underline">
+                  <Link to="/mentions-legales" className="text-emerald-400/60 hover:text-emerald-400 transition-colors duration-200 hover:underline">
                     conditions générales
                   </Link>
                   . Vous devez avoir 18 ans ou plus.
@@ -660,12 +660,12 @@ export default function Login() {
               {[
                 { icon: Shield, label: 'SSL' },
                 { icon: Lock, label: 'RGPD' },
-                { icon: Sparkles, label: 'IA Certifiée' },
+                { icon: Leaf, label: 'IA Certifiée' },
               ].map((item, i) => (
                 <div key={item.label} className="contents">
                   {i > 0 && <span className="w-1 h-1 rounded-full bg-white/10" />}
                   <div className="flex items-center gap-1.5">
-                    <item.icon className="w-3 h-3 text-violet-400/30" />
+                    <item.icon className="w-3 h-3 text-emerald-400/30" />
                     <span className="text-[10px] uppercase tracking-widest font-semibold">{item.label}</span>
                   </div>
                 </div>
