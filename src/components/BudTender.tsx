@@ -158,7 +158,7 @@ export default function BudTender() {
     const { userName, isLoggedIn, restockCandidates, savedPrefs } = memory;
     const greeting = userName ? `Hello ${userName} !` : "Bonjour !";
 
-    let welcomeText = `${greeting} Je suis ${globalSettings.budtender_name || 'Cortex'} votre Cortex personnel. Prêt à optimiser votre setup ou à trouver le gadget de vos rêves ?`;
+    let welcomeText = `${greeting} Je suis ${globalSettings.budtender_name || 'BudTender'} votre BudTender personnel. Prêt à optimiser votre setup ou à trouver le gadget de vos rêves ?`;
 
     if (restockCandidates.length > 0) {
       welcomeText += "\n\n**Il est peut-être temps de mettre à jour votre équipement ?** 🔄";

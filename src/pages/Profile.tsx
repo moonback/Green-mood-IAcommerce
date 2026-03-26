@@ -184,7 +184,7 @@ export default function Profile() {
   };
 
   const handleResetPrefs = async () => {
-    if (window.confirm("Êtes-vous sûr de vouloir réinitialiser toutes vos préférences IA Cortex ? Toute sa mémoire sur vous sera effacée.")) {
+    if (window.confirm("Êtes-vous sûr de vouloir réinitialiser toutes vos préférences IA BudTender ? Toute sa mémoire sur vous sera effacée.")) {
       setIsSaving(true);
       try {
         await clearPrefs();
@@ -262,7 +262,7 @@ export default function Profile() {
                       ID Master #{user?.id.slice(0, 8).toUpperCase()}
                     </span>
                   </div>
-                  <p className="text-[color:var(--color-text-muted)] font-medium">Gestion experte de vos paramètres et de votre profil Cortex.</p>
+                  <p className="text-[color:var(--color-text-muted)] font-medium">Gestion experte de vos paramètres et de votre profil BudTender.</p>
                 </div>
 
                 <div className="flex items-center gap-3">
@@ -495,7 +495,7 @@ export default function Profile() {
                           <Zap className="w-6 h-6" />
                         </div>
                         <div>
-                          <h4 className="text-xs font-black uppercase tracking-[0.3em] text-[color:var(--color-text-muted)]">Profil Evolutif (Cortex)</h4>
+                          <h4 className="text-xs font-black uppercase tracking-[0.3em] text-[color:var(--color-text-muted)]">Profil Evolutif (BudTender)</h4>
                           <p className="text-[10px] text-purple-500/70 font-black uppercase mt-1">Traits identifiés automatiquement lors de vos échanges</p>
                         </div>
                       </div>
@@ -522,7 +522,7 @@ export default function Profile() {
                       ) : (
                         <div className="p-8 border border-dashed border-[color:var(--color-border)] rounded-[2.5rem] bg-[color:var(--color-card)]/30 text-center">
                           <p className="text-[10px] font-black uppercase tracking-widest text-[color:var(--color-text-muted)] italic">
-                            Cortex n'a pas encore extrait de traits spécifiques. Discutez avec lui pour enrichir votre profil.
+                            BudTender n'a pas encore extrait de traits spécifiques. Discutez avec lui pour enrichir votre profil.
                           </p>
                         </div>
                       )}
@@ -566,7 +566,7 @@ export default function Profile() {
                         className="flex items-center gap-2 px-6 py-3 rounded-2xl border border-red-500/20 text-red-500 hover:bg-red-500/10 hover:border-red-500/40 transition-all font-black uppercase tracking-widest text-[10px] disabled:opacity-50"
                       >
                         <Trash2 className="w-4 h-4" />
-                        Réinitialiser Profil Cortex
+                        Réinitialiser Profil BudTender
                       </button>
                     </div>
                   </motion.div>

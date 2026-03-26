@@ -70,7 +70,7 @@ La majorité des solutions e-commerce existantes (Shopify, WooCommerce) sont des
   - Abonnements récurrents (hebdo / bimensuel / mensuel)
 
 ### 🤖 Intelligence Artificielle de Pointe
-- **Conseiller Cortex IA 24/7** :
+- **Conseiller BudTender IA 24/7** :
   - **Chat Multimodal** : Recommandations contextuelles basées sur catalogue + préférences
   - **Interaction Vocale Native** : Gemini Live API, conversation temps réel < 500ms latence
 - **Mémoire & Personnalisation** : Préférences persistées en base, historique de conversation
@@ -89,7 +89,7 @@ Les dernières fonctionnalités ajoutées sont documentées dans [`explication-f
 - **Blog automatique via RAG** : génération de guides SEO à partir de la base de connaissances.
 - **Sitemap enrichi** : injection automatique des URLs produits et guides pour améliorer l'indexation.
 - **Import PDF pour base de connaissances** : possibilité d'importer des notices PDF pour enrichir la base de connaissances du conseiller IA.
-- **Gestion vocale des favoris** : l'IA Cortex peut désormais ajouter, retirer et lister les produits favoris du client directement par commande vocale.
+- **Gestion vocale des favoris** : l'IA BudTender peut désormais ajouter, retirer et lister les produits favoris du client directement par commande vocale.
 - **Endpoints IA sécurisés** : implémentation de la validation JWT pour les Edge Functions (`gemini-token`, `ai-chat`, `ai-embeddings`) et vérification automatique des rôles administrateurs.
 
 ### Démarrage rapide des nouveautés
@@ -112,7 +112,7 @@ npx tsx scripts/generate-sitemap.ts
 - **28 Modules de Gestion** : Stock, Commandes (liste & Kanban), CRM, Marketing, Analytique
 - **CRM Hyper-Ciblé** : Suivi des anniversaires clients pour l'automatisation de fidélisation via récompenses.
 - **Campagnes Publicitaires Intégrées** : Gestion centralisée pour planifier et diffuser des alertes ou bannières promotionnelles sur le storefront.
-- **Données Transversales** : Module dédié ("Machines & Informations") gérant la complexité technique inhérente à chaque secteur (ex: fiches de liaison complexes).
+- **Analyses & Traçabilité** : Module gérant la complexité de conformité propre au CBD (certificats d'analyses labo, suivi des taux de THC/CBD, traçabilité des lots).
 - **Dashboard DataViz** : Recharts, KPIs temps réel, top produits, revenus
 - **Modification de Masse** : Centaines de prix / stocks mis à jour simultanément
 - ⚡ **Setup Wizard** : Wizard guidé **9 étapes** pour onboarder une boutique en < 5 minutes (dont configuration Stripe)
@@ -700,7 +700,7 @@ Green-mood embarque un système d'analytics **first-party** complet, sans dépen
 - Top produits & revenus par catégorie
 - Distribution des statuts de commandes
 - Acquisition client par jour
-- Interactions Cortex IA (voix, chat, quiz, feedback)
+- Interactions BudTender IA (voix, chat, quiz, feedback)
 
 #### Nouvelles métriques (Sprint 2)
 - **Funnel de conversion** — Taux panier → checkout → achat avec % d'abandon par étape
@@ -727,7 +727,7 @@ Pas de referrer → "direct"
 
 ## 📈 Évolutivité
 
-Green-mood est conçu comme une solution **clé en main**. Que vous vendiez des machines, du textile, des services ou des produits numériques, l'architecture modulaire + les 15+ paramètres de configuration permettent une adaptation immédiate à votre secteur.
+Green-mood est conçu comme une solution **clé en main**. Que vous vendiez des fleurs, des huiles, des cosmétiques ou des accessoires, l'architecture modulaire + les paramètres de configuration permettent une adaptation immédiate à l'écosystème du CBD et du bien-être.
 
 ---
 

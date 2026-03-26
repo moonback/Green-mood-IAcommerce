@@ -139,7 +139,7 @@ export const sidebarCategories = [
     label: 'IA',
     color: '#10b981',
     items: [
-      { key: 'budtender', label: 'Cortex IA', icon: Leaf },
+      { key: 'budtender', label: 'BudTender IA', icon: Leaf },
       { key: 'recommendations', label: 'Recommandations', icon: TrendingUp },
       { key: 'marketing', label: 'Marketing IA', icon: Megaphone },
       { key: 'knowledge', label: 'Connaissances IA', icon: BookOpen },

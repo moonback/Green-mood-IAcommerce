@@ -7,4 +7,4 @@ Brand facts:
 - Lab testing and certification signals are surfaced in structured data.
 
 Quotable summary:
-Green-mood   helps customers discover lab-tested  products and receive AI-guided recommendations and favorite management via its Cortex IA assistant (text and voice).
+Green-mood   helps customers discover lab-tested  products and receive AI-guided recommendations and favorite management via its BudTender IA assistant (text and voice).

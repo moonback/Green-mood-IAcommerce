@@ -328,10 +328,10 @@ export function useBudTenderChat({
                 parameters: {
                     type: 'object',
                     properties: {
-                        new_prefs: { 
-                            type: 'object', 
+                        new_prefs: {
+                            type: 'object',
                             additionalProperties: true,
-                            description: "Un objet JSON contenant les nouveaux traits de profil identifiés." 
+                            description: "Un objet JSON contenant les nouveaux traits de profil identifiés."
                         },
                     },
                     required: ['new_prefs'],
@@ -348,7 +348,7 @@ export function useBudTenderChat({
                     tool_choice: 'auto',
                     temperature: settings.ai_temperature,
                     max_tokens: settings.ai_max_tokens,
-                    x_title: `${storeName} Cortex`,
+                    x_title: `${storeName} BudTender`,
                 },
             });
 
@@ -542,7 +542,7 @@ export function useBudTenderChat({
                         try { args = JSON.parse(toolCall.function.arguments); } catch { continue; }
                         // Fallback: if 'new_prefs' is missing but args has keys, use args directly
                         const newPrefs = args.new_prefs ?? (Object.keys(args).length > 0 ? args : {});
-                        
+
                         // Use the new updatePrefs function to securely merge via DB
                         await memory.updatePrefs(newPrefs);
 

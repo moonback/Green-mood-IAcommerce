@@ -115,7 +115,7 @@
     "ai_max_tokens": 1500,
     "ai_temperature": 0.7,
     "memory_enabled": true,
-    "welcome_message": "Bienvenue ! Je suis Cortex votre assistant virtuel. Comment puis-je vous accompagner dans votre projet aujourd'hui ?",
+    "welcome_message": "Bienvenue ! Je suis BudTender votre assistant virtuel. Comment puis-je vous accompagner dans votre projet aujourd'hui ?",
     "threshold_arcade": 60,
     "threshold_others": 45,
     "custom_chat_prompt": "",

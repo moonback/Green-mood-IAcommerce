@@ -223,13 +223,13 @@ export function useBudTenderMemory() {
                 };
 
                 if (import.meta.env.DEV) {
-                    console.log('[CortexMemory] Dynamic Supabase Upsert Payload:', payload);
+                    console.log('[BudTenderMemory] Dynamic Supabase Upsert Payload:', payload);
                 }
 
                 await supabase.from('user_ai_preferences').upsert(payload, { onConflict: 'user_id' });
             }
         } catch (err) {
-            if (import.meta.env.DEV) console.error('[CortexMemory] Error saving prefs:', err);
+            if (import.meta.env.DEV) console.error('[BudTenderMemory] Error saving prefs:', err);
         }
     };
 
@@ -252,7 +252,7 @@ export function useBudTenderMemory() {
 
             await savePrefs(merged);
         } catch (err) {
-            if (import.meta.env.DEV) console.error('[CortexMemory] Error updating prefs:', err);
+            if (import.meta.env.DEV) console.error('[BudTenderMemory] Error updating prefs:', err);
         }
     };
 
@@ -403,7 +403,7 @@ export function useBudTenderMemory() {
                 };
                 await supabase.from('user_ai_preferences').upsert(payload, { onConflict: 'user_id' });
             } catch (err) {
-                console.error('[CortexMemory] Error clearing DB prefs:', err);
+                console.error('[BudTenderMemory] Error clearing DB prefs:', err);
             }
         }
     };

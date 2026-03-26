@@ -476,7 +476,7 @@ export default function AdminBudTenderTab() {
                     {/* ── GÉNÉRAL ── */}
                     {activeTab === 'general' && (
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                            <Section icon={Zap} title="Canaux d'Activation" description="Déterminez sur quels points de contact l'IA Cortex intervient.">
+                            <Section icon={Zap} title="Canaux d'Activation" description="Déterminez sur quels points de contact l'IA BudTender intervient.">
                                 <div className="space-y-4">
                                     <div className="flex items-center justify-between p-6 bg-zinc-950/40 rounded-3xl border border-white/5 hover:border-emerald-500/20 transition-all group">
                                         <div className="flex items-center gap-4">
@@ -576,7 +576,7 @@ export default function AdminBudTenderTab() {
                                                 type="text"
                                                 value={globalSettings.budtender_name || ''}
                                                 onChange={(e) => updateSettingsInStore({ budtender_name: e.target.value })}
-                                                placeholder="Ex: Cortex, Luna..."
+                                                placeholder="Ex: BudTender, Luna..."
                                                 className={INPUT}
                                             />
                                         </div>
@@ -591,7 +591,7 @@ export default function AdminBudTenderTab() {
                                             value={settings.welcome_message}
                                             onChange={(e) => update({ welcome_message: e.target.value })}
                                             className={INPUT + ' resize-none !px-6 !py-5 leading-relaxed'}
-                                            placeholder="Bonjour ! Je suis l'IA Cortex..."
+                                            placeholder="Bonjour ! Je suis l'IA BudTender..."
                                         />
                                     </div>
                                     <div className="flex items-center gap-2 text-[10px] bg-emerald-500/5 border border-emerald-500/10 rounded-xl px-4 py-2 text-emerald-400 font-bold italic">

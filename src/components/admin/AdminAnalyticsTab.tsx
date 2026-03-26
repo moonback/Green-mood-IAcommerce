@@ -393,7 +393,7 @@ export default function AdminAnalyticsTab() {
 
   const smartInsights = useMemo(() => {
     const insights: { type: 'success' | 'warning' | 'info'; message: string; icon: any }[] = [];
-    
+
     // 1. Revenue
     if (kpis.totalRevenue > 0) {
       insights.push({ type: 'success', message: `Le CA s'élève à ${CURRENCY(kpis.totalRevenue)}. Concentrez-vous sur l'augmentation du panier moyen.`, icon: TrendingUp });
@@ -427,7 +427,7 @@ export default function AdminAnalyticsTab() {
         insights.push({ type: 'warning', message: `Les recommandations IA sont peu appréciées (${pct}% de satisfaction), surveillez les questions fréquentes pour cibler le contenu.`, icon: AlertTriangle });
       }
     }
-    
+
     return insights;
   }, [kpis.totalRevenue, cartConversionRate, topProducts, voiceStats, feedbackStats]);
 
@@ -503,11 +503,10 @@ export default function AdminAnalyticsTab() {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {smartInsights.map((insight, idx) => (
                   <div key={idx} className="bg-zinc-950/50 border border-zinc-800/50 rounded-2xl p-4 flex items-start gap-3 hover:border-emerald-500/30 transition-all">
-                    <div className={`mt-0.5 rounded-lg p-1.5 shrink-0 ${
-                      insight.type === 'success' ? 'bg-emerald-500/20 text-emerald-400' :
+                    <div className={`mt-0.5 rounded-lg p-1.5 shrink-0 ${insight.type === 'success' ? 'bg-emerald-500/20 text-emerald-400' :
                       insight.type === 'warning' ? 'bg-amber-500/20 text-amber-400' :
-                      'bg-indigo-500/20 text-indigo-400'
-                    }`}>
+                        'bg-indigo-500/20 text-indigo-400'
+                      }`}>
                       <insight.icon className="w-4 h-4" />
                     </div>
                     <p className="text-sm text-zinc-300 leading-relaxed font-medium">{insight.message}</p>
@@ -820,9 +819,9 @@ export default function AdminAnalyticsTab() {
           </div>
 
           {/* ══════════════════════════════════════════════════════════════════════
-              SECTION 7 — Cortex IA
+              SECTION 7 — BudTender IA
           ══════════════════════════════════════════════════════════════════════ */}
-          <SectionLabel icon={MessageSquare} label="Insights Cortex IA" />
+          <SectionLabel icon={MessageSquare} label="Insights BudTender IA" />
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <ChartCard title="Insight SEO/FAQ">

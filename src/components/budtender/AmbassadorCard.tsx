@@ -61,11 +61,11 @@ export default function AmbassadorCard({
                 Votre code :
               </p>
               <p className="text-lg font-black text-emerald-400 tracking-tighter">
-                Cortex10
+                BudTender10
               </p>
             </div>
             <button
-              onClick={() => onCopyPromoCode("Cortex10")}
+              onClick={() => onCopyPromoCode("BudTender10")}
               className="relative p-2 bg-emerald-500/10 hover:bg-emerald-500 text-emerald-400 hover:text-black rounded-lg transition-all"
             >
               <Copy className="w-4 h-4" />

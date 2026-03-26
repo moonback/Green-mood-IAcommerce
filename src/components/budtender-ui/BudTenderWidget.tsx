@@ -56,7 +56,7 @@ export default function BudTenderWidget({
         try { localStorage.setItem('budtender_widget_hidden', String(next)); } catch { /* noop */ }
     };
 
-    const defaultName = budtenderName || settings.budtender_name || 'Cortex';
+    const defaultName = budtenderName || settings.budtender_name || 'BudTender';
     const displayLabel = label || (isExpand ? 'Continuer' : defaultName);
     const displaySubLabel = subLabel || 'Chat + Vocal';
 
@@ -68,7 +68,7 @@ export default function BudTenderWidget({
         >
             <button
                 onClick={toggleHidden}
-                aria-label={isHidden ? 'Afficher Cortex' : 'Réduire Cortex'}
+                aria-label={isHidden ? 'Afficher BudTender' : 'Réduire BudTender'}
                 className={`flex-shrink-0 self-center w-3.5 h-11 border border-r-0 rounded-l-xl flex items-center justify-center transition-colors backdrop-blur-xl ${isLightTheme ? 'bg-white/90 border-slate-200 hover:bg-slate-50' : 'bg-zinc-950/90 border-white/[0.10] hover:bg-zinc-900'}`}
             >
                 <motion.span

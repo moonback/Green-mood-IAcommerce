@@ -16,7 +16,7 @@
 
 Contrairement aux solutions classiques (Shopify, WooCommerce) qui nécessitent des dizaines d'extensions coûteuses et ralentissent votre site, **Green-mood intègre tout nativement**. 
 
-- **AI-Native** : L'IA Cortex n'est pas un gadget ajouté, elle est au cœur de l'expérience (Vente assistée, recherche sémantique, marketing automatisé).
+- **AI-Native** : L'IA BudTender n'est pas un gadget ajouté, elle est au cœur de l'expérience (Vente assistée, recherche sémantique, marketing automatisé).
 - **Vitesse Éclair** : Chargement instantané (< 1s) pour un taux de rebond minimal.
 - **Omnicanal Réel** : Une seule plateforme pour votre site web, votre magasin physique (Caisse POS) et vos écrans publicitaires.
 - **Zéro Friction** : Expérience d'achat fluide, du premier clic au paiement sécurisé en un passage.
@@ -58,7 +58,7 @@ Ne cherchez plus de nouveaux clients, chouchoutez ceux que vous avez déjà.
 | **Dashboard Expert** | Une vue d'ensemble sur vos revenus, vos stocks et vos performances en temps réel. |
 | **SEO Automatisé** | L'IA rédige vos descriptions et balises pour vous placer en tête des résultats Google. |
 | **Gestion des Stocks** | Alertes en cas de stock faible et mises à jour massives en un clic. |
-| **Blog & Guides** | Génération automatique d'articles pour attirer du trafic naturel sur votre boutique. |
+| **Blog & Guides** | Génération automatique d'articles experts (bienfaits du CBD, guide des terpènes) pour attirer du trafic naturel. |
 | **CRM Intégré** | Suivi précis de vos clients, outils d'anniversaires et récompenses ciblées. |
 | **Campagnes Pubs** | Planifiez vos bannières et alertes promos directement depuis votre interface. |
 
@@ -188,7 +188,7 @@ Architecture modulaire — `getVoicePrompt()` compose ces fonctions privées :
 
 **`VOICE_FORMAT_RULES`** : interdit le markdown, les emojis, les puces et tout caractère qui serait lu par la synthèse vocale. Tout output doit être du français oral naturel.
 
-### Outils Cortex (20 côté client)
+### Outils BudTender (20 côté client)
 
 | Outil | Description |
 |---|---|

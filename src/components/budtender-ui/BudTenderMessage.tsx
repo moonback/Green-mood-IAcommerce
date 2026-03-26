@@ -32,7 +32,7 @@ export default function BudTenderMessage({
     type: _type,
     isTyping: _isTyping,
     children,
-    budtenderName = 'Cortex',
+    budtenderName = 'BudTender',
     onCopy,
     isCopied,
     timestamp,
@@ -130,12 +130,12 @@ export default function BudTenderMessage({
                             animate={{ opacity: 1, scale: 1, y: 0 }}
                             transition={{ duration: 0.2, ease: [0.23, 1, 0.32, 1] }}
                             className={`px-5 py-3.5 sm:px-6 sm:py-4 text-sm sm:text-base leading-relaxed relative ${isBot
-                                    ? isLightTheme
-                                        ? 'rounded-2xl rounded-bl-sm text-slate-800 font-medium border border-slate-200 shadow-[0_16px_32px_rgba(15,23,42,0.08)]'
-                                        : 'rounded-2xl rounded-bl-sm text-zinc-100 font-medium border border-white/[0.06] shadow-2xl'
-                                    : isLightTheme
-                                        ? 'rounded-2xl rounded-br-sm bg-gradient-to-br from-emerald-500 to-emerald-400 text-white font-bold shadow-[0_12px_28px_rgba(16,185,129,0.18)]'
-                                        : 'rounded-2xl rounded-br-sm bg-gradient-to-br from-emerald-500 to-emerald-400 text-black font-bold shadow-[0_8px_24px_rgba(57,255,20,0.12)]'
+                                ? isLightTheme
+                                    ? 'rounded-2xl rounded-bl-sm text-slate-800 font-medium border border-slate-200 shadow-[0_16px_32px_rgba(15,23,42,0.08)]'
+                                    : 'rounded-2xl rounded-bl-sm text-zinc-100 font-medium border border-white/[0.06] shadow-2xl'
+                                : isLightTheme
+                                    ? 'rounded-2xl rounded-br-sm bg-gradient-to-br from-emerald-500 to-emerald-400 text-white font-bold shadow-[0_12px_28px_rgba(16,185,129,0.18)]'
+                                    : 'rounded-2xl rounded-br-sm bg-gradient-to-br from-emerald-500 to-emerald-400 text-black font-bold shadow-[0_8px_24px_rgba(57,255,20,0.12)]'
                                 }`}
                             style={isBot ? {
                                 backgroundColor: isLightTheme ? 'rgba(255, 255, 255, 0.92)' : 'rgba(28, 28, 32, 0.65)',

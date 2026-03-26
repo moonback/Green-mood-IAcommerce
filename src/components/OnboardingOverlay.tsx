@@ -10,7 +10,7 @@ const SLIDES = [
   {
     Icon: Zap,
     badge: 'Bienvenue',
-    title: 'Cortex Experience',
+    title: 'BudTender Experience',
     subtitle: 'L\'innovation au bout des doigts',
     description:
       'Explorez une sélection ultra-premium d\'équipements tech et lifestyle, curés par nos algorithmes pour l\'excellence.',
@@ -27,7 +27,7 @@ const SLIDES = [
     Icon: Sparkles,
     badge: 'Intelligence',
     title: 'Conseiller Neural',
-    subtitle: 'Cortex IA à votre service',
+    subtitle: 'BudTender IA à votre service',
     description:
       'Notre moteur d\'IA analyse vos besoins en temps réel pour vous guider vers le "perfect match" technologique.',
   },
