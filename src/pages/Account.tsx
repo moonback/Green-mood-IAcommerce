@@ -31,6 +31,7 @@ import { useSettingsStore } from '../store/settingsStore';
 import { supabase } from '../lib/supabase';
 import SEO from '../components/SEO';
 import AccountSidebar from '../components/AccountSidebar';
+import { useTheme } from '../components/ThemeProvider';
 
 /* ── Tier helpers ──────────────────────────────────────────────────── */
 
@@ -46,8 +47,8 @@ interface Tier {
 
 const TIERS: Tier[] = [
   { name: 'Bronze', minPoints: 0, maxPoints: 499, icon: Award, color: 'text-amber-600', gradient: 'from-amber-900/30 to-amber-800/10', glow: 'bg-amber-500/15' },
-  { name: 'Silver', minPoints: 500, maxPoints: 1499, icon: Star, color: 'text-[color:var(--color-text-subtle)]', gradient: 'from-zinc-600/30 to-zinc-500/10', glow: 'bg-[color:var(--color-text)]/10' },
-  { name: 'Gold', minPoints: 1500, maxPoints: null, icon: Crown, color: 'text-yellow-400', gradient: 'from-yellow-500/30 to-yellow-400/10', glow: 'bg-yellow-400/15' },
+  { name: 'Silver', minPoints: 500, maxPoints: 1499, icon: Star, color: 'text-zinc-500 dark:text-zinc-400', gradient: 'from-zinc-600/30 to-zinc-500/10', glow: 'bg-zinc-500/10' },
+  { name: 'Gold', minPoints: 1500, maxPoints: null, icon: Crown, color: 'text-yellow-600 dark:text-yellow-400', gradient: 'from-yellow-500/30 to-yellow-400/10', glow: 'bg-yellow-400/15' },
 ];
 
 
@@ -55,6 +56,7 @@ const TIERS: Tier[] = [
 export default function Account() {
   const { profile, user, signOut } = useAuthStore();
   const { settings } = useSettingsStore();
+  const { resolvedTheme } = useTheme();
   const [orderCount, setOrderCount] = useState(0);
   const [copied, setCopied] = useState(false);
   const [activeTab, setActiveTab] = useState<'services' | 'activity'>('services');
@@ -262,10 +264,9 @@ export default function Account() {
             transition={{ duration: 12, repeat: Infinity, ease: "easeInOut", delay: 2 }}
             className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-[color:var(--color-primary)]/[0.05] blur-[120px] pointer-events-none"
           />
-
           <div className="absolute inset-y-0 right-0 w-px bg-gradient-to-b from-transparent via-emerald-500/20 to-transparent" />
 
-          <div className="relative p-6 sm:p-8 md:p-12 lg:p-16">
+          <div className="relative p-6 sm:p-8 md:p-12 lg:p-16 text-white">
             <div className="flex flex-col xl:flex-row items-start xl:items-center gap-8 lg:gap-12 xl:gap-16 w-full">
               {/* Left: Avatar + Name */}
               <div className="flex items-center gap-6">
@@ -306,7 +307,7 @@ export default function Account() {
                     initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.35 }}
-                    className="text-2xl md:text-3xl font-['Inter',sans-serif] font-black tracking-tight text-[color:var(--color-text)]"
+                    className="text-2xl md:text-3xl font-['Inter',sans-serif] font-black tracking-tight text-white"
                   >
                     {profile?.full_name ?? 'Membre'}
                   </motion.h1>
@@ -331,7 +332,7 @@ export default function Account() {
                   transition={{ delay: 0.4 }}
                   className="relative group/stat overflow-hidden"
                 >
-                  <div className="absolute inset-0 bg-[color:var(--color-bg)]/50 backdrop-blur-3xl rounded-3xl border border-[color:var(--color-border)] transition-colors group-hover/stat:border-green-neon/50" />
+                  <div className={`absolute inset-0 ${resolvedTheme === 'light' ? 'bg-white/80' : 'bg-[color:var(--color-bg)]/50'} backdrop-blur-3xl rounded-3xl border border-[color:var(--color-border)] transition-colors group-hover/stat:border-green-neon/50`} />
                   <div className="relative p-5 md:p-6">
                     <div className={`w-10 h-10 rounded-2xl flex items-center justify-center mb-4 ${currentTier.glow} shadow-sm group-hover/stat:scale-110 transition-transform`}>
                       <TierIcon className={`w-5 h-5 ${currentTier.color}`} />
@@ -348,7 +349,7 @@ export default function Account() {
                   transition={{ delay: 0.5 }}
                   className="relative group/stat overflow-hidden"
                 >
-                  <div className="absolute inset-0 bg-[color:var(--color-bg)]/50 backdrop-blur-3xl rounded-3xl border border-[color:var(--color-border)] transition-colors group-hover/stat:border-yellow-200" />
+                  <div className={`absolute inset-0 ${resolvedTheme === 'light' ? 'bg-white/80' : 'bg-[color:var(--color-bg)]/50'} backdrop-blur-3xl rounded-3xl border border-[color:var(--color-border)] transition-colors group-hover/stat:border-yellow-200`} />
                   <div className="relative p-5 md:p-6">
                     <div className="flex items-center justify-between mb-4">
                       <div className="w-10 h-10 rounded-2xl bg-yellow-50 flex items-center justify-center shadow-sm group-hover/stat:scale-110 transition-transform">
@@ -376,7 +377,7 @@ export default function Account() {
                   transition={{ delay: 0.6 }}
                   className="relative group/stat overflow-hidden"
                 >
-                  <div className="absolute inset-0 bg-[color:var(--color-bg)]/50 backdrop-blur-3xl rounded-3xl border border-[color:var(--color-border)] transition-colors group-hover/stat:border-green-neon/50" />
+                  <div className={`absolute inset-0 ${resolvedTheme === 'light' ? 'bg-white/80' : 'bg-[color:var(--color-bg)]/50'} backdrop-blur-3xl rounded-3xl border border-[color:var(--color-border)] transition-colors group-hover/stat:border-green-neon/50`} />
                   <div className="relative p-5 md:p-6">
                     <div className="w-10 h-10 rounded-2xl bg-blue-50 flex items-center justify-center mb-4 shadow-sm group-hover/stat:scale-110 transition-transform">
                       <ShoppingBag className="w-5 h-5 text-blue-600" />
