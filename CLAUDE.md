@@ -16,7 +16,7 @@ npm run dev:importer # Product importer Express server (server/index.ts)
 
 ## Architecture Overview
 
-**NeuroCart** is an AI-first e-commerce platform. Stack: React 19 + TypeScript 5.8 + Vite 6, Supabase (PostgreSQL + PostgREST + Edge Functions), Tailwind CSS v4, Zustand 5, Motion/React (Framer Motion v11+), Lucide React icons.
+**Green-mood** is an AI-first e-commerce platform. Stack: React 19 + TypeScript 5.8 + Vite 6, Supabase (PostgreSQL + PostgREST + Edge Functions), Tailwind CSS v4, Zustand 5, Motion/React (Framer Motion v11+), Lucide React icons.
 
 ### Routing & Entry Points
 

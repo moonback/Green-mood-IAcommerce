@@ -1,10 +1,10 @@
 <div align="center">
-<img src="public/header.png" alt="NeuroCart Banner" width="100%" />
+<img src="public/header.png" alt="Green-mood Banner" width="100%" />
 
-# 🚀 NeuroCart
+# 🚀 Green-mood
 ### L’E-commerce "AI-First" spécialisé High-Tech & Premium.
 
-**Vendez plus, plus vite, et plus intelligemment.** NeuroCart est un écosystème complet conçu pour les boutiques de haute technologie, combinant l'Intelligence Artificielle de pointe avec une expérience client ultra-premium.
+**Vendez plus, plus vite, et plus intelligemment.** Green-mood est un écosystème complet conçu pour les boutiques de haute technologie, combinant l'Intelligence Artificielle de pointe avec une expérience client ultra-premium.
 
 [Découvrir les avantages](#-les-piliers-de-votre-succès) · [Fonctionnalités](#-tout-ce-dont-vous-avez-besoin) · [Pour qui ?](#-cas-dutilisation) · [Démarrage Rapide](#-lancez-votre-boutique)
 
@@ -12,9 +12,9 @@
 
 ---
 
-## 🌟 Pourquoi choisir NeuroCart ?
+## 🌟 Pourquoi choisir Green-mood ?
 
-Contrairement aux solutions classiques (Shopify, WooCommerce) qui nécessitent des dizaines d'extensions coûteuses et ralentissent votre site, **NeuroCart intègre tout nativement**. 
+Contrairement aux solutions classiques (Shopify, WooCommerce) qui nécessitent des dizaines d'extensions coûteuses et ralentissent votre site, **Green-mood intègre tout nativement**. 
 
 - **AI-Native** : L'IA Cortex n'est pas un gadget ajouté, elle est au cœur de l'expérience (Vente assistée, recherche sémantique, marketing automatisé).
 - **Vitesse Éclair** : Chargement instantané (< 1s) pour un taux de rebond minimal.
@@ -99,9 +99,9 @@ Grâce au **Setup Wizard (Assistant de Configuration)**, vous n'avez pas besoin 
 
 ### Prêt à passer au niveau supérieur ?
 
-NeuroCart est la solution ultime pour les commerçants qui refusent le compromis entre simplicité et puissance.
+Green-mood est la solution ultime pour les commerçants qui refusent le compromis entre simplicité et puissance.
 
-**Propulsé par l'innovation • NeuroCart © 2026**
+**Propulsé par l'innovation • Green-mood © 2026**
 
 </div>
 

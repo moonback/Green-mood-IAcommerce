@@ -1,7 +1,7 @@
 <div align="center">
-<img src="public/header.png" alt="NeuroCart" />
+<img src="public/header.png" alt="Green-mood" />
 
-# 🚀 NeuroCart
+# 🚀 Green-mood
 
 **La solution e-commerce "Full Stack" & "AI-First" clé en main pour tous commerces.**
 
@@ -25,7 +25,7 @@
 
 ### Objectif du projet
 
-**NeuroCart** est une plateforme e-commerce "AI-First" complète construite avec React 19, TypeScript et Supabase. Elle intègre nativement l'intelligence artificielle à tous les niveaux : conseiller IA vocal et textuel, génération de contenu automatisée, recherche vectorielle, recommandations personnalisées et assistance administrative par commande vocale.
+**Green-mood** est une plateforme e-commerce "AI-First" complète construite avec React 19, TypeScript et Supabase. Elle intègre nativement l'intelligence artificielle à tous les niveaux : conseiller IA vocal et textuel, génération de contenu automatisée, recherche vectorielle, recommandations personnalisées et assistance administrative par commande vocale.
 
 ### Problème résolu
 
@@ -672,7 +672,7 @@ git push origin feature/ma-fonctionnalite
 
 ## 📊 Analytics & Métriques
 
-NeuroCart embarque un système d'analytics **first-party** complet, sans dépendance externe, stocké directement dans Supabase.
+Green-mood embarque un système d'analytics **first-party** complet, sans dépendance externe, stocké directement dans Supabase.
 
 ### Infrastructure de tracking
 
@@ -727,10 +727,10 @@ Pas de referrer → "direct"
 
 ## 📈 Évolutivité
 
-NeuroCart est conçu comme une solution **clé en main**. Que vous vendiez des machines, du textile, des services ou des produits numériques, l'architecture modulaire + les 15+ paramètres de configuration permettent une adaptation immédiate à votre secteur.
+Green-mood est conçu comme une solution **clé en main**. Que vous vendiez des machines, du textile, des services ou des produits numériques, l'architecture modulaire + les 15+ paramètres de configuration permettent une adaptation immédiate à votre secteur.
 
 ---
 
 <div align="center">
-  Propulsé par l'innovation de Maysson D • NeuroCart © 2026
+  Propulsé par l'innovation de Maysson D • Green-mood © 2026
 </div>

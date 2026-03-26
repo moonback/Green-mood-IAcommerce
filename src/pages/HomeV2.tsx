@@ -24,32 +24,46 @@ import Hero from '../components/home/Hero';
 // Demo conversation scenarios for the BudTender showcase
 const DEMO_CONVERSATIONS = [
   {
-    userMessage: "J'ai du mal à dormir, qu'est-ce que tu me conseilles ?",
-    thinkingText: "Analyse du besoin sommeil...",
-    aiResponse: "Écoute, pour le sommeil j'ai exactement ce qu'il te faut. Notre huile CBD 15% est riche en Myrcène, c'est le terpène idéal pour la relaxation profonde. Tu préfères en huile ou en fleur pour la tisane du soir ?",
+    mode: 'chat' as const,
+    userMessage: "Quels sont vos produits relaxants ?",
+    thinkingText: "Filtrage catalogue : détente...",
+    aiResponse: "Pour une détente absolue, je te recommande notre sélection de fleurs Indoor ou nos huiles full spectrum. Nos clients adorent la Purple Punch pour son effet immédiat. Tu veux que je t'affiche les détails ?",
     actions: [
-      { label: "Voir le produit", icon: 'eye' as const },
-      { label: "Ajouter au panier", icon: 'cart' as const },
+      { label: "Voir la sélection", icon: 'eye' as const },
+      { label: "Comparer", icon: 'compare' as const },
     ],
-    productPreview: { name: "Huile CBD 15%", category: "Huiles", price: "34,90€", tag: "Best-seller" },
+    productPreview: { name: "Purple Punch", category: "Fleurs CBD", price: "9,50€/g", tag: "Puissant" },
   },
   {
-    userMessage: "Je cherche quelque chose de fruité et relaxant",
-    thinkingText: "Recherche catalogue : fruité + relaxant...",
-    aiResponse: "Franchement, si tu aimes les arômes fruités avec un effet détente, l'Amnesia Haze est une pépite. Notes d'agrumes et de mangue, avec un effet apaisant progressif. C'est notre coup de cœur du moment.",
+    mode: 'voice' as const,
+    userMessage: "Montre-moi les huiles CBD s'il te plaît",
+    thinkingText: "Navigation : /catalogue?category=huiles",
+    aiResponse: "C'est parti ! Je mets à jour ton écran avec notre gamme d'huiles. Nos extractions au CO2 supercritique garantissent une pureté maximale. Dis-moi si une concentration précise t'intéresse.",
     actions: [
-      { label: "Voir le produit", icon: 'eye' as const },
-      { label: "Mettre en favoris", icon: 'heart' as const },
+      { label: "Filtrer concentration", icon: 'compare' as const },
+      { label: "Guide utilisation", icon: 'eye' as const },
     ],
-    productPreview: { name: "Amnesia Haze", category: "Fleurs CBD", price: "8,90€/g", tag: "Fruité" },
+    productPreview: { name: "Gamme Huiles Bio", category: "Navigation active", price: "Dès 24,90€", tag: "Spectre Complet" },
   },
   {
-    userMessage: "Ajoute-moi 2 grammes de OG Kush",
-    thinkingText: "Ajout au panier...",
-    aiResponse: "C'est ajouté, deux grammes d'OG Kush dans ton panier. Excellent choix pour la détente. Au fait, les clients qui aiment l'OG Kush adorent aussi notre résine Charas. Tu veux que je te la montre ?",
+    mode: 'voice' as const,
+    userMessage: "C'est quoi l'effet d'entourage ?",
+    thinkingText: "Recherche base de connaissances...",
+    aiResponse: "Excellente question ! C'est la synergie entre les cannabinoïdes et les terpènes qui rend le CBD plus efficace. C'est pour ça qu'on privilégie le spectre complet. Tu veux voir un produit qui utilise au mieux ce principe ?",
     actions: [
-      { label: "Voir le panier", icon: 'cart' as const },
-      { label: "Comparer produits", icon: 'compare' as const },
+      { label: "Produits recommandés", icon: 'cart' as const },
+      { label: "En savoir plus", icon: 'eye' as const },
+    ],
+    productPreview: { name: "Full Spectrum 10%", category: "Huiles", price: "29,90€", tag: "Effet Entourage" },
+  },
+  {
+    mode: 'chat' as const,
+    userMessage: "Ok, ajoute une OG Kush au panier",
+    thinkingText: "Action : add_to_cart('OG Kush')",
+    aiResponse: "Excellent choix, c'est fait ! L'OG Kush est dans ton panier. On est à 42,40€. Plus que 7,60€ pour avoir la livraison gratuite. On regarde une petite résine pour compléter ?",
+    actions: [
+      { label: "Voir mon panier", icon: 'cart' as const },
+      { label: "Finaliser commande", icon: 'eye' as const },
     ],
     productPreview: { name: "OG Kush", category: "Fleurs CBD", price: "7,50€/g", tag: "Ajouté ✓" },
   },
@@ -423,7 +437,7 @@ export default function HomeV2() {
                     <div>
                       <p className="text-xs font-black text-white uppercase tracking-wider">{settings.budtender_name || 'BudTender'}</p>
                       <p className="text-[10px] text-emerald-400 font-semibold flex items-center gap-1">
-                        <Sparkles className="w-2.5 h-2.5" /> En ligne — Mode vocal
+                        <Sparkles className="w-2.5 h-2.5" /> En ligne — Mode {currentDemo.mode === 'voice' ? 'vocal' : 'chat'}
                       </p>
                     </div>
                     <div className="ml-auto flex items-center gap-2">
@@ -447,7 +461,7 @@ export default function HomeV2() {
                         transition={{ duration: 0.3 }}
                         className="space-y-4"
                       >
-                        {/* User message (voice) */}
+                        {/* User message (chat or voice) */}
                         <motion.div
                           initial={{ opacity: 0, x: 20 }}
                           animate={{ opacity: 1, x: 0 }}
@@ -455,10 +469,19 @@ export default function HomeV2() {
                           className="flex justify-end"
                         >
                           <div className="max-w-[85%] flex items-start gap-2">
-                            <div className="bg-emerald-500/15 border border-emerald-500/20 rounded-2xl rounded-tr-md px-4 py-3">
+                            <div className={`${currentDemo.mode === 'voice' ? 'bg-emerald-500/15 border-emerald-500/20' : 'bg-blue-500/15 border-blue-500/20'} border rounded-2xl rounded-tr-md px-4 py-3 shadow-lg`}>
                               <div className="flex items-center gap-2 mb-1">
-                                <Mic className="w-3 h-3 text-emerald-400" />
-                                <span className="text-[9px] font-bold text-emerald-400 uppercase tracking-wider">Vocal</span>
+                                {currentDemo.mode === 'voice' ? (
+                                  <>
+                                    <Mic className="w-3 h-3 text-emerald-400" />
+                                    <span className="text-[9px] font-bold text-emerald-400 uppercase tracking-wider">Vocal</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <MessageSquare className="w-3 h-3 text-blue-400" />
+                                    <span className="text-[9px] font-bold text-blue-400 uppercase tracking-wider">Message</span>
+                                  </>
+                                )}
                               </div>
                               <p className="text-sm text-white/90 leading-relaxed">{currentDemo.userMessage}</p>
                             </div>
@@ -512,7 +535,32 @@ export default function HomeV2() {
                               <Leaf className="w-3.5 h-3.5 text-emerald-400" />
                             </div>
                             <div className="max-w-[88%] space-y-3">
-                              <div className="bg-white/[0.03] border border-white/5 rounded-2xl rounded-tl-md px-4 py-3">
+                              <div className="bg-white/[0.03] border border-white/5 rounded-2xl rounded-tl-md px-4 py-3 relative overflow-hidden group">
+                                <AnimatePresence>
+                                  {currentDemo.thinkingText.toLowerCase().includes('navigation') && demoStep === 'ai' && (
+                                    <motion.div
+                                      initial={{ x: -100 }}
+                                      animate={{ x: 0 }}
+                                      className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-cyan-400 to-transparent"
+                                    />
+                                  )}
+                                </AnimatePresence>
+                                
+                                <div className="flex items-center gap-2 mb-2">
+                                  {currentDemo.thinkingText.toLowerCase().includes('navigation') ? (
+                                    <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-[8px] font-black text-cyan-400 uppercase tracking-widest">
+                                      <Smartphone className="w-2.5 h-2.5" /> Navigation Active
+                                    </div>
+                                  ) : currentDemo.thinkingText.toLowerCase().includes('action') ? (
+                                    <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-[8px] font-black text-amber-400 uppercase tracking-widest">
+                                      <Zap className="w-2.5 h-2.5" /> Action Catalogue
+                                    </div>
+                                  ) : (
+                                    <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[8px] font-black text-emerald-400 uppercase tracking-widest">
+                                      <Sparkles className="w-2.5 h-2.5" /> Conseil IA
+                                    </div>
+                                  )}
+                                </div>
                                 <p className="text-sm text-zinc-200 leading-relaxed">{currentDemo.aiResponse}</p>
                               </div>
 
@@ -521,7 +569,7 @@ export default function HomeV2() {
                                 initial={{ opacity: 0, scale: 0.95 }}
                                 animate={{ opacity: 1, scale: 1 }}
                                 transition={{ delay: 0.3 }}
-                                className="bg-white/[0.04] border border-white/10 rounded-xl p-3 flex items-center gap-3"
+                                className="bg-white/[0.04] border border-white/10 rounded-xl p-3 flex items-center gap-3 shadow-inner"
                               >
                                 <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-emerald-900/40 to-zinc-900 border border-white/5 flex items-center justify-center shrink-0">
                                   <Leaf className="w-5 h-5 text-emerald-500/60" />
