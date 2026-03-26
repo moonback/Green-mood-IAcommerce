@@ -80,7 +80,7 @@ function PaymentSimulator({
 
 export default function Checkout() {
   const navigate = useNavigate();
-  const { user, profile } = useAuthStore();
+  const { user, profile, fetchProfile } = useAuthStore();
   const {
     items,
     deliveryType,
@@ -259,7 +259,7 @@ export default function Checkout() {
     // Single source of truth: Stripe webhook finalizes payment status + loyalty points.
     // Frontend only tracks analytics and UI navigation.
     if (import.meta.env.DEV) {
-      await supabase
+      const { error: updateError } = await supabase
         .from('orders')
         .update({
           payment_status: 'paid',
@@ -268,6 +268,16 @@ export default function Checkout() {
         })
         .eq('id', pendingOrderId)
         .eq('payment_status', 'pending');
+
+      if (updateError) {
+        console.error('Erreur simulation paiement:', updateError);
+        alert('Erreur lors de la simulation du paiement. Vérifiez la console.');
+        return;
+      }
+    }
+
+    if (user) {
+      await fetchProfile(user.id);
     }
 
     trackEvent('purchase', '/checkout', { order_id: pendingOrderId, total: tot });

@@ -42,7 +42,16 @@ export default function AdminOrdersTab({ orders, onRefresh, storeName, storeAddr
     const { settings } = useSettingsStore();
 
     const handleUpdateOrderStatus = async (orderId: string, status: string) => {
-        await supabase.from('orders').update({ status }).eq('id', orderId);
+        const updateData: any = { status };
+        
+        // If an admin manually sets status forward, assume it's paid or being paid
+        // to trigger loyalty points trigger (handle_loyalty_on_payment)
+        const isPaidStatus = ['paid', 'processing', 'ready', 'shipped', 'delivered'].includes(status);
+        if (isPaidStatus) {
+            updateData.payment_status = 'paid';
+        }
+
+        await supabase.from('orders').update(updateData).eq('id', orderId);
         onRefresh();
     };
 

@@ -27,8 +27,7 @@ BEGIN
 
       -- Update profile
       UPDATE public.profiles
-      SET loyalty_points = v_new_balance,
-          updated_at = now()
+      SET loyalty_points = v_new_balance
       WHERE id = NEW.user_id;
 
       -- Log transactions

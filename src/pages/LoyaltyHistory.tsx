@@ -482,8 +482,8 @@ export default function LoyaltyHistory() {
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: i * 0.05 }}
                             className={`group relative flex flex-col items-center justify-center gap-4 p-8 rounded-[2.5rem] border transition-all duration-700 ${isCredit
-                                ? 'bg-[color:var(--color-primary)]/10 border-emerald-500 shadow-sm'
-                                : 'bg-[color:var(--color-card)]/80 border-[color:var(--color-border)] hover:border-[color:var(--color-primary)]/35'
+                              ? 'bg-[color:var(--color-primary)]/10 border-emerald-500 shadow-sm'
+                              : 'bg-[color:var(--color-card)]/80 border-[color:var(--color-border)] hover:border-[color:var(--color-primary)]/35'
                               }`}
                           >
                             <div className={`w-14 h-14 rounded-2xl border flex items-center justify-center shrink-0 transition-all group-hover:scale-105 shadow-xl ${config.color.replace('bg-', 'bg-[color:var(--color-card)]/80 ').replace('emerald-500/10', 'emerald-50').replace('white/[0.04]', 'zinc-50')}`}>
@@ -577,10 +577,10 @@ export default function LoyaltyHistory() {
               )}
             </div>
 
-            {/* Footer */}\r
-            <div className="mt-12 flex items-center justify-center gap-2 text-[10px] font-mono text-[color:var(--color-text-muted)] uppercase tracking-widest">\r
-              <Shield className="w-3 h-3" />\r
-              <span>Programme fidélité {settings.store_name} — Cultivons l'excellence</span>\r
+            {/* Footer */}
+            <div className="mt-12 flex items-center justify-center gap-2 text-[10px] font-mono text-[color:var(--color-text-muted)] uppercase tracking-widest">
+              <Shield className="w-3 h-3" />
+              <span>Programme fidélité {settings.store_name} — Cultivons l'excellence</span>
             </div>
           </div>
         </div>

@@ -5,26 +5,33 @@ import { CheckCircle, Package, Truck, Clock, ArrowRight, Coins } from 'lucide-re
 import { supabase } from '../lib/supabase';
 import { Order } from '../lib/types';
 import SEO from '../components/SEO';
-
+import { useAuthStore } from '../store/authStore';
 import { useSettingsStore } from '../store/settingsStore';
 
 export default function OrderConfirmation() {
   const [searchParams] = useSearchParams();
   const orderId = searchParams.get('id');
-  const [order, setOrder] = useState<Order | null>(null);
+  const { user, fetchProfile } = useAuthStore();
   const { settings } = useSettingsStore();
+  const [order, setOrder] = useState<Order | null>(null);
 
   useEffect(() => {
     if (!orderId) return;
+    
     supabase
       .from('orders')
       .select('*, order_items(*), address:addresses(*)')
       .eq('id', orderId)
       .single()
       .then(({ data }) => {
-        if (data) setOrder(data as Order);
+        if (data) {
+          setOrder(data as Order);
+          if (user) {
+            fetchProfile(user.id);
+          }
+        }
       });
-  }, [orderId]);
+  }, [orderId, user, fetchProfile]);
 
   return (
     <>
