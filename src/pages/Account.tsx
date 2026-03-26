@@ -235,8 +235,17 @@ export default function Account() {
           transition={{ duration: 0.6, ease: 'easeOut' }}
           className="relative rounded-[3rem] overflow-hidden mb-8 shadow-sm border border-[color:var(--color-border)]"
         >
-          {/* Light Premium background */}
-          <div className="absolute inset-0 bg-[color:var(--color-card)]/80" />
+          {/* Background Image with Overlay */}
+          <div className="absolute inset-0">
+            <img
+              src="/account_hero_bg.png"
+              className="w-full h-full object-cover opacity-100 scale-105"
+              alt="Botanical background"
+            />
+            <div className="absolute inset-0 bg-gradient-to-br from-black/80 via-black/40 to-black/80" />
+            <div className="absolute inset-0 bg-[color:var(--color-primary)]/10 mix-blend-overlay" />
+          </div>
+
           <motion.div
             animate={{
               opacity: [0.3, 0.5, 0.3],
@@ -254,14 +263,7 @@ export default function Account() {
             className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-[color:var(--color-primary)]/[0.05] blur-[120px] pointer-events-none"
           />
 
-          {/* Elegant grid pattern */}
-          <div
-            className="absolute inset-0 opacity-[0.4]"
-            style={{
-              backgroundImage: `linear-gradient(to right, #f4f4f5 1px, transparent 1px), linear-gradient(to bottom, #f4f4f5 1px, transparent 1px)`,
-              backgroundSize: '40px 40px',
-            }}
-          />
+          <div className="absolute inset-y-0 right-0 w-px bg-gradient-to-b from-transparent via-emerald-500/20 to-transparent" />
 
           <div className="relative p-6 sm:p-8 md:p-12 lg:p-16">
             <div className="flex flex-col xl:flex-row items-start xl:items-center gap-8 lg:gap-12 xl:gap-16 w-full">

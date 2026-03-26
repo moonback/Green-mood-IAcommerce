@@ -177,14 +177,7 @@ export default function Login() {
             className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 rounded-full bg-emerald-500/8 blur-[100px] pointer-events-none"
           />
 
-          {/* Cyber grid overlay */}
-          <div
-            className="absolute inset-0 pointer-events-none opacity-[0.02]"
-            style={{
-              backgroundImage: `linear-gradient(rgba(16,185,129,0.8) 1px, transparent 1px), linear-gradient(90deg, rgba(16,185,129,0.8) 1px, transparent 1px)`,
-              backgroundSize: '48px 48px',
-            }}
-          />
+
 
           {/* Animated scan line */}
           <motion.div
