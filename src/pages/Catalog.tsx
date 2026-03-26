@@ -4,6 +4,8 @@ import {
   Search, SlidersHorizontal, X, Sparkles, Info, ShieldCheck,
   ArrowUpDown, ChevronLeft, ChevronRight, Microscope, Link2, Scale,
   LayoutGrid, LayoutList, ChevronDown, ChevronUp, Star,
+  Sprout, Wind, Gauge, FlaskConical, Beaker, Zap, Euro, CheckCircle2,
+  Filter, MoreHorizontal
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { generateEmbedding } from '../lib/embeddings';
@@ -25,22 +27,59 @@ import { useSettingsStore } from '../store/settingsStore';
 import { ProductGridSkeleton } from '../components/ui/Skeleton';
 import { Button } from '../components/ui/Button';
 import ThemeToggle from '../components/ThemeToggle';
+import { Badge } from '../components/ui/Badge';
 
 /* ─── Collapsible sidebar section ─── */
-function FilterSection({ title, children, defaultOpen = true }: { title: string; children: React.ReactNode; defaultOpen?: boolean }) {
+function FilterSection({ 
+  title, 
+  icon: Icon, 
+  children, 
+  defaultOpen = true, 
+  activeCount = 0, 
+  onClear 
+}: { 
+  title: string; 
+  icon?: any;
+  children: React.ReactNode; 
+  defaultOpen?: boolean; 
+  activeCount?: number;
+  onClear?: () => void;
+}) {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <div className="border-b border-[color:var(--color-border)] pb-4">
+    <div className={`py-4 ${open ? 'mb-2' : ''} border-b border-[color:var(--color-border)]/50 last:border-0`}>
       <button
         onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center justify-between py-2 text-left group"
+        className="w-full flex items-center justify-between py-1 text-left group gap-2"
       >
-        <span className="text-[11px] font-bold uppercase tracking-[0.25em] text-[color:var(--color-text-subtle)] group-hover:text-[color:var(--color-text)] transition-colors">
-          {title}
-        </span>
-        {open
-          ? <ChevronUp className="w-3.5 h-3.5 text-[color:var(--color-text-subtle)]" />
-          : <ChevronDown className="w-3.5 h-3.5 text-[color:var(--color-text-subtle)]" />}
+        <div className="flex items-center gap-2.5 overflow-hidden">
+          {Icon && (
+            <div className={`p-1.5 rounded-lg transition-colors ${open ? 'bg-green-neon/10 text-green-neon' : 'bg-[color:var(--color-bg-elevated)] text-[color:var(--color-text-subtle)] group-hover:text-[color:var(--color-text)]'}`}>
+              <Icon className="w-3.5 h-3.5" />
+            </div>
+          )}
+          <span className="text-[11px] font-black uppercase tracking-[0.2em] text-[color:var(--color-text)] group-hover:text-green-neon transition-colors truncate">
+            {title}
+          </span>
+          {activeCount > 0 && !open && (
+            <Badge variant="success" className="h-4 min-w-4 px-1 rounded-full text-[8px] font-black">
+              {activeCount}
+            </Badge>
+          )}
+        </div>
+        <div className="flex items-center gap-2 flex-shrink-0">
+          {activeCount > 0 && open && (
+            <button 
+              onClick={(e) => { e.stopPropagation(); onClear?.(); }}
+              className="text-[9px] font-bold text-red-500 hover:underline px-1"
+            >
+              Reset
+            </button>
+          )}
+          {open
+            ? <ChevronUp className="w-3.5 h-3.5 text-[color:var(--color-text-subtle)] group-hover:text-[color:var(--color-text)]" />
+            : <ChevronDown className="w-3.5 h-3.5 text-[color:var(--color-text-subtle)] group-hover:text-[color:var(--color-text)]" />}
+        </div>
       </button>
       <AnimatePresence initial={false}>
         {open && (
@@ -48,10 +87,10 @@ function FilterSection({ title, children, defaultOpen = true }: { title: string;
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.22 }}
+            transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
             className="overflow-hidden"
           >
-            <div className="pt-3 space-y-1.5">
+            <div className="pt-4 space-y-1.5 px-0.5">
               {children}
             </div>
           </motion.div>
@@ -440,192 +479,292 @@ export default function Catalog() {
   ].filter(Boolean).length;
 
   /* ─── Sidebar content (shared between desktop & mobile drawer) ─── */
-  const SidebarContent = () => (
-    <div className="space-y-4">
+  const SidebarContent = () => {
+    const getIconForSpec = (label: string) => {
+      const lower = label.toLowerCase();
+      if (lower.includes('concentration') || lower.includes('cbd') || lower.includes('thc')) return Gauge;
+      if (lower.includes('certif') || lower.includes('test')) return ShieldCheck;
+      if (lower.includes('culture') || lower.includes('pouss')) return Sprout;
+      if (lower.includes('aroma') || lower.includes('saveur') || lower.includes('goût')) return Wind;
+      if (lower.includes('effet') || lower.includes('bienfait')) return Sparkles;
+      if (lower.includes('lab') || lower.includes('analyse')) return FlaskConical;
+      return Filter;
+    };
 
-      {/* Departments — hierarchical accordion */}
-      <FilterSection title="Département">
-        <button
-          onClick={() => setSelectedCategory(null)}
-          className={`w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs transition-all ${!selectedCategory ? 'bg-green-neon/10 text-green-neon font-bold glow-green' : 'text-[color:var(--color-text-muted)] hover:bg-[color:var(--color-bg-elevated)]/80 hover:text-[color:var(--color-text)]'}`}
+    return (
+      <div className="space-y-1 divide-y divide-[color:var(--color-border)]/20">
+
+        {/* Departments — hierarchical accordion */}
+        <FilterSection 
+          title="Catégories" 
+          icon={LayoutGrid} 
+          activeCount={selectedCategory ? 1 : 0}
+          onClear={() => setSelectedCategory(null)}
         >
-          <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${!selectedCategory ? 'bg-green-neon shadow-[0_0_8px_var(--theme-neon)]' : 'bg-[color:var(--color-text-subtle)]'}`} />
-          Tous les produits
-        </button>
-        {categoryTree.map(function renderCatNode(node: CategoryNode): React.ReactNode {
-          const isSelected = selectedCategory === node.id || selectedCategory === node.slug;
-          const hasChildren = node.children.length > 0;
-          const isExpanded = expandedCatNodes.has(node.id);
-          const indent = (node.depth ?? 0) * 12;
-          return (
-            <div key={node.id}>
-              <div className="flex items-center gap-1" style={{ paddingLeft: `${indent}px` }}>
-                {hasChildren && (
-                  <button
-                    onClick={() => setExpandedCatNodes(prev => { const n = new Set(prev); n.has(node.id) ? n.delete(node.id) : n.add(node.id); return n; })}
-                    className="p-0.5 text-[color:var(--color-text-subtle)] hover:text-[color:var(--color-text)] transition-colors"
-                  >
-                    <ChevronDown className={`w-3 h-3 transition-transform ${isExpanded ? '' : '-rotate-90'}`} />
-                  </button>
-                )}
-                {!hasChildren && <span className="w-4 flex-shrink-0" />}
-                <button
-                  onClick={() => setSelectedCategory(isSelected ? null : node.id)}
-                  className={`flex-1 flex items-center gap-2 px-2 py-1.5 rounded-lg text-xs transition-all ${isSelected ? 'bg-green-neon/10 text-green-neon font-bold glow-green' : 'text-[color:var(--color-text-muted)] hover:bg-[color:var(--color-bg-elevated)]/80 hover:text-[color:var(--color-text)]'}`}
-                >
-                  <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${isSelected ? 'bg-green-neon shadow-[0_0_8px_var(--theme-neon)]' : 'bg-[color:var(--color-text-subtle)]'}`} />
-                  {node.name}
-                </button>
-              </div>
-              {hasChildren && isExpanded && node.children.map(renderCatNode)}
+          <button
+            onClick={() => setSelectedCategory(null)}
+            className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs transition-all ${!selectedCategory ? 'bg-green-neon/10 text-green-neon font-black glow-green' : 'text-[color:var(--color-text-muted)] hover:bg-[color:var(--color-bg-elevated)]/80 hover:text-[color:var(--color-text)]'}`}
+          >
+            <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${!selectedCategory ? 'bg-green-neon shadow-[0_0_8px_var(--theme-neon)]' : 'bg-[color:var(--color-border)]'}`} />
+            Tous les produits
+          </button>
+          <div className="space-y-1 mt-1">
+            {categoryTree.map(function renderCatNode(node: CategoryNode): React.ReactNode {
+              const isSelected = selectedCategory === node.id || selectedCategory === node.slug;
+              const hasChildren = node.children.length > 0;
+              const isExpanded = expandedCatNodes.has(node.id);
+              const indent = (node.depth ?? 0) * 12;
+              return (
+                <div key={node.id}>
+                  <div className="flex items-center gap-1 group/item" style={{ paddingLeft: `${indent}px` }}>
+                    {hasChildren && (
+                      <button
+                        onClick={() => setExpandedCatNodes(prev => { const n = new Set(prev); n.has(node.id) ? n.delete(node.id) : n.add(node.id); return n; })}
+                        className="p-1 text-[color:var(--color-text-subtle)] hover:text-green-neon transition-colors"
+                      >
+                        <ChevronDown className={`w-3 h-3 transition-transform duration-300 ${isExpanded ? '' : '-rotate-90'}`} />
+                      </button>
+                    )}
+                    {!hasChildren && <span className="w-5 flex-shrink-0" />}
+                    <button
+                      onClick={() => setSelectedCategory(isSelected ? null : node.id)}
+                      className={`flex-1 flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs transition-all group-hover/item:translate-x-0.5 ${isSelected ? 'bg-green-neon/10 text-green-neon font-black glow-green' : 'text-[color:var(--color-text-muted)] hover:bg-[color:var(--color-bg-elevated)]/80 hover:text-[color:var(--color-text)]'}`}
+                    >
+                      <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${isSelected ? 'bg-green-neon shadow-[0_0_8px_var(--theme-neon)]' : 'bg-[color:var(--color-border)]'}`} />
+                      {node.name}
+                    </button>
+                  </div>
+                  {hasChildren && isExpanded && (
+                    <div className="mt-1 border-l border-[color:var(--color-border)]/30 ml-2.5 pl-0.5">
+                      {node.children.map(renderCatNode)}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </FilterSection>
+
+        {/* Customer ratings */}
+        <FilterSection 
+          title="Note clients" 
+          icon={Star} 
+          activeCount={selectedMinRating ? 1 : 0}
+          onClear={() => setSelectedMinRating(null)}
+          defaultOpen={false}
+        >
+          {[4, 3, 2].map((r) => (
+            <StarRatingRow
+              key={r}
+              rating={r}
+              active={selectedMinRating === r}
+              onClick={() => setSelectedMinRating((v) => v === r ? null : r)}
+            />
+          ))}
+        </FilterSection>
+
+        {/* Price */}
+        <FilterSection 
+          title="Budget" 
+          icon={Euro} 
+          activeCount={(priceMin > priceBounds.min || priceMax < priceBounds.max) ? 1 : 0}
+          onClear={() => { setPriceMin(priceBounds.min); setPriceMax(priceBounds.max); }}
+        >
+          <div className="grid grid-cols-2 gap-2.5 mb-5 px-1">
+            <div className="relative group">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] font-black text-[color:var(--color-text-subtle)] group-focus-within:text-green-neon transition-colors">€</span>
+              <input
+                type="number"
+                value={priceMin ?? ''}
+                min={priceBounds.min}
+                max={priceMax ?? priceBounds.max}
+                onChange={(e) => setPriceMin(Number(e.target.value))}
+                className="w-full rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-bg-muted)] pl-7 pr-3 py-2.5 text-[11px] font-bold text-[color:var(--color-text)] focus:outline-none focus:ring-1 focus:ring-green-neon/30 focus:border-green-neon/50 transition-all shadow-inner"
+                placeholder="Min"
+              />
             </div>
+            <div className="relative group">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[10px] font-black text-[color:var(--color-text-subtle)] group-focus-within:text-green-neon transition-colors">€</span>
+              <input
+                type="number"
+                value={priceMax ?? ''}
+                min={priceMin ?? priceBounds.min}
+                max={priceBounds.max}
+                onChange={(e) => setPriceMax(Number(e.target.value))}
+                className="w-full rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-bg-muted)] pl-7 pr-3 py-2.5 text-[11px] font-bold text-[color:var(--color-text)] focus:outline-none focus:ring-1 focus:ring-green-neon/30 focus:border-green-neon/50 transition-all shadow-inner"
+                placeholder="Max"
+              />
+            </div>
+          </div>
+          {priceMin !== null && priceMax !== null && priceBounds.max > priceBounds.min && (
+            <div className="px-2">
+              <DualRangeSlider
+                min={priceBounds.min} max={priceBounds.max}
+                valueMin={priceMin} valueMax={priceMax}
+                onChangeMin={setPriceMin} onChangeMax={setPriceMax}
+                formatLabel={(v) => `${v}€`}
+              />
+            </div>
+          )}
+        </FilterSection>
+
+        {/* Caractéristiques techniques ou pratiques */}
+        {impacts.length > 0 && (
+          <FilterSection 
+            title="Effets & Bienfaits" 
+            icon={Sparkles} 
+            defaultOpen={false}
+            activeCount={selectedBenefit ? 1 : 0}
+            onClear={() => setSelectedBenefit(null)}
+          >
+            <div className="grid grid-cols-1 gap-1 max-h-48 overflow-y-auto scrollbar-thin pr-1">
+              {impacts.map((benefit) => (
+                <label key={benefit} className="group/benefit flex items-center gap-3 px-3 py-2 rounded-xl cursor-pointer hover:bg-[color:var(--color-bg-elevated)]/80 transition-all">
+                  <div className="relative flex items-center justify-center">
+                    <input
+                      type="checkbox"
+                      checked={selectedBenefit === benefit}
+                      onChange={() => setSelectedBenefit(selectedBenefit === benefit ? null : benefit)}
+                      className="peer sr-only"
+                    />
+                    <div className="w-4 h-4 rounded border border-[color:var(--color-border)] transition-all peer-checked:bg-green-neon peer-checked:border-green-neon peer-checked:shadow-[0_0_8px_var(--theme-neon)] flex items-center justify-center group-hover/benefit:border-green-neon/50">
+                      <div className="w-2 h-2 rounded-sm bg-black opacity-0 peer-checked:opacity-100 transition-opacity" />
+                    </div>
+                  </div>
+                  <span className={`text-[11px] transition-colors ${selectedBenefit === benefit ? 'text-[color:var(--color-text)] font-black' : 'text-[color:var(--color-text-muted)] group-hover:text-[color:var(--color-text)]'}`}>
+                    {stripHtml(benefit)}
+                  </span>
+                </label>
+              ))}
+            </div>
+          </FilterSection>
+        )}
+
+        {aromas.length > 0 && (
+          <FilterSection 
+            title="Profil Aromatique" 
+            icon={Wind} 
+            defaultOpen={false}
+            activeCount={selectedAroma ? 1 : 0}
+            onClear={() => setSelectedAroma(null)}
+          >
+            <div className="flex flex-wrap gap-1.5 max-h-48 overflow-y-auto scrollbar-thin pr-1">
+              {aromas.map((aroma) => (
+                <button
+                  key={aroma}
+                  onClick={() => setSelectedAroma(selectedAroma === aroma ? null : aroma)}
+                  className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider transition-all border ${
+                    selectedAroma === aroma 
+                      ? 'bg-green-neon border-green-neon text-black shadow-[0_4px_12px_var(--theme-neon-transparent)]' 
+                      : 'border-[color:var(--color-border)] text-[color:var(--color-text-muted)] hover:border-green-neon/50 hover:text-[color:var(--color-text)]'
+                  }`}
+                >
+                  {stripHtml(aroma)}
+                </button>
+              ))}
+            </div>
+          </FilterSection>
+        )}
+
+        {/* Dynamic Technical Specs Filters */}
+        {Object.entries(availableSpecs).filter(([label, values]) => values.size > 1 && !label.toLowerCase().includes('certification')).map(([label, values]) => {
+          const valsArray = Array.from(values).sort();
+          const isConcentration = label.toLowerCase().includes('concentration');
+          const isMultiColumn = valsArray.length > 6 && !isConcentration;
+
+          return (
+            <FilterSection 
+              key={label} 
+              title={label} 
+              icon={getIconForSpec(label)} 
+              defaultOpen={isConcentration} 
+              activeCount={selectedSpecs[label]?.length || 0}
+              onClear={() => setSelectedSpecs(prev => { const n = { ...prev }; delete n[label]; return n; })}
+            >
+              <div className={`scrollbar-thin pr-1 ${isConcentration ? 'space-y-2' : isMultiColumn ? 'grid grid-cols-2 gap-1' : 'space-y-1'}`}>
+                {valsArray.map((val) => {
+                  const isChecked = selectedSpecs[label]?.includes(val);
+                  
+                  // For concentration, try to make it look nicer if it's very long
+                  const displayVal = isConcentration ? stripHtml(val).replace(/de CBD/gi, 'CBD').replace(/de CBG/gi, 'CBG') : stripHtml(val);
+
+                  return (
+                    <label key={val} className={`group/spec flex items-center gap-3 px-3 py-2 rounded-xl cursor-pointer transition-all ${isChecked ? 'bg-green-neon/5' : 'hover:bg-[color:var(--color-bg-elevated)]/80'}`}>
+                      <div className="relative flex items-center justify-center">
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={() => {
+                            setSelectedSpecs(prev => {
+                              const current = prev[label] || [];
+                              const next = current.includes(val) ? current.filter(v => v !== val) : [...current, val];
+                              return { ...prev, [label]: next };
+                            });
+                          }}
+                          className="peer sr-only"
+                        />
+                        <div className={`w-4 h-4 rounded border border-[color:var(--color-border)] transition-all peer-checked:bg-green-neon peer-checked:border-green-neon peer-checked:shadow-[0_0_8px_var(--theme-neon)] flex items-center justify-center group-hover/spec:border-green-neon/50`}>
+                          <CheckCircle2 className={`w-2.5 h-2.5 text-black opacity-0 peer-checked:opacity-100 transition-opacity`} />
+                        </div>
+                      </div>
+                      <span className={`text-[11px] leading-snug break-words ${isChecked ? 'text-[color:var(--color-text)] font-black' : 'text-[color:var(--color-text-muted)] group-hover:text-[color:var(--color-text)]'}`}>
+                        {displayVal}
+                      </span>
+                    </label>
+                  );
+                })}
+              </div>
+            </FilterSection>
           );
         })}
-      </FilterSection>
 
-      {/* Customer ratings */}
-      <FilterSection title="Avis clients">
-        {[4, 3, 2].map((r) => (
-          <StarRatingRow
-            key={r}
-            rating={r}
-            active={selectedMinRating === r}
-            onClick={() => setSelectedMinRating((v) => v === r ? null : r)}
-          />
-        ))}
-      </FilterSection>
-
-      {/* Price */}
-      <FilterSection title="Prix">
-        <div className="grid grid-cols-2 gap-2 mb-3">
-          <div className="relative">
-            <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[10px] text-[color:var(--color-text-subtle)]">€</span>
-            <input
-              type="number"
-              value={priceMin ?? ''}
-              min={priceBounds.min}
-              max={priceMax ?? priceBounds.max}
-              onChange={(e) => setPriceMin(Number(e.target.value))}
-              className="w-full rounded-lg border border-[color:var(--color-border)] bg-[color:var(--color-bg-elevated)] pl-6 pr-2 py-1.5 text-xs text-[color:var(--color-text)] focus:outline-none focus:border-green-neon/40"
-              placeholder="Min"
-            />
-          </div>
-          <div className="relative">
-            <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[10px] text-[color:var(--color-text-subtle)]">€</span>
-            <input
-              type="number"
-              value={priceMax ?? ''}
-              min={priceMin ?? priceBounds.min}
-              max={priceBounds.max}
-              onChange={(e) => setPriceMax(Number(e.target.value))}
-              className="w-full rounded-lg border border-[color:var(--color-border)] bg-[color:var(--color-bg-elevated)] pl-6 pr-2 py-1.5 text-xs text-[color:var(--color-text)] focus:outline-none focus:border-green-neon/40"
-              placeholder="Max"
-            />
-          </div>
-        </div>
-        {priceMin !== null && priceMax !== null && priceBounds.max > priceBounds.min && (
-          <DualRangeSlider
-            min={priceBounds.min} max={priceBounds.max}
-            valueMin={priceMin} valueMax={priceMax}
-            onChangeMin={setPriceMin} onChangeMax={setPriceMax}
-            formatLabel={(v) => `${v}€`}
-          />
-        )}
-      </FilterSection>
-
-      {/* Caractéristiques techniques ou pratiques */}
-      {impacts.length > 0 && (
-        <FilterSection title="Caractéristiques clés" defaultOpen={false}>
-          <div className="max-h-36 overflow-y-auto scrollbar-thin space-y-0.5">
-            {impacts.map((benefit) => (
-              <label key={benefit} className="flex items-center gap-2.5 px-2 py-1.5 rounded-lg cursor-pointer hover:bg-[color:var(--color-bg-elevated)]/80 transition-colors">
-                <input
-                  type="checkbox"
-                  checked={selectedBenefit === benefit}
-                  onChange={() => setSelectedBenefit(selectedBenefit === benefit ? null : benefit)}
-                  className="w-3.5 h-3.5 accent-[#2563eb] rounded"
-                />
-                <span className="text-xs text-[color:var(--color-text-muted)]">{stripHtml(benefit)}</span>
-              </label>
-            ))}
-          </div>
-        </FilterSection>
-      )}
-
-      {aromas.length > 0 && (
-        <FilterSection title="Marques & Univers" defaultOpen={false}>
-          <div className="max-h-36 overflow-y-auto scrollbar-thin space-y-0.5">
-            {aromas.map((aroma) => (
-              <label key={aroma} className="flex items-center gap-2.5 px-2 py-1.5 rounded-lg cursor-pointer hover:bg-[color:var(--color-bg-elevated)]/80 transition-colors">
-                <input
-                  type="checkbox"
-                  checked={selectedAroma === aroma}
-                  onChange={() => setSelectedAroma(selectedAroma === aroma ? null : aroma)}
-                  className="w-3.5 h-3.5 accent-[#2563eb] rounded"
-                />
-                <span className="text-xs text-[color:var(--color-text-muted)]">{stripHtml(aroma)}</span>
-              </label>
-            ))}
-          </div>
-        </FilterSection>
-      )}
-
-      {/* Dynamic Technical Specs Filters */}
-      {Object.entries(availableSpecs).filter(([_, values]) => values.size > 1).slice(0, 5).map(([label, values]) => (
-        <FilterSection key={label} title={label} defaultOpen={false}>
-          <div className="max-h-36 overflow-y-auto scrollbar-thin space-y-0.5">
-            {Array.from(values).sort().map((val) => (
-              <label key={val} className="flex items-center gap-2.5 px-2 py-1.5 rounded-lg cursor-pointer hover:bg-[color:var(--color-bg-elevated)]/80 transition-colors">
-                <input
-                  type="checkbox"
-                  checked={selectedSpecs[label]?.includes(val)}
-                  onChange={() => {
-                    setSelectedSpecs(prev => {
-                      const current = prev[label] || [];
-                      const next = current.includes(val) ? current.filter(v => v !== val) : [...current, val];
-                      return { ...prev, [label]: next };
-                    });
-                  }}
-                  className="w-3.5 h-3.5 accent-[#2563eb] rounded"
-                />
-                <span className="text-xs text-[color:var(--color-text-muted)] truncate">{stripHtml(val)}</span>
-              </label>
-            ))}
-          </div>
-        </FilterSection>
-      ))}
-
-      {/* Statut */}
-      <FilterSection title="Disponibilité" defaultOpen={false}>
-        {[
-          { label: 'En stock uniquement', active: inStockOnly, toggle: () => setInStockOnly(v => !v) },
-          { label: 'Produits vedettes', active: featuredOnly, toggle: () => setFeaturedOnly(v => !v) },
-          { label: 'Disponible en abonnement', active: subscribableOnly, toggle: () => setSubscribableOnly(v => !v) },
-        ].map((item) => (
-          <label key={item.label} className="flex items-center gap-2.5 px-2 py-1.5 rounded-lg cursor-pointer hover:bg-[color:var(--color-bg-elevated)]/80 transition-colors">
-            <input
-              type="checkbox"
-              checked={item.active}
-              onChange={item.toggle}
-              className="w-3.5 h-3.5 accent-[#2563eb] rounded"
-            />
-            <span className="text-xs text-[color:var(--color-text-muted)]">{item.label}</span>
-          </label>
-        ))}
-      </FilterSection>
-
-      {activeFilterCount > 0 && (
-        <Button
-          variant="danger"
-          size="sm"
-          onClick={resetAllFilters}
-          className="w-full py-2.5 font-black uppercase tracking-widest text-[10px]"
+        {/* Statut */}
+        <FilterSection 
+          title="Disponibilité" 
+          icon={CheckCircle2} 
+          defaultOpen={false}
+          activeCount={[inStockOnly, featuredOnly, subscribableOnly].filter(Boolean).length}
+          onClear={() => { setInStockOnly(false); setFeaturedOnly(false); setSubscribableOnly(false); }}
         >
-          Réinitialiser les filtres ({activeFilterCount})
-        </Button>
-      )}
-    </div>
-  );
+          {[
+            { label: 'En stock uniquement', active: inStockOnly, toggle: () => setInStockOnly(v => !v) },
+            { label: 'Produits vedettes', active: featuredOnly, toggle: () => setFeaturedOnly(v => !v) },
+            { label: 'Disponible en abonnement', active: subscribableOnly, toggle: () => setSubscribableOnly(v => !v) },
+          ].map((item) => (
+            <label key={item.label} className="group/avail flex items-center gap-3 px-3 py-2 rounded-xl cursor-pointer hover:bg-[color:var(--color-bg-elevated)]/80 transition-all">
+              <div className="relative flex items-center justify-center">
+                <input
+                  type="checkbox"
+                  checked={item.active}
+                  onChange={item.toggle}
+                  className="peer sr-only"
+                />
+                <div className="w-4 h-4 rounded border border-[color:var(--color-border)] group-hover/avail:border-green-neon/50 transition-all peer-checked:bg-green-neon peer-checked:border-green-neon peer-checked:shadow-[0_0_8px_var(--theme-neon)] flex items-center justify-center">
+                  <div className="w-2 h-2 rounded-sm bg-black opacity-0 peer-checked:opacity-100 transition-opacity" />
+                </div>
+              </div>
+              <span className={`text-[11px] transition-colors ${item.active ? 'text-[color:var(--color-text)] font-black' : 'text-[color:var(--color-text-muted)] group-hover:text-[color:var(--color-text)]'}`}>{item.label}</span>
+            </label>
+          ))}
+        </FilterSection>
+
+        {activeFilterCount > 0 && (
+          <div className="pt-6">
+            <button
+              onClick={resetAllFilters}
+              className="w-full relative group h-12 bg-red-500/10 border border-red-500/30 text-red-500 rounded-2xl overflow-hidden active:scale-95 transition-all"
+            >
+              <div className="absolute inset-0 bg-red-500 opacity-0 group-hover:opacity-10 transition-opacity" />
+              <div className="relative flex items-center justify-center gap-2">
+                <X className="w-4 h-4" />
+                <span className="text-xs font-black uppercase tracking-[0.2em]">Réinitialiser ({activeFilterCount})</span>
+              </div>
+            </button>
+          </div>
+        )}
+      </div>
+    );
+  };
 
   const gridItems = useMemo(() => injectAdsIntoGrid(products, ads), [products, ads]);
 
@@ -745,21 +884,28 @@ export default function Catalog() {
         <div className="flex gap-6">
 
           {/* ── DESKTOP SIDEBAR ── */}
-          <aside className="hidden lg:block w-[220px] xl:w-[240px] flex-shrink-0">
+          <aside className="hidden lg:block w-[260px] xl:w-[280px] flex-shrink-0">
             <div className="sticky top-[104px]">
-              <div className="rounded-2xl border border-[color:var(--color-border)] bg-[color:var(--color-card)]/85 p-4 shadow-[var(--shadow-card)] backdrop-blur-xl">
-                <div className="flex items-center justify-between mb-4">
-                  <span className="text-xs font-bold text-[color:var(--color-text)]">Filtres</span>
+              <div className="rounded-[2.5rem] border border-[color:var(--color-border)]/50 bg-[color:var(--color-card)]/70 p-6 shadow-[var(--shadow-card)] backdrop-blur-2xl transition-all duration-500 hover:shadow-2xl hover:border-green-neon/20">
+                <div className="flex items-center justify-between mb-8">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-xl bg-green-neon/10 flex items-center justify-center">
+                      <SlidersHorizontal className="w-4 h-4 text-green-neon" />
+                    </div>
+                    <span className="text-sm font-black uppercase tracking-[0.1em] text-[color:var(--color-text)]">Configuration</span>
+                  </div>
                   {activeFilterCount > 0 && (
                     <button
                       onClick={resetAllFilters}
-                      className="text-[10px] text-[color:var(--color-primary)] hover:underline transition-all"
+                      className="text-[10px] font-bold text-[color:var(--color-text-subtle)] hover:text-red-500 transition-colors"
                     >
-                      Tout réinitialiser
+                      Reset All
                     </button>
                   )}
                 </div>
-                <SidebarContent />
+                <div className="max-h-[calc(100vh-280px)] overflow-y-auto no-scrollbar pr-1">
+                  <SidebarContent />
+                </div>
               </div>
             </div>
           </aside>
