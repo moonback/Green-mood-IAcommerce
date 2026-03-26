@@ -444,35 +444,10 @@ export function useAdminPOS({ storeName, storeAddress, storePhone }: AdminPOSTab
       }
 
       if (selectedCustomer) {
-        const tiers = settings.loyalty_tiers || [];
-        const currentTier = [...tiers].sort((a, b) => b.min_points - a.min_points).find((tier) => (selectedCustomer.loyalty_points || 0) >= tier.min_points) || tiers[0];
-        const multiplier = currentTier?.multiplier ?? 1;
-        const earned = Math.floor(computed.total * multiplier * (settings.loyalty_earn_rate || 1));
-        const redeemed = useLoyaltyPoints ? pointsToRedeem : 0;
-        const newPoints = (selectedCustomer.loyalty_points || 0) + earned - redeemed;
-
-        await supabase.from('profiles').update({ loyalty_points: newPoints }).eq('id', selectedCustomer.id);
-
-        if (earned > 0) {
-          await supabase.from('loyalty_transactions').insert({
-            user_id: selectedCustomer.id,
-            order_id: order.id,
-            type: 'earned',
-            points: earned,
-            balance_after: (selectedCustomer.loyalty_points || 0) + earned,
-            note: `[POS] Vente boutique #${order.id.slice(0, 8).toUpperCase()}`,
-          });
-        }
-        if (redeemed > 0) {
-          await supabase.from('loyalty_transactions').insert({
-            user_id: selectedCustomer.id,
-            order_id: order.id,
-            type: 'redeemed',
-            points: redeemed,
-            balance_after: newPoints,
-            note: `[POS] Utilisation points en boutique #${order.id.slice(0, 8).toUpperCase()}`,
-          });
-        }
+        // Point awarding and deductions are now handled by the database trigger
+        // when payment_status is set to 'paid'.
+        // This avoids code duplication and ensures points are awarded even 
+        // if the sale comes from elsewhere.
       }
 
       const sale: CompletedSale = {
