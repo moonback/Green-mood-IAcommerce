@@ -1,18 +1,32 @@
 /**
- * HeaderV2 — Premium dark e-commerce header.
+ * HeaderV2 — Premium dark e-commerce header with glassmorphic design.
+ *
+ * Features:
  * - Glassmorphic design with scroll-aware compact mode
- * - Full-width search bar in the centre row
+ * - Full-width search bar in the center row
  * - AI advisor shortcuts with animated indicators
  * - Polished mobile drawer with smooth spring animations
+ * - Hierarchical category navigation
  */
 
 import React, { memo, useState, useEffect, useCallback } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
-  ShoppingCart, User, ChevronDown, Menu, X, Package,
-  Settings, MessageSquare, Mic, Sparkles, LogOut, ExternalLink, Heart
+  ShoppingCart,
+  User,
+  ChevronDown,
+  Menu,
+  X,
+  Package,
+  Settings,
+  MessageSquare,
+  Mic,
+  Sparkles,
+  LogOut,
+  ExternalLink,
+  Heart,
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useBudtenderStore } from '../../store/budtenderStore';
 import { useCartStore } from '../../store/cartStore';
 import { useWishlistStore } from '../../store/wishlistStore';
@@ -23,12 +37,7 @@ import { SearchBar } from './SearchBar';
 import TopBanner from './TopBanner';
 import { useTheme } from '../ThemeProvider';
 
-
-interface HeaderV2Props {
-  setIsSearchOpen: (open: boolean) => void;
-  setIsLoyaltyModalOpen: (open: boolean) => void;
-}
-
+// Types
 interface NavCategory {
   id: string;
   label: string;
@@ -37,8 +46,13 @@ interface NavCategory {
   children: NavCategory[];
 }
 
-// ─── Cart badge ──────────────────────────────────────────────────────────────
-const CartBadge = memo(function CartBadge({ count }: { count: number }) {
+interface HeaderV2Props {
+  setIsSearchOpen: (open: boolean) => void;
+  setIsLoyaltyModalOpen: (open: boolean) => void;
+}
+
+// CartBadge component (extracted for reusability)
+const CartBadge: React.FC<{ count: number }> = memo(({ count }) => {
   if (count === 0) return null;
   return (
     <motion.span
@@ -47,25 +61,89 @@ const CartBadge = memo(function CartBadge({ count }: { count: number }) {
       animate={{ scale: 1, opacity: 1 }}
       transition={{ type: 'spring', stiffness: 400, damping: 20 }}
       className="absolute -top-1.5 -right-1.5 bg-[color:var(--color-primary)] text-[color:var(--color-primary-contrast)] text-[9px] font-black rounded-full min-w-[18px] h-[18px] flex items-center justify-center shadow-[var(--shadow-glow)] border-2 border-[color:var(--color-bg)]"
+      aria-label={`${count} ${count > 1 ? 'articles' : 'article'}`}
     >
       {count > 99 ? '99+' : count}
     </motion.span>
   );
 });
 
-// ─── HeaderV2 ───
-function HeaderV2({ setIsSearchOpen, setIsLoyaltyModalOpen }: HeaderV2Props) {
+// MobileNavItem component (extracted for reusability)
+const MobileNavItem: React.FC<{
+  item: NavCategory;
+  location: { pathname: string; search: string };
+  expandedMobileCats: Set<string>;
+  setExpandedMobileCats: React.Dispatch<React.SetStateAction<Set<string>>>;
+  setMobileMenuOpen: React.Dispatch<React.SetStateAction<boolean>>;
+}> = memo(({ item, location, expandedMobileCats, setExpandedMobileCats, setMobileMenuOpen }) => {
+  const href = item.slug ? `/catalogue?category=${item.slug}` : '/catalogue';
+  const isActive = location.pathname === '/catalogue' && new URLSearchParams(location.search).get('category') === item.slug;
+  const hasChildren = item.children.length > 0;
+  const isExpanded = expandedMobileCats.has(item.id);
+  const indent = item.depth * 12;
 
+  return (
+    <li key={item.id || item.slug} style={{ paddingLeft: `${indent}px` }}>
+      <div className="flex items-center gap-1">
+        {hasChildren && (
+          <button
+            onClick={() =>
+              setExpandedMobileCats((prev) => {
+                const next = new Set(prev);
+                isExpanded ? next.delete(item.id) : next.add(item.id);
+                return next;
+              })
+            }
+            className="p-1 text-[color:var(--color-text-subtle)] hover:text-[color:var(--color-text)] transition-colors flex-shrink-0"
+            aria-label={isExpanded ? 'Réduire' : 'Développer'}
+          >
+            <ChevronDown className={`w-3 h-3 transition-transform ${isExpanded ? '' : '-rotate-90'}`} />
+          </button>
+        )}
+        <Link
+          to={href}
+          onClick={() => setMobileMenuOpen(false)}
+          className={`flex-1 flex items-center justify-between py-2.5 px-3 text-sm rounded-xl transition-all ${isActive
+              ? 'bg-[color:var(--color-primary)]/10 text-[color:var(--color-primary)] font-bold'
+              : 'text-[color:var(--color-text-subtle)] hover:text-[color:var(--color-text)] hover:bg-[color:var(--color-bg-elevated)]'
+            }`}
+          aria-current={isActive ? 'page' : undefined}
+        >
+          {item.label}
+          {isActive && <span className="w-1.5 h-1.5 rounded-full bg-[color:var(--color-primary)]" />}
+        </Link>
+      </div>
+      {hasChildren && isExpanded && (
+        <ul className="mt-0.5 space-y-0.5 border-l border-[color:var(--color-border)] ml-4 pl-2">
+          {item.children.map((child) => (
+            <MobileNavItem
+              key={child.id}
+              item={child}
+              location={location}
+              expandedMobileCats={expandedMobileCats}
+              setExpandedMobileCats={setExpandedMobileCats}
+              setMobileMenuOpen={setMobileMenuOpen}
+            />
+          ))}
+        </ul>
+      )}
+    </li>
+  );
+});
+
+// Main HeaderV2 component
+const HeaderV2: React.FC<HeaderV2Props> = ({ setIsSearchOpen, setIsLoyaltyModalOpen }) => {
   const { resolvedTheme } = useTheme();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [bannerVisible, setBannerVisible] = useState(true);
   const [categories, setCategories] = useState<NavCategory[]>([
-    { id: '', label: 'Tout le catalogue', slug: '', depth: 0, children: [] }
+    { id: '', label: 'Tout le catalogue', slug: '', depth: 0, children: [] },
   ]);
   const [expandedMobileCats, setExpandedMobileCats] = useState<Set<string>>(new Set());
   const location = useLocation();
 
+  // Store selectors (optimized with useCallback)
   const itemCount = useCartStore(useCallback((s) => s.itemCount(), []));
   const favoritesCount = useWishlistStore(useCallback((s) => s.items.length, []));
   const openCart = useCartStore(useCallback((s) => s.openSidebar, []));
@@ -73,12 +151,12 @@ function HeaderV2({ setIsSearchOpen, setIsLoyaltyModalOpen }: HeaderV2Props) {
   const settings = useSettingsStore(useCallback((s) => s.settings, []));
   const { isVoiceOpen, toggleVoice } = useBudtenderStore();
 
-  const logoUrl = resolvedTheme === 'dark'
-    ? (settings.store_logo_dark_url || settings.store_logo_url || '/logo.png')
-    : (settings.store_logo_url || '/logo.png');
+  // Logo URL based on theme
+  const logoUrl = resolvedTheme === 'dark' ? settings.store_logo_dark_url || settings.store_logo_url || '/logo.png' : settings.store_logo_url || '/logo.png';
 
+  // Fetch categories on mount
   useEffect(() => {
-    async function fetchCategories() {
+    const fetchCategories = async () => {
       const [{ data: catData }, { data: prodData }] = await Promise.all([
         supabase
           .from('categories')
@@ -90,50 +168,58 @@ function HeaderV2({ setIsSearchOpen, setIsLoyaltyModalOpen }: HeaderV2Props) {
           .select('category_id')
           .eq('is_active', true)
           .eq('is_available', true)
-          .gt('stock_quantity', 0)
+          .gt('stock_quantity', 0),
       ]);
 
-      if (catData && prodData) {
-        const activeIds = new Set(prodData.map(p => p.category_id).filter(Boolean));
+      if (!catData || !prodData) return;
 
-        const hasProducts = (catId: string): boolean => {
-          if (activeIds.has(catId)) return true;
-          const children = catData.filter(c => c.parent_id === catId);
-          return children.some(c => hasProducts(c.id));
-        };
+      const activeIds = new Set(prodData.map((p) => p.category_id).filter(Boolean));
 
-        const filteredCats = catData.filter(c => hasProducts(c.id));
+      const hasProducts = (catId: string): boolean => {
+        if (activeIds.has(catId)) return true;
+        const children = catData.filter((c) => c.parent_id === catId);
+        return children.some((c) => hasProducts(c.id));
+      };
 
-        // Build nav tree client-side
-        const nodeMap = new Map<string, NavCategory>(
-          filteredCats.map(c => [c.id, { id: c.id, label: c.name, slug: c.slug, depth: c.depth ?? 0, children: [] }])
-        );
-        const roots: NavCategory[] = [];
-        for (const c of filteredCats) {
-          const node = nodeMap.get(c.id)!;
-          if (!c.parent_id || !nodeMap.has(c.parent_id)) {
-            roots.push(node);
-          } else {
-            nodeMap.get(c.parent_id)!.children.push(node);
-          }
+      const filteredCats = catData.filter((c) => hasProducts(c.id));
+
+      // Build nav tree
+      const nodeMap = new Map<string, NavCategory>(
+        filteredCats.map((c) => [
+          c.id,
+          { id: c.id, label: c.name, slug: c.slug, depth: c.depth ?? 0, children: [] },
+        ]),
+      );
+      const roots: NavCategory[] = [];
+
+      filteredCats.forEach((c) => {
+        const node = nodeMap.get(c.id)!;
+        if (!c.parent_id || !nodeMap.has(c.parent_id)) {
+          roots.push(node);
+        } else {
+          nodeMap.get(c.parent_id)!.children.push(node);
         }
-        setCategories([
-          { id: '', label: 'Tout le catalogue', slug: '', depth: 0, children: [] },
-          ...roots,
-          { id: 'nouveautes', label: 'Nouveautés', slug: 'nouveautes', depth: 0, children: [] },
-          { id: 'promotions', label: 'Promotions', slug: 'promotions', depth: 0, children: [] },
-        ]);
-      }
-    }
+      });
+
+      setCategories([
+        { id: '', label: 'Tout le catalogue', slug: '', depth: 0, children: [] },
+        ...roots,
+        { id: 'nouveautes', label: 'Nouveautés', slug: 'nouveautes', depth: 0, children: [] },
+        { id: 'promotions', label: 'Promotions', slug: 'promotions', depth: 0, children: [] },
+      ]);
+    };
+
     fetchCategories();
   }, []);
 
+  // Scroll effect
   useEffect(() => {
     const onScroll = () => setIsScrolled(window.scrollY > 60);
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
+  // Close mobile menu on route change
   useEffect(() => {
     setMobileMenuOpen(false);
   }, [location.pathname]);
@@ -159,29 +245,31 @@ function HeaderV2({ setIsSearchOpen, setIsLoyaltyModalOpen }: HeaderV2Props) {
       />
 
       <header className={`sticky top-0 z-[60] w-full transition-all duration-300 ${isScrolled ? 'shadow-[0_8px_32px_rgba(0,0,0,0.8)]' : ''}`}>
-
-        {/* ── Row 1: Logo + Search + Actions ── */}
+        {/* Row 1: Logo + Search + Actions */}
         <div className={`border-b border-[color:var(--color-border)] bg-[color:var(--color-card)]/90 backdrop-blur-2xl transition-all duration-300 ${isScrolled ? 'py-2' : 'py-3'}`}>
           <div className="max-w-screen-3xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center gap-3 lg:gap-5">
-
               {/* Logo */}
               <Link
                 to="/"
                 aria-label={`${settings.store_name} — Accueil`}
-                className="shrink-0 flex items-center gap-2.5 group"
+                className={`relative shrink-0 flex items-center group z-[70] transition-all duration-300 ${isScrolled ? 'h-12 w-32' : 'h-16 w-52'}`}
               >
                 <img
                   src={logoUrl}
                   alt={settings.store_name}
-                  className={`object-contain transition-all duration-300 ${isScrolled ? 'h-18' : 'h-22'}`}
+                  className={`absolute left-0 object-contain transition-all duration-500 ${isScrolled ? 'h-32 -translate-y-2' : 'h-56 -translate-y-4'
+                    } group-hover:scale-105 drop-shadow-[0_0_20px_rgba(255,255,255,0.15)]`}
                 />
               </Link>
 
               {/* Search bar */}
               <div className="flex-1 hidden md:flex min-w-0">
                 <SearchBar
-                  categories={categories.slice(1).filter(n => n.slug && n.slug !== 'nouveautes' && n.slug !== 'promotions').map((n) => ({ slug: n.slug, name: n.label }))}
+                  categories={categories
+                    .slice(1)
+                    .filter((n) => n.slug && n.slug !== 'nouveautes' && n.slug !== 'promotions')
+                    .map((n) => ({ slug: n.slug, name: n.label }))}
                   placeholder={`Rechercher sur ${settings.store_name || 'NeuroCart'}…`}
                 />
               </div>
@@ -195,41 +283,55 @@ function HeaderV2({ setIsSearchOpen, setIsLoyaltyModalOpen }: HeaderV2Props) {
                       <Link
                         to="/assistant"
                         className={`relative flex flex-col items-center px-2.5 py-1.5 rounded-xl transition-all group overflow-hidden ${location.pathname === '/assistant'
-                          ? 'bg-[color:var(--color-primary)]/15 shadow-[var(--shadow-glow)]'
-                          : 'hover:bg-[color:var(--color-bg-elevated)]'
+                            ? 'bg-[color:var(--color-primary)]/15 shadow-[var(--shadow-glow)]'
+                            : 'hover:bg-[color:var(--color-bg-elevated)]'
                           }`}
                         aria-label="Conseiller Chat IA"
                       >
                         {location.pathname === '/assistant' && (
                           <span className="absolute inset-0 rounded-xl border border-[color:var(--color-primary)]/30" />
                         )}
-                        <MessageSquare className={`w-4 h-4 transition-all duration-300 ${location.pathname === '/assistant' ? 'text-[color:var(--color-primary)] scale-110' : 'text-[color:var(--color-text-subtle)] group-hover:text-[color:var(--color-primary)] group-hover:scale-110'
-                          }`} />
-                        <span className={`text-[10px] font-bold uppercase tracking-tight mt-0.5 leading-none ${location.pathname === '/assistant' ? 'text-[color:var(--color-primary)]' : 'text-[color:var(--color-text-subtle)] group-hover:text-[color:var(--color-text)]'
-                          }`}>Chat IA</span>
+                        <MessageSquare
+                          className={`w-4 h-4 transition-all duration-300 ${location.pathname === '/assistant'
+                              ? 'text-[color:var(--color-primary)] scale-110'
+                              : 'text-[color:var(--color-text-subtle)] group-hover:text-[color:var(--color-primary)] group-hover:scale-110'
+                            }`}
+                        />
+                        <span
+                          className={`text-[10px] font-bold uppercase tracking-tight mt-0.5 leading-none ${location.pathname === '/assistant'
+                              ? 'text-[color:var(--color-primary)]'
+                              : 'text-[color:var(--color-text-subtle)] group-hover:text-[color:var(--color-text)]'
+                            }`}
+                        >
+                          Chat IA
+                        </span>
                       </Link>
                     )}
                     {settings.budtender_voice_enabled !== false && (
                       <button
                         onClick={toggleVoice}
                         className={`relative flex flex-col items-center px-2.5 py-1.5 rounded-xl transition-all group overflow-hidden ${isVoiceOpen
-                          ? 'bg-[color:var(--color-secondary)]/10 shadow-[0_0_20px_rgba(56,189,248,0.12)]'
-                          : 'hover:bg-[color:var(--color-bg-elevated)]'
+                            ? 'bg-[color:var(--color-secondary)]/10 shadow-[0_0_20px_rgba(56,189,248,0.12)]'
+                            : 'hover:bg-[color:var(--color-bg-elevated)]'
                           }`}
                         aria-label="Conseiller Vocal IA"
                       >
                         {isVoiceOpen && <span className="absolute inset-0 rounded-xl border border-[color:var(--color-secondary)]/30" />}
-                        <Mic className={`w-4 h-4 transition-all duration-300 ${isVoiceOpen
-                          ? 'text-[color:var(--color-secondary)] scale-110'
-                          : 'text-[color:var(--color-text-subtle)] group-hover:text-[color:var(--color-secondary)] group-hover:scale-110'
-                          }`} />
-                        <span className={`text-[10px] font-bold uppercase tracking-tight mt-0.5 leading-none ${isVoiceOpen
-                          ? 'text-[color:var(--color-secondary)]'
-                          : 'text-[color:var(--color-text-subtle)] group-hover:text-[color:var(--color-text-muted)]'
-                          }`}>Voice</span>
-                        {isVoiceOpen && (
-                          <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-[color:var(--color-secondary)] animate-pulse" />
-                        )}
+                        <Mic
+                          className={`w-4 h-4 transition-all duration-300 ${isVoiceOpen
+                              ? 'text-[color:var(--color-secondary)] scale-110'
+                              : 'text-[color:var(--color-text-subtle)] group-hover:text-[color:var(--color-secondary)] group-hover:scale-110'
+                            }`}
+                        />
+                        <span
+                          className={`text-[10px] font-bold uppercase tracking-tight mt-0.5 leading-none ${isVoiceOpen
+                              ? 'text-[color:var(--color-secondary)]'
+                              : 'text-[color:var(--color-text-subtle)] group-hover:text-[color:var(--color-text-muted)]'
+                            }`}
+                        >
+                          Voice
+                        </span>
+                        {isVoiceOpen && <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-[color:var(--color-secondary)] animate-pulse" />}
                       </button>
                     )}
                   </div>
@@ -242,7 +344,9 @@ function HeaderV2({ setIsSearchOpen, setIsLoyaltyModalOpen }: HeaderV2Props) {
                     className="hidden lg:flex flex-col items-start px-3 py-1.5 rounded-xl hover:bg-[color:var(--color-bg-elevated)] transition-colors group border border-transparent hover:border-[color:var(--color-border)]"
                     aria-label="Administration"
                   >
-                    <span className="text-[10px] text-[color:var(--color-primary)] font-bold uppercase tracking-widest leading-tight">Admin</span>
+                    <span className="text-[10px] text-[color:var(--color-primary)] font-bold uppercase tracking-widest leading-tight">
+                      Admin
+                    </span>
                     <div className="flex items-center gap-1 text-[color:var(--color-text)] group-hover:text-[color:var(--color-primary)] transition-colors leading-tight">
                       <span className="text-[11px] font-bold">Dashboard</span>
                       <Settings className="w-3 h-3" />
@@ -257,14 +361,15 @@ function HeaderV2({ setIsSearchOpen, setIsLoyaltyModalOpen }: HeaderV2Props) {
                     className="hidden sm:flex items-center gap-2.5 px-3 py-1.5 rounded-xl hover:bg-[color:var(--color-bg-elevated)] transition-all group border border-transparent hover:border-[color:var(--color-border)]"
                     aria-label="Mon compte"
                   >
-                    {/* User avatar with initials */}
                     <div className="w-7 h-7 rounded-full bg-[color:var(--color-primary)]/15 border border-[color:var(--color-primary)]/30 flex items-center justify-center flex-shrink-0 group-hover:bg-[color:var(--color-primary)]/25 transition-colors">
                       <span className="text-[11px] font-black text-[color:var(--color-primary)] leading-none">
                         {(profile?.full_name?.[0] || user.email?.[0] || 'U').toUpperCase()}
                       </span>
                     </div>
                     <div className="hidden lg:flex flex-col items-start">
-                      <span className="text-[10px] text-[color:var(--color-text-subtle)] font-medium leading-tight">Bonjour{firstName ? `, ${firstName}` : ''}</span>
+                      <span className="text-[10px] text-[color:var(--color-text-subtle)] font-medium leading-tight">
+                        Bonjour{firstName ? `, ${firstName}` : ''}
+                      </span>
                       <span className="text-[11px] font-bold text-[color:var(--color-text)] group-hover:text-[color:var(--color-primary)] transition-colors flex items-center gap-0.5 leading-tight">
                         Mon Compte <ChevronDown className="w-2.5 h-2.5" />
                       </span>
@@ -282,19 +387,6 @@ function HeaderV2({ setIsSearchOpen, setIsLoyaltyModalOpen }: HeaderV2Props) {
                     </div>
                   </Link>
                 )}
-
-                {/* Orders */}
-                {/* <Link
-                  to={user ? '/compte/commandes' : '/connexion'}
-                  className="hidden xl:flex flex-col items-start px-3 py-1.5 rounded-xl hover:bg-white/[0.05] transition-colors group border border-transparent hover:border-white/[0.08]"
-                  aria-label="Mes commandes"
-                >
-                  <span className="text-[8px] text-slate-500 font-medium">Retours</span>
-                  <div className="flex items-center gap-1 text-slate-200 group-hover:text-emerald-400 transition-colors">
-                    <span className="text-[11px] font-bold">& Commandes</span>
-                    <Package className="w-2.5 h-2.5" />
-                  </div>
-                </Link> */}
 
                 {/* Favorites */}
                 <Link
@@ -341,11 +433,23 @@ function HeaderV2({ setIsSearchOpen, setIsLoyaltyModalOpen }: HeaderV2Props) {
                 >
                   <AnimatePresence mode="wait" initial={false}>
                     {mobileMenuOpen ? (
-                      <motion.span key="close" initial={{ rotate: -90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: 90, opacity: 0 }} transition={{ duration: 0.15 }}>
+                      <motion.span
+                        key="close"
+                        initial={{ rotate: -90, opacity: 0 }}
+                        animate={{ rotate: 0, opacity: 1 }}
+                        exit={{ rotate: 90, opacity: 0 }}
+                        transition={{ duration: 0.15 }}
+                      >
                         <X className="w-5 h-5" />
                       </motion.span>
                     ) : (
-                      <motion.span key="menu" initial={{ rotate: 90, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }} exit={{ rotate: -90, opacity: 0 }} transition={{ duration: 0.15 }}>
+                      <motion.span
+                        key="menu"
+                        initial={{ rotate: 90, opacity: 0 }}
+                        animate={{ rotate: 0, opacity: 1 }}
+                        exit={{ rotate: -90, opacity: 0 }}
+                        transition={{ duration: 0.15 }}
+                      >
                         <Menu className="w-5 h-5" />
                       </motion.span>
                     )}
@@ -361,24 +465,19 @@ function HeaderV2({ setIsSearchOpen, setIsLoyaltyModalOpen }: HeaderV2Props) {
           </div>
         </div>
 
-        {/* ── Row 2: Category nav (desktop) ── */}
+        {/* Row 2: Category nav (desktop) */}
         {location.pathname !== '/catalogue' && (
-          <nav
-            aria-label="Catégories"
-            className="hidden lg:block border-b border-[color:var(--color-border)] bg-[color:var(--color-bg-elevated)]/60 backdrop-blur-xl"
-          >
+          <nav aria-label="Catégories" className="hidden lg:block border-b border-[color:var(--color-border)] bg-[color:var(--color-bg-elevated)]/60 backdrop-blur-xl">
             <div className="max-w-screen-3xl mx-auto px-4 sm:px-6 lg:px-8">
               <ul className="flex items-center overflow-x-auto scrollbar-none">
                 {categories.map((item) => {
                   const href = item.slug ? `/catalogue?category=${item.slug}` : '/catalogue';
-                  const isActive = (new URLSearchParams(location.search).get('category') ?? '') === item.slug;
+                  const isActive = new URLSearchParams(location.search).get('category') === item.slug;
                   return (
                     <li key={item.id || item.slug} className="shrink-0">
                       <Link
                         to={href}
-                        className={`relative flex items-center px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wider whitespace-nowrap transition-all duration-150 group ${isActive
-                          ? 'text-[color:var(--color-primary)]'
-                          : 'text-[color:var(--color-text-subtle)] hover:text-[color:var(--color-text)]'
+                        className={`relative flex items-center px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wider whitespace-nowrap transition-all duration-150 group ${isActive ? 'text-[color:var(--color-primary)]' : 'text-[color:var(--color-text-subtle)] hover:text-[color:var(--color-text)]'
                           }`}
                       >
                         {item.label}
@@ -400,7 +499,7 @@ function HeaderV2({ setIsSearchOpen, setIsLoyaltyModalOpen }: HeaderV2Props) {
           </nav>
         )}
 
-        {/* ── Mobile drawer ── */}
+        {/* Mobile drawer */}
         <AnimatePresence>
           {mobileMenuOpen && (
             <>
@@ -424,7 +523,9 @@ function HeaderV2({ setIsSearchOpen, setIsLoyaltyModalOpen }: HeaderV2Props) {
                 <div className="flex items-center justify-between px-5 py-4 border-b border-[color:var(--color-border)] bg-[color:var(--color-card-muted)]">
                   <div className="flex items-center gap-2">
                     <Sparkles className="w-4 h-4 text-[color:var(--color-primary)]" />
-                    <span className="text-sm font-black text-[color:var(--color-text)] uppercase tracking-wider">{settings.store_name || 'Menu'}</span>
+                    <span className="text-sm font-black text-[color:var(--color-text)] uppercase tracking-wider">
+                      {settings.store_name || 'Menu'}
+                    </span>
                   </div>
                   <button
                     onClick={() => setMobileMenuOpen(false)}
@@ -440,25 +541,44 @@ function HeaderV2({ setIsSearchOpen, setIsLoyaltyModalOpen }: HeaderV2Props) {
                   {user ? (
                     <div className="space-y-3">
                       <div className="flex items-center gap-3 p-3 rounded-2xl bg-[color:var(--color-bg-elevated)] border border-[color:var(--color-border)]">
-
                         <div>
                           <p className="text-sm font-bold text-[color:var(--color-text)]">{firstName || 'Mon compte'}</p>
                           <p className="text-[10px] text-[color:var(--color-text-subtle)] font-medium">{user.email}</p>
                         </div>
                       </div>
-                      <Link to="/compte" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 px-3 py-2.5 text-sm text-[color:var(--color-text-muted)] hover:text-[color:var(--color-text)] hover:bg-[color:var(--color-bg-elevated)] rounded-xl transition-all">
+                      <Link
+                        to="/compte"
+                        onClick={() => setMobileMenuOpen(false)}
+                        className="flex items-center gap-3 px-3 py-2.5 text-sm text-[color:var(--color-text-muted)] hover:text-[color:var(--color-text)] hover:bg-[color:var(--color-bg-elevated)] rounded-xl transition-all"
+                      >
                         <User className="w-4 h-4" /> Mon compte
                       </Link>
-                      <Link to="/favoris" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 px-3 py-2.5 text-sm text-[color:var(--color-text-muted)] hover:text-[color:var(--color-text)] hover:bg-[color:var(--color-bg-elevated)] rounded-xl transition-all">
+                      <Link
+                        to="/favoris"
+                        onClick={() => setMobileMenuOpen(false)}
+                        className="flex items-center gap-3 px-3 py-2.5 text-sm text-[color:var(--color-text-muted)] hover:text-[color:var(--color-text)] hover:bg-[color:var(--color-bg-elevated)] rounded-xl transition-all"
+                      >
                         <Heart className="w-4 h-4" /> Mes favoris
                         {favoritesCount > 0 && (
-                          <span className="ml-auto bg-[color:var(--color-primary)] text-[color:var(--color-primary-contrast)] text-[10px] font-bold px-2 py-0.5 rounded-full">{favoritesCount}</span>
+                          <span className="ml-auto bg-[color:var(--color-primary)] text-[color:var(--color-primary-contrast)] text-[10px] font-bold px-2 py-0.5 rounded-full">
+                            {favoritesCount}
+                          </span>
                         )}
                       </Link>
-                      <Link to="/compte/commandes" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-3 px-3 py-2.5 text-sm text-[color:var(--color-text-muted)] hover:text-[color:var(--color-text)] hover:bg-[color:var(--color-bg-elevated)] rounded-xl transition-all">
+                      <Link
+                        to="/compte/commandes"
+                        onClick={() => setMobileMenuOpen(false)}
+                        className="flex items-center gap-3 px-3 py-2.5 text-sm text-[color:var(--color-text-muted)] hover:text-[color:var(--color-text)] hover:bg-[color:var(--color-bg-elevated)] rounded-xl transition-all"
+                      >
                         <Package className="w-4 h-4" /> Mes commandes
                       </Link>
-                      <button onClick={() => { signOut(); setMobileMenuOpen(false); }} className="flex items-center gap-3 px-3 py-2.5 text-sm text-[color:var(--color-text-subtle)] hover:text-red-400 hover:bg-red-400/5 w-full rounded-xl transition-all">
+                      <button
+                        onClick={() => {
+                          signOut();
+                          setMobileMenuOpen(false);
+                        }}
+                        className="flex items-center gap-3 px-3 py-2.5 text-sm text-[color:var(--color-text-subtle)] hover:text-red-400 hover:bg-red-400/5 w-full rounded-xl transition-all"
+                      >
                         <LogOut className="w-4 h-4" /> Se déconnecter
                       </button>
                     </div>
@@ -476,7 +596,11 @@ function HeaderV2({ setIsSearchOpen, setIsLoyaltyModalOpen }: HeaderV2Props) {
                   {profile?.is_admin && (
                     <div className="mt-3 p-3 rounded-2xl bg-[color:var(--color-primary)]/5 border border-[color:var(--color-primary)]/20">
                       <p className="text-[10px] font-bold uppercase tracking-widest text-[color:var(--color-primary)] mb-2">Administration</p>
-                      <Link to="/admin" onClick={() => setMobileMenuOpen(false)} className="flex items-center gap-2 text-sm text-[color:var(--color-primary)] font-bold">
+                      <Link
+                        to="/admin"
+                        onClick={() => setMobileMenuOpen(false)}
+                        className="flex items-center gap-2 text-sm text-[color:var(--color-primary)] font-bold"
+                      >
                         <Settings className="w-4 h-4" /> Accéder au Dashboard <ExternalLink className="w-3 h-3 ml-auto opacity-50" />
                       </Link>
                     </div>
@@ -492,8 +616,8 @@ function HeaderV2({ setIsSearchOpen, setIsLoyaltyModalOpen }: HeaderV2Props) {
                             to="/assistant"
                             onClick={() => setMobileMenuOpen(false)}
                             className={`flex items-center gap-2 px-3 py-2.5 rounded-xl transition-all border ${location.pathname === '/assistant'
-                              ? 'bg-[color:var(--color-primary)]/15 border-[color:var(--color-primary)]/30 text-[color:var(--color-primary)]'
-                              : 'bg-[color:var(--color-bg-elevated)] border-[color:var(--color-border)] text-[color:var(--color-text-muted)]'
+                                ? 'bg-[color:var(--color-primary)]/15 border-[color:var(--color-primary)]/30 text-[color:var(--color-primary)]'
+                                : 'bg-[color:var(--color-bg-elevated)] border-[color:var(--color-border)] text-[color:var(--color-text-muted)]'
                               }`}
                           >
                             <MessageSquare className="w-4 h-4" />
@@ -502,10 +626,13 @@ function HeaderV2({ setIsSearchOpen, setIsLoyaltyModalOpen }: HeaderV2Props) {
                         )}
                         {settings.budtender_voice_enabled !== false && (
                           <button
-                            onClick={() => { toggleVoice(); setMobileMenuOpen(false); }}
+                            onClick={() => {
+                              toggleVoice();
+                              setMobileMenuOpen(false);
+                            }}
                             className={`flex items-center gap-2 px-3 py-2.5 rounded-xl transition-all border ${isVoiceOpen
-                              ? 'bg-cyan-400/10 border-cyan-400/30 text-cyan-400'
-                              : 'bg-[color:var(--color-bg-elevated)] border-[color:var(--color-border)] text-[color:var(--color-text-muted)]'
+                                ? 'bg-cyan-400/10 border-cyan-400/30 text-cyan-400'
+                                : 'bg-[color:var(--color-bg-elevated)] border-[color:var(--color-border)] text-[color:var(--color-text-muted)]'
                               }`}
                           >
                             <Mic className="w-4 h-4" />
@@ -521,64 +648,18 @@ function HeaderV2({ setIsSearchOpen, setIsLoyaltyModalOpen }: HeaderV2Props) {
                 <nav className="p-5 flex-1">
                   <p className="text-[10px] font-bold uppercase tracking-widest text-[color:var(--color-text-subtle)] mb-3">Catégories</p>
                   <ul className="space-y-0.5">
-                    {categories.map(function renderMobileNavItem(item: NavCategory): React.ReactNode {
-                      const href = item.slug ? `/catalogue?category=${item.slug}` : '/catalogue';
-                      const isActive = location.pathname === '/catalogue' &&
-                        (new URLSearchParams(location.search).get('category') ?? '') === item.slug;
-                      const hasChildren = item.children.length > 0;
-                      const isExpanded = expandedMobileCats.has(item.id);
-                      const indent = item.depth * 12;
-                      return (
-                        <li key={item.id || item.slug} style={{ paddingLeft: `${indent}px` }}>
-                          <div className="flex items-center gap-1">
-                            {hasChildren && (
-                              <button
-                                onClick={() => setExpandedMobileCats(prev => { const n = new Set(prev); n.has(item.id) ? n.delete(item.id) : n.add(item.id); return n; })}
-                                className="p-1 text-[color:var(--color-text-subtle)] hover:text-[color:var(--color-text)] transition-colors flex-shrink-0"
-                              >
-                                <ChevronDown className={`w-3 h-3 transition-transform ${isExpanded ? '' : '-rotate-90'}`} />
-                              </button>
-                            )}
-                            <Link
-                              to={href}
-                              onClick={() => setMobileMenuOpen(false)}
-                              className={`flex-1 flex items-center justify-between py-2.5 px-3 text-sm rounded-xl transition-all ${isActive
-                                ? 'bg-[color:var(--color-primary)]/10 text-[color:var(--color-primary)] font-bold'
-                                : 'text-[color:var(--color-text-subtle)] hover:text-[color:var(--color-text)] hover:bg-[color:var(--color-bg-elevated)]'
-                                }`}
-                            >
-                              {item.label}
-                              {isActive && <span className="w-1.5 h-1.5 rounded-full bg-[color:var(--color-primary)]" />}
-                            </Link>
-                          </div>
-                          {hasChildren && isExpanded && (
-                            <ul className="mt-0.5 space-y-0.5 border-l border-[color:var(--color-border)] ml-4 pl-2">
-                              {item.children.map(renderMobileNavItem)}
-                            </ul>
-                          )}
-                        </li>
-                      );
-                    })}
+                    {categories.map((item) => (
+                      <MobileNavItem
+                        key={item.id || item.slug}
+                        item={item}
+                        location={location}
+                        expandedMobileCats={expandedMobileCats}
+                        setExpandedMobileCats={setExpandedMobileCats}
+                        setMobileMenuOpen={setMobileMenuOpen}
+                      />
+                    ))}
                   </ul>
                 </nav>
-
-                {/* Footer links */}
-                <div className="p-5 border-t border-[color:var(--color-border)] space-y-0.5">
-                  {[
-                    { label: 'Notre boutique', to: '/boutique' },
-
-                    { label: 'Contactez-nous', to: '/contact' },
-                  ].map((l) => (
-                    <Link
-                      key={l.to}
-                      to={l.to}
-                      onClick={() => setMobileMenuOpen(false)}
-                      className="block py-2 px-3 text-xs text-[color:var(--color-text-subtle)] hover:text-[color:var(--color-text-muted)] transition-colors rounded-lg hover:bg-[color:var(--color-bg-elevated)]"
-                    >
-                      {l.label}
-                    </Link>
-                  ))}
-                </div>
               </motion.div>
             </>
           )}
@@ -586,6 +667,6 @@ function HeaderV2({ setIsSearchOpen, setIsLoyaltyModalOpen }: HeaderV2Props) {
       </header>
     </>
   );
-}
+};
 
 export default memo(HeaderV2);
