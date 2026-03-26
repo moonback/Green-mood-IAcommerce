@@ -75,7 +75,7 @@ export default function AdminLayout({
         <div className="pointer-events-none absolute bottom-[-20%] left-[-10%] h-[520px] w-[520px] rounded-full bg-emerald-500/5 blur-[130px]" />
 
         <div className="relative z-10 mx-auto max-w-[1600px] p-4 md:p-8 xl:p-10">
-          <AdminHeader currentTab={currentTab} />
+          {/* <AdminHeader currentTab={currentTab} /> */}
           {children}
         </div>
       </main>

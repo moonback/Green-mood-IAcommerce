@@ -81,6 +81,7 @@ const PLACEHOLDER_IMAGE = "https://images.unsplash.com/photo-1555617766-c9480497
 
 export default function AdminProductsTab({ products, categories, onRefresh }: AdminProductsTabProps) {
     const [searchQuery, setSearchQuery] = useState('');
+    const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<string>('all');
     const [viewMode, setViewMode] = useState<'list' | 'grid'>('grid');
     const [isSaving, setIsSaving] = useState(false);
     const [isActionsMenuOpen, setIsActionsMenuOpen] = useState(false);
@@ -400,10 +401,15 @@ export default function AdminProductsTab({ products, categories, onRefresh }: Ad
     };
 
     const filteredProducts = products.filter(
-        (p) =>
-            !searchQuery ||
-            p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            (p.sku && p.sku.toLowerCase().includes(searchQuery.toLowerCase()))
+        (p) => {
+            const matchesSearch = !searchQuery ||
+                p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                (p.sku && p.sku.toLowerCase().includes(searchQuery.toLowerCase()));
+            
+            const matchesCategory = selectedCategoryFilter === 'all' || p.category_id === selectedCategoryFilter;
+            
+            return matchesSearch && matchesCategory;
+        }
     );
 
     const handleMassAutoCategorize = async (all: boolean = false) => {
@@ -646,6 +652,24 @@ export default function AdminProductsTab({ products, categories, onRefresh }: Ad
                         placeholder="Rechercher par nom, SKU ou description..."
                         className="w-full bg-zinc-950/50 border border-zinc-800 rounded-xl pl-10 pr-4 py-2 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-emerald-500 transition-all"
                     />
+                </div>
+                <div className="relative min-w-[200px]">
+                    <select
+                        value={selectedCategoryFilter}
+                        onChange={(e) => {
+                            setSelectedCategoryFilter(e.target.value);
+                            setCurrentPage(1);
+                        }}
+                        className="w-full bg-zinc-950/50 border border-zinc-800 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:border-emerald-500 transition-all appearance-none cursor-pointer"
+                    >
+                        <option value="all">Toutes les catégories</option>
+                        {categories.map((cat) => (
+                            <option key={cat.id} value={cat.id}>
+                                {cat.name}
+                            </option>
+                        ))}
+                    </select>
+                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 pointer-events-none" />
                 </div>
             </div>
 
