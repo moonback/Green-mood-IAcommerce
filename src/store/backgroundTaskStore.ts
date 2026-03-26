@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { Product } from '../lib/types';
-import { autoFillProductSync } from '../lib/productAI';
+import { autoFillProductSync, autoCategorizeProduct } from '../lib/productAI';
 import { sleep, isQuotaError } from '../lib/utils';
 import { useToastStore } from './toastStore';
 import { generateEmbedding } from '../lib/embeddings';
@@ -13,6 +13,9 @@ interface BackgroundTaskState {
     isSyncingVectors: boolean;
     vectorSyncProgress: { done: number; total: number } | null;
     startVectorSync: (products: Product[], onRefresh?: () => void) => Promise<void>;
+    isAutoCategorizing: boolean;
+    autoCategorizeProgress: { done: number; total: number } | null;
+    startMassAutoCategorize: (products: Product[], categories: {id: string, name: string}[], onRefresh?: () => void) => Promise<void>;
 }
 
 function buildEmbeddingText(product: Product): string {
@@ -38,6 +41,8 @@ export const useBackgroundTaskStore = create<BackgroundTaskState>((set, get) => 
     aiSyncProgress: null,
     isSyncingVectors: false,
     vectorSyncProgress: null,
+    isAutoCategorizing: false,
+    autoCategorizeProgress: null,
 
     startMassAIFill: async (products, force, onRefresh) => {
         if (get().isSyncingAI || products.length === 0) return;
@@ -128,5 +133,47 @@ export const useBackgroundTaskStore = create<BackgroundTaskState>((set, get) => 
                 type: successCount > 0 ? 'success' : 'error'
             });
         }
+    },
+
+    startMassAutoCategorize: async (products, categories, onRefresh) => {
+        if (get().isAutoCategorizing || products.length === 0 || categories.length === 0) return;
+
+        set({ isAutoCategorizing: true, autoCategorizeProgress: { done: 0, total: products.length } });
+
+        let successCount = 0;
+        let failedCount = 0;
+
+        for (let i = 0; i < products.length; i++) {
+            const product = products[i];
+            try {
+                const categoryId = await autoCategorizeProduct(product, categories);
+                if (categoryId) {
+                    const { error } = await supabase.from('products').update({ category_id: categoryId }).eq('id', product.id);
+                    if (!error) {
+                        successCount++;
+                    } else {
+                        failedCount++;
+                    }
+                } else {
+                    failedCount++;
+                }
+            } catch (err) {
+                console.error('[Background AI] Auto-categorize Error:', err);
+                failedCount++;
+            } finally {
+                set({ autoCategorizeProgress: { done: i + 1, total: products.length } });
+                // We don't refresh every time to not overwhelm the UI, maybe every 5 products or at the end.
+                if (successCount % 5 === 0 && onRefresh) onRefresh();
+            }
+            await sleep(500);
+        }
+
+        set({ isAutoCategorizing: false, autoCategorizeProgress: null });
+        if (onRefresh) onRefresh();
+
+        useToastStore.getState().addToast({
+            message: `Catégorisation IA terminée: ${successCount} succès, ${failedCount} échecs.`,
+            type: successCount > 0 ? 'success' : 'error'
+        });
     },
 }));

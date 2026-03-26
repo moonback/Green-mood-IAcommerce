@@ -280,3 +280,71 @@ export async function autoFillProductSync(product: Product, force: boolean = fal
 
     return true;
 }
+
+/**
+ * Assigne automatiquement un produit à la meilleure catégorie via l'IA.
+ */
+export async function autoCategorizeProduct(product: Product, categories: {id: string, name: string}[]): Promise<string | null> {
+    const prompt = `
+    Agis en tant qu'expert en classification de produits CBD et bien-être.
+    Tu dois trouver la meilleure catégorie pour le produit suivant :
+    - Nom: ${product.name}
+    - Description: ${product.description || 'Non renseignée'}
+    
+    Voici la liste des catégories disponibles :
+    ${categories.map(c => `- ID: ${c.id} | Nom: ${c.name}`).join('\n')}
+    
+    CONSIGNES (CRITIQUE) :
+    - RÉPONDRE EXCLUSIVEMENT AVEC UN OBJET JSON. NE JAMAIS inclure de texte avant ou après.
+    - Le JSON doit avoir la structure suivante : { "category_id": "L'ID CHOISI" }
+    - Si aucune catégorie ne correspond, renvoie { "category_id": null }
+    `;
+
+    try {
+        const { data: { session } } = await supabase.auth.getSession();
+        const functionUrl = `${SUPABASE_URL}/functions/v1/ai-chat?apikey=${SUPABASE_ANON_KEY}`;
+        
+        const response = await fetch(functionUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${session?.access_token || SUPABASE_ANON_KEY}`,
+                'apikey': SUPABASE_ANON_KEY,
+                'x-client-info': 'green-mood-ai-ecommerce'
+            },
+            body: JSON.stringify({
+                model: AI_MODEL,
+                messages: [{ role: 'user', content: prompt }],
+                x_title: `Auto Categorization`,
+            })
+        });
+
+        if (!response.ok) return null;
+        const data = await response.json();
+
+        let content = data?.choices?.[0]?.message?.content;
+        if (!content) return null;
+
+        let jsonString = '';
+        const start = content.indexOf('{');
+        const end = content.lastIndexOf('}');
+        
+        if (start !== -1 && end !== -1 && end > start) {
+            jsonString = content.substring(start, end + 1);
+            jsonString = jsonString.replace(/[\x00-\x08\x0b\x0c\x0e-\x1f\x7f-\x9f]/g, '').replace(/[\n\r\t]/g, ' ');
+            
+            try {
+                const parsed = JSON.parse(jsonString);
+                if (parsed && typeof parsed.category_id === 'string' && parsed.category_id) {
+                    return parsed.category_id;
+                }
+            } catch (e) {
+                console.error('[AI] Failed to parse category JSON:', e);
+            }
+        }
+        return null;
+    } catch (err) {
+        console.error('[AI] Error in autoCategorizeProduct:', err);
+        return null;
+    }
+}

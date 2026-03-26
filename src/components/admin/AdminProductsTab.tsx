@@ -86,7 +86,7 @@ export default function AdminProductsTab({ products, categories, onRefresh }: Ad
     const [isSaving, setIsSaving] = useState(false);
     const [isActionsMenuOpen, setIsActionsMenuOpen] = useState(false);
 
-    const { isSyncingAI, aiSyncProgress, startMassAIFill, isSyncingVectors, startVectorSync } = useBackgroundTaskStore();
+    const { isSyncingAI, aiSyncProgress, startMassAIFill, isSyncingVectors, startVectorSync, isAutoCategorizing, startMassAutoCategorize } = useBackgroundTaskStore();
     const addToast = useToastStore(s => s.addToast);
 
     const ITEMS_PER_PAGE = 20;
@@ -407,6 +407,20 @@ export default function AdminProductsTab({ products, categories, onRefresh }: Ad
             (p.sku && p.sku.toLowerCase().includes(searchQuery.toLowerCase()))
     );
 
+    const handleMassAutoCategorize = async (all: boolean = false) => {
+        let productsToCategorize = all 
+            ? products 
+            : products.filter(p => selectedProductIds.includes(p.id));
+
+        if (productsToCategorize.length === 0 || isAutoCategorizing) return;
+        
+        const desc = all ? `TOUT le catalogue (${products.length} articles)` : `votre sélection (${productsToCategorize.length} articles)`;
+        if (!confirm(`Voulez-vous assigner automatiquement des catégories à ${desc} via l'IA ?\nCette opération tourne en arrière-plan.`)) return;
+
+        startMassAutoCategorize(productsToCategorize, categories, onRefresh);
+        addToast({ message: "Catégorisation IA lancée en arrière-plan", type: "info" });
+    };
+
     const totalPages = Math.ceil(filteredProducts.length / ITEMS_PER_PAGE);
     const paginatedProducts = filteredProducts.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
 
@@ -488,7 +502,7 @@ export default function AdminProductsTab({ products, categories, onRefresh }: Ad
                             onClick={() => setIsActionsMenuOpen(!isActionsMenuOpen)}
                             className="flex items-center gap-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition-all shadow-xl active:scale-95"
                         >
-                            <Brain className={`w-4 h-4 ${isSyncingAI || isSyncingVectors ? 'text-emerald-400 animate-pulse' : 'text-zinc-400'}`} />
+                            <Brain className={`w-4 h-4 ${isSyncingAI || isSyncingVectors || isAutoCategorizing ? 'text-emerald-400 animate-pulse' : 'text-zinc-400'}`} />
                             <span>Actions</span>
                             <ChevronDown className={`w-4 h-4 transition-transform ${isActionsMenuOpen ? 'rotate-180' : ''}`} />
                         </button>
@@ -567,6 +581,40 @@ export default function AdminProductsTab({ products, categories, onRefresh }: Ad
                                             </div>
                                             <span className="px-1.5 py-0.5 rounded-md bg-zinc-800 text-[10px] font-bold text-zinc-500 border border-zinc-700">
                                                 {productsWithoutVectors.length}
+                                            </span>
+                                        </button>
+
+                                        <button
+                                            onClick={() => {
+                                                handleMassAutoCategorize(false);
+                                                setIsActionsMenuOpen(false);
+                                            }}
+                                            disabled={isAutoCategorizing || selectedProductIds.length === 0 || categories.length === 0}
+                                            className="w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl text-sm text-zinc-300 hover:text-white hover:bg-zinc-800 transition-all disabled:opacity-50"
+                                        >
+                                            <div className="flex items-center gap-3">
+                                                <List className={`w-4 h-4 ${isAutoCategorizing ? 'text-emerald-400 animate-pulse' : ''}`} />
+                                                <span>Catégoriser la sélection</span>
+                                            </div>
+                                            <span className="px-1.5 py-0.5 rounded-md bg-zinc-800 text-[10px] font-bold text-zinc-500 border border-zinc-700">
+                                                {selectedProductIds.length}
+                                            </span>
+                                        </button>
+
+                                        <button
+                                            onClick={() => {
+                                                handleMassAutoCategorize(true);
+                                                setIsActionsMenuOpen(false);
+                                            }}
+                                            disabled={isAutoCategorizing || products.length === 0 || categories.length === 0}
+                                            className="w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl text-sm text-zinc-300 hover:text-emerald-400 hover:bg-emerald-500/5 transition-all disabled:opacity-50"
+                                        >
+                                            <div className="flex items-center gap-3">
+                                                <List className={`w-4 h-4 ${isAutoCategorizing ? 'text-emerald-400 animate-pulse' : 'text-emerald-500'}`} />
+                                                <span>Catégoriser tout le catalogue</span>
+                                            </div>
+                                            <span className="px-1.5 py-0.5 rounded-md bg-emerald-900/40 text-[10px] font-bold text-emerald-500 border border-emerald-500/30">
+                                                {products.length}
                                             </span>
                                         </button>
                                     </motion.div>
