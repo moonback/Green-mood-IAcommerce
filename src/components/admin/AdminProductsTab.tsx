@@ -30,7 +30,6 @@ import { buildCategoryTree, flattenTree, getCategoryAncestors } from '../../lib/
 import CSVImporter from './CSVImporter';
 import MassModifyModal from './MassModifyModal';
 import AdminProductPreviewModal from './AdminProductPreviewModal';
-import ProductImporter from './ProductImporter';
 import { generateEmbedding } from '../../lib/embeddings';
 import { generateProductInfo } from '../../lib/productAI';
 import { slugify } from '../../lib/utils';
@@ -633,8 +632,6 @@ export default function AdminProductsTab({ products, categories, onRefresh }: Ad
                     </button>
                 </div>
             </div>
-
-            <ProductImporter categories={categories} onImported={onRefresh} />
 
             {/* Filters & Search */}
             <div className="bg-zinc-900/50 backdrop-blur-sm border border-zinc-800 rounded-2xl p-4 flex flex-wrap items-center gap-4">
