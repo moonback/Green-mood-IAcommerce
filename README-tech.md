@@ -3,7 +3,7 @@
 
 # 🚀 Green-mood
 
-**La solution e-commerce "Full Stack" & "AI-First" clé en main pour tous commerces.**
+**La solution e-commerce "Full Stack" & "AI-First" spécialisée dans le CBD et le Bien-être.**
 
 <p align="center">
   <img src="https://img.shields.io/badge/React-19-blue?logo=react" alt="React 19" />
@@ -25,7 +25,7 @@
 
 ### Objectif du projet
 
-**Green-mood** est une plateforme e-commerce "AI-First" complète construite avec React 19, TypeScript et Supabase. Elle intègre nativement l'intelligence artificielle à tous les niveaux : conseiller IA vocal et textuel, génération de contenu automatisée, recherche vectorielle, recommandations personnalisées et assistance administrative par commande vocale.
+**Green-mood** est une plateforme e-commerce "AI-First" spécialisée dans le domaine du CBD, construite avec React 19, TypeScript et Supabase. Elle intègre nativement l'intelligence artificielle à tous les niveaux : conseiller **BudTender IA** vocal et textuel expert en cannabinoïdes, génération de contenu automatisée, recherche vectorielle par effets, recommandations personnalisées et assistance administrative par commande vocale.
 
 ### Problème résolu
 
@@ -41,8 +41,8 @@ La majorité des solutions e-commerce existantes (Shopify, WooCommerce) sont des
 
 | Secteur | Usage |
 |---------|-------|
-| Retail haut de gamme | Boutique avec conseiller IA vocal + POS |
-| Vente spécialisée | Catalogue technique + quiz d'orientation + matching vectoriel |
+| CBD & Bien-être Premium | Boutique avec BudTender IA vocal + POS |
+| CBD spécialisé | Catalogue de fleurs/huiles + quiz BudTender (effets/besoins) + matching vectoriel |
 | Franchise | White-label, configuration JSON exportable entre instances |
 | Commerce physique | Combinaison boutique en ligne + caisse POS + affichage TV |
 | Abonnements | Commandes récurrentes + fidélisation avancée |
@@ -414,9 +414,9 @@ Home (hero dynamique + contenu via settingsStore)
     ↓
 Navigation: Catalogue → ProductDetail
     ↓
-BudTender Widget (chat ou voix) ──→ Recommandations produits
+BudTender Widget (chat ou voix) ──→ Recommandations de fleurs, huiles et produits CBD
     ↓
-AddToCart → CartSidebar (calcul livraison + promo)
+AddToCart → CartSidebar (calcul livraison + promo liée au CBD)
     ↓
 Login/Register (si non connecté)
     ↓
@@ -447,7 +447,7 @@ Onglets spécialisés (26 modules)
 ```
 Utilisateur active BudTender (chat ou voix)
     ↓
-Quiz initial (objectif, budget, type, joueurs)
+Quiz initial (besoin: sommeil/stress/douleur, budget, type: fleur/huile, intensité)
     ↓
 useBudTenderChat → buildPrompt avec contexte:
     - Catalogue complet
@@ -503,7 +503,7 @@ Accessible depuis le Dashboard, l'overlay wizard guide en **8 étapes** :
 4. **Livraison** — Frais, seuil gratuit, informations légales
 5. **Réseaux Sociaux** — Instagram, Facebook, Twitter, TikTok
 6. **Modules** — Toggles de toutes les fonctionnalités
-7. **IA & Fidélité** — Config conseiller IA, taux de points
+7. **IA & Fidélité** — Config conseiller BudTender (ton, expertise CBD), taux de points
 8. **Paiement** — Stripe (CB)
 9. **Récapitulatif** — Validation et sauvegarde Supabase
 
@@ -522,8 +522,8 @@ Accessible depuis le Dashboard, l'overlay wizard guide en **8 étapes** :
 - **Localisation** : `src/hooks/useGeminiLiveVoice.ts`
 - API : Google Gemini Live (bidirectionnel, < 500ms)
 - Token fetching via Edge Function `gemini-token`
-- **Outils Intégrés** : Recherche catalogue, affichage produit, ajout au panier, navigation, **gestion des favoris**, base de connaissances.
-- Contexte injecté : catalogue, préférences, historique, panier.
+- **Outils Intégrés** : Recherche catalogue (fleurs, huiles, accessoires), affichage produit, ajout au panier, navigation, **gestion des favoris**, base de connaissances experte CBD.
+- Contexte injecté : catalogue (variétés, taux de CBD/THC), préférences, historique, panier.
 
 ### Admin Voice Commands
 - **Localisation** : `src/hooks/useGeminiAdminVoice.ts`

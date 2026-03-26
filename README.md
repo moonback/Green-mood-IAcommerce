@@ -2,9 +2,9 @@
 <img src="public/header.png" alt="Green-mood Banner" width="100%" />
 
 # 🚀 Green-mood
-### L’E-commerce "AI-First" spécialisé High-Tech & Premium.
+### L’E-commerce "AI-First" spécialisé CBD & Bien-être Premium.
 
-**Vendez plus, plus vite, et plus intelligemment.** Green-mood est un écosystème complet conçu pour les boutiques de haute technologie, combinant l'Intelligence Artificielle de pointe avec une expérience client ultra-premium.
+**Vendez plus, plus vite, et plus intelligemment.** Green-mood est un écosystème complet conçu pour les boutiques spécialisées dans le CBD et le bien-être, combinant l'Intelligence Artificielle de pointe avec une expérience client ultra-premium.
 
 [Découvrir les avantages](#-les-piliers-de-votre-succès) · [Fonctionnalités](#-tout-ce-dont-vous-avez-besoin) · [Pour qui ?](#-cas-dutilisation) · [Démarrage Rapide](#-lancez-votre-boutique)
 
@@ -25,11 +25,11 @@ Contrairement aux solutions classiques (Shopify, WooCommerce) qui nécessitent d
 
 ## 💎 Les Piliers de votre Succès
 
-### 🤖 1. L'IA au Service de vos Clients (Cortex IA Expert)
-Transformez chaque visiteur en acheteur grâce à notre conseiller **Cortex** disponible 24h/24.
-- **Conseiller Vocal & Textuel** : Une IA qui parle et comprend vos clients pour les guider, comparer les fiches techniques et gérer leurs favoris par simple commande vocale.
-- **Recherche Sémantique** : Trouvez les composants ou gadgets par usage (ex: "un setup pour le montage 4K") plutôt que par simples mots-clés.
-- **Mémoire Évolutive** : L'IA identifie les traits du client (passionné, budget, expertise) pour adapter son discours et ses recommandations.
+### 🤖 1. L'IA au Service de vos Clients (BudTender IA Expert)
+Transformez chaque visiteur en acheteur grâce à notre conseiller **BudTender** disponible 24h/24.
+- **Conseiller Vocal & Textuel** : Une IA experte en CBD qui parle et comprend vos clients pour les guider, comparer les fiches produits (taux de CBD, terpènes, effets) et gérer leurs favoris par simple commande vocale.
+- **Recherche Sémantique** : Trouvez les fleurs, huiles ou infusions par effet ou usage (ex: "une fleur pour l'anxiété" ou "un produit pour mieux dormir") plutôt que par simples mots-clés.
+- **Mémoire Évolutive** : L'IA identifie les préférences du client (goûts, besoins de relaxation, budget) pour adapter son discours et ses recommandations.
 
 ### 🛒 2. Une Expérience d'Achat "Premium"
 Offrez à vos clients le confort des plus grandes enseignes mondiales.
@@ -66,10 +66,10 @@ Ne cherchez plus de nouveaux clients, chouchoutez ceux que vous avez déjà.
 
 ## 🎯 Cas d'utilisation
 
-- **Boutiques High-Tech & High-End** : Pour un conseil client digne d'un expert humain.
-- **Franchises & Réseaux** : Déployez des dizaines de boutiques avec une configuration unifiée.
-- **Concept Stores** : Liez votre expérience physique et digitale sans effort.
-- **Abonnements Box & Services** : Idéal pour les revenus récurrents.
+- **Boutiques CBD & Bien-être Premium** : Pour un conseil client expert digne d'un BudTender humain.
+- **Franchises & Shops spécialisés** : Déployez des dizaines de boutiques avec une configuration unifiée.
+- **Stores Conceptuels (Fleurs & Dérivés)** : Liez votre expérience physique et digitale sans effort.
+- **Abonnements Découverte & Cure** : Idéal pour les revenus récurrents via des box mensuelles de CBD.
 
 ---
 
@@ -133,14 +133,13 @@ src/
 ├── components/
 │   ├── admin/              # Dashboard + 28 modules de gestion
 │   ├── layout/             # Header, footer, navigation
-│   └── VoiceAdvisor.tsx    # Interface vocale Cortex
+│   └── VoiceAdvisor.tsx    # Interface vocale BudTender
 ├── hooks/
 │   ├── useGeminiLiveVoice.ts   # Session vocale native (Bidi)
 │   ├── useGeminiAdminVoice.ts  # Commandes vocales Back-office
-│   ├── useBudTenderChat.ts     # Chat IA texte expert
-│   ├── useBudTenderQuiz.ts     # Machine d'état diagnostic
-│   └── useBudTenderMemory.ts   # Mémoire JSONB des préférences
-├── lib/
+│   ├── useBudTenderChat.ts     # Chat IA texte expert CBD
+│   ├── useBudTenderQuiz.ts     # Machine d'état diagnostic CBD
+│   └── useBudTenderMemory.ts   # Mémoire JSONB des préférences client├── lib/
 │   ├── budtenderPrompts.ts     # Moteur de personnalisation (System Prompts)
 │   ├── categoryTree.ts         # Navigation hiérarchique
 │   └── types.ts                # Typage strict (40+ interfaces)
@@ -152,7 +151,7 @@ src/
 
 ---
 
-## Cortex — IA Vocale
+## BudTender — IA Vocale Expert CBD
 
 ### Flux architectural
 
@@ -170,7 +169,7 @@ Gemini Live WebSocket (BidiGenerateContent)
 Handlers dans useGeminiLiveVoice.ts ──► Supabase / callbacks UI
         │
         ▼
-Réponse audio Cortex (24kHz PCM) ──► AudioContext
+Réponse audio BudTender (24kHz PCM) ──► AudioContext
 ```
 
 ### Prompt System (`src/lib/budtenderPrompts.ts`)
@@ -206,9 +205,8 @@ Architecture modulaire — `getVoicePrompt()` compose ces fonctions privées :
 | `open_product_modal` | Ouvrir la modale aperçu rapide |
 | `search_expert_data` | Recherche RAG (blog/guides/FAQ) |
 | `close_session` | Terminer la session vocale (conditionnel) |
-| `suggest_bundle` | Suggérer un produit complémentaire après add_to_cart |
-| `compare_products` | Comparaison verbale côte-à-côte |
-| `apply_promo` | Appliquer un code promo |
+| `suggest_bundle` | Suggérer un produit complémentaire (ex: vaporisateur + fleur) |
+| `compare_products` | Comparaison verbale des taux et effets || `apply_promo` | Appliquer un code promo |
 | `watch_stock` | S'abonner à une alerte retour en stock |
 | `filter_catalog` | Filtre multi-critères (budget, catégorie, attribut) |
 | `get_referral_link` | Récupérer le lien de parrainage |
