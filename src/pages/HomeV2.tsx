@@ -21,10 +21,42 @@ import { useBudtenderStore } from '../store/budtenderStore';
 
 import Hero from '../components/home/Hero';
 
-// Pre-computed waveform values — stable across re-renders for the BudTender visualization
-const WAVE_HEIGHTS = Array.from({ length: 32 }, (_, i) => 10 + ((i * 17 + 11) % 50));
-const WAVE_DURATIONS = Array.from({ length: 32 }, (_, i) => parseFloat((0.4 + (i * 0.029) % 0.4).toFixed(2)));
-const ORB_WAVE_DURATIONS = Array.from({ length: 8 }, (_, i) => parseFloat((0.5 + (i * 0.07) % 0.5).toFixed(2)));
+// Demo conversation scenarios for the BudTender showcase
+const DEMO_CONVERSATIONS = [
+  {
+    userMessage: "J'ai du mal à dormir, qu'est-ce que tu me conseilles ?",
+    thinkingText: "Analyse du besoin sommeil...",
+    aiResponse: "Écoute, pour le sommeil j'ai exactement ce qu'il te faut. Notre huile CBD 15% est riche en Myrcène, c'est le terpène idéal pour la relaxation profonde. Tu préfères en huile ou en fleur pour la tisane du soir ?",
+    actions: [
+      { label: "Voir le produit", icon: 'eye' as const },
+      { label: "Ajouter au panier", icon: 'cart' as const },
+    ],
+    productPreview: { name: "Huile CBD 15%", category: "Huiles", price: "34,90€", tag: "Best-seller" },
+  },
+  {
+    userMessage: "Je cherche quelque chose de fruité et relaxant",
+    thinkingText: "Recherche catalogue : fruité + relaxant...",
+    aiResponse: "Franchement, si tu aimes les arômes fruités avec un effet détente, l'Amnesia Haze est une pépite. Notes d'agrumes et de mangue, avec un effet apaisant progressif. C'est notre coup de cœur du moment.",
+    actions: [
+      { label: "Voir le produit", icon: 'eye' as const },
+      { label: "Mettre en favoris", icon: 'heart' as const },
+    ],
+    productPreview: { name: "Amnesia Haze", category: "Fleurs CBD", price: "8,90€/g", tag: "Fruité" },
+  },
+  {
+    userMessage: "Ajoute-moi 2 grammes de OG Kush",
+    thinkingText: "Ajout au panier...",
+    aiResponse: "C'est ajouté, deux grammes d'OG Kush dans ton panier. Excellent choix pour la détente. Au fait, les clients qui aiment l'OG Kush adorent aussi notre résine Charas. Tu veux que je te la montre ?",
+    actions: [
+      { label: "Voir le panier", icon: 'cart' as const },
+      { label: "Comparer produits", icon: 'compare' as const },
+    ],
+    productPreview: { name: "OG Kush", category: "Fleurs CBD", price: "7,50€/g", tag: "Ajouté ✓" },
+  },
+];
+
+const DEMO_STEP_TIMINGS = { user: 0, thinking: 1200, ai: 2400, actions: 3800, hold: 8000 };
+const TOTAL_CYCLE_MS = DEMO_STEP_TIMINGS.hold;
 
 const ADVANTAGES = [
   {
@@ -91,6 +123,35 @@ export default function HomeV2() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [categoryBlocks, setCategoryBlocks] = useState<{ name: string, id: string, slug: string, products: Product[] }[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  // BudTender demo state
+  const [demoIndex, setDemoIndex] = useState(0);
+  const [demoStep, setDemoStep] = useState<'user' | 'thinking' | 'ai' | 'actions'>('user');
+
+  useEffect(() => {
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    let cancelled = false;
+
+    const runCycle = () => {
+      if (cancelled) return;
+      setDemoStep('user');
+
+      timers.push(setTimeout(() => { if (!cancelled) setDemoStep('thinking'); }, DEMO_STEP_TIMINGS.thinking));
+      timers.push(setTimeout(() => { if (!cancelled) setDemoStep('ai'); }, DEMO_STEP_TIMINGS.ai));
+      timers.push(setTimeout(() => { if (!cancelled) setDemoStep('actions'); }, DEMO_STEP_TIMINGS.actions));
+      timers.push(setTimeout(() => {
+        if (!cancelled) {
+          setDemoIndex(prev => (prev + 1) % DEMO_CONVERSATIONS.length);
+          runCycle();
+        }
+      }, TOTAL_CYCLE_MS));
+    };
+
+    runCycle();
+    return () => { cancelled = true; timers.forEach(clearTimeout); };
+  }, []);
+
+  const currentDemo = DEMO_CONVERSATIONS[demoIndex];
 
   useEffect(() => {
     async function fetchHomepageData() {
@@ -344,40 +405,209 @@ export default function HomeV2() {
                 </button>
               </div>
 
-              <div className="relative flex justify-center items-center h-[500px]">
-                {/* Neural Core visualization */}
-                <div className="relative w-80 h-80 rounded-full flex items-center justify-center">
-                  <motion.div
-                    animate={{
-                      scale: [1, 1.1, 1],
-                      boxShadow: ["0 0 20px rgba(16, 185, 129, 0.2)", "0 0 80px rgba(16, 185, 129, 0.4)", "0 0 20px rgba(16, 185, 129, 0.2)"]
-                    }}
-                    transition={{ duration: 4, repeat: Infinity }}
-                    className="absolute inset-0 rounded-full border border-[color:var(--color-primary)]/20 bg-gradient-to-br from-[color:var(--color-primary)]/5 to-transparent backdrop-blur-3xl"
-                  />
+              {/* ── CONVERSATION DEMO ────────────────────────────── */}
+              <div className="relative flex flex-col h-[520px]">
+                {/* Glow behind the phone frame */}
+                <div className="absolute -inset-8 bg-gradient-to-br from-emerald-500/10 via-transparent to-cyan-500/5 rounded-[3rem] blur-2xl pointer-events-none" />
 
-                  <div className="relative z-10 flex items-end gap-1.5 h-32 w-full justify-center">
-                    {WAVE_HEIGHTS.map((h, i) => (
+                {/* Simulated chat window */}
+                <div className="relative flex flex-col h-full rounded-[2rem] border border-white/10 bg-zinc-950/80 backdrop-blur-2xl overflow-hidden shadow-[0_0_60px_rgba(16,185,129,0.08)]">
+                  {/* Header */}
+                  <div className="flex items-center gap-3 px-6 py-4 border-b border-white/5 bg-white/[0.02]">
+                    <div className="relative">
+                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500/20 to-emerald-800/20 border border-emerald-500/30 flex items-center justify-center">
+                        <Leaf className="w-5 h-5 text-emerald-400" />
+                      </div>
+                      <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-400 border-2 border-zinc-950 shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-black text-white uppercase tracking-wider">{settings.budtender_name || 'BudTender'}</p>
+                      <p className="text-[10px] text-emerald-400 font-semibold flex items-center gap-1">
+                        <Sparkles className="w-2.5 h-2.5" /> En ligne — Mode vocal
+                      </p>
+                    </div>
+                    <div className="ml-auto flex items-center gap-2">
                       <motion.div
-                        key={i}
-                        animate={{ height: ['10%', `${h}%`, '10%'], opacity: [0.3, 0.8, 0.3] }}
-                        transition={{ duration: WAVE_DURATIONS[i], repeat: Infinity }}
-                        className="w-1.5 rounded-full bg-[color:var(--color-primary)]"
+                        animate={{ scale: [1, 1.3, 1], opacity: [0.5, 1, 0.5] }}
+                        transition={{ duration: 1.5, repeat: Infinity }}
+                        className="w-2 h-2 rounded-full bg-emerald-400"
                       />
-                    ))}
+                      <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">Live</span>
+                    </div>
                   </div>
 
-                  {/* Floating data particles */}
-                  {[...Array(12)].map((_, i) => (
-                    <motion.div
+                  {/* Messages area */}
+                  <div className="flex-1 px-5 py-6 space-y-4 overflow-hidden">
+                    <AnimatePresence mode="wait">
+                      <motion.div
+                        key={`demo-${demoIndex}`}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.3 }}
+                        className="space-y-4"
+                      >
+                        {/* User message (voice) */}
+                        <motion.div
+                          initial={{ opacity: 0, x: 20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ duration: 0.4 }}
+                          className="flex justify-end"
+                        >
+                          <div className="max-w-[85%] flex items-start gap-2">
+                            <div className="bg-emerald-500/15 border border-emerald-500/20 rounded-2xl rounded-tr-md px-4 py-3">
+                              <div className="flex items-center gap-2 mb-1">
+                                <Mic className="w-3 h-3 text-emerald-400" />
+                                <span className="text-[9px] font-bold text-emerald-400 uppercase tracking-wider">Vocal</span>
+                              </div>
+                              <p className="text-sm text-white/90 leading-relaxed">{currentDemo.userMessage}</p>
+                            </div>
+                          </div>
+                        </motion.div>
+
+                        {/* Thinking indicator */}
+                        {(demoStep === 'thinking') && (
+                          <motion.div
+                            initial={{ opacity: 0, y: 8 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="flex items-start gap-3"
+                          >
+                            <div className="w-7 h-7 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shrink-0">
+                              <Leaf className="w-3.5 h-3.5 text-emerald-400" />
+                            </div>
+                            <div className="bg-white/[0.03] border border-white/5 rounded-2xl rounded-tl-md px-4 py-3">
+                              <div className="flex items-center gap-2">
+                                <motion.div
+                                  animate={{ opacity: [0.3, 1, 0.3] }}
+                                  transition={{ duration: 0.8, repeat: Infinity }}
+                                  className="flex items-center gap-1"
+                                >
+                                  <Zap className="w-3 h-3 text-amber-400" />
+                                  <span className="text-[10px] font-bold text-amber-400/80">{currentDemo.thinkingText}</span>
+                                </motion.div>
+                                <div className="flex gap-1 ml-2">
+                                  {[0, 1, 2].map(j => (
+                                    <motion.div
+                                      key={j}
+                                      animate={{ scale: [1, 1.4, 1], opacity: [0.3, 0.8, 0.3] }}
+                                      transition={{ duration: 0.6, repeat: Infinity, delay: j * 0.15 }}
+                                      className="w-1.5 h-1.5 rounded-full bg-emerald-400"
+                                    />
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+                          </motion.div>
+                        )}
+
+                        {/* AI Response */}
+                        {(demoStep === 'ai' || demoStep === 'actions') && (
+                          <motion.div
+                            initial={{ opacity: 0, y: 12 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.5 }}
+                            className="flex items-start gap-3"
+                          >
+                            <div className="w-7 h-7 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shrink-0">
+                              <Leaf className="w-3.5 h-3.5 text-emerald-400" />
+                            </div>
+                            <div className="max-w-[88%] space-y-3">
+                              <div className="bg-white/[0.03] border border-white/5 rounded-2xl rounded-tl-md px-4 py-3">
+                                <p className="text-sm text-zinc-200 leading-relaxed">{currentDemo.aiResponse}</p>
+                              </div>
+
+                              {/* Product preview card */}
+                              <motion.div
+                                initial={{ opacity: 0, scale: 0.95 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                transition={{ delay: 0.3 }}
+                                className="bg-white/[0.04] border border-white/10 rounded-xl p-3 flex items-center gap-3"
+                              >
+                                <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-emerald-900/40 to-zinc-900 border border-white/5 flex items-center justify-center shrink-0">
+                                  <Leaf className="w-5 h-5 text-emerald-500/60" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-[11px] font-black text-white truncate">{currentDemo.productPreview.name}</p>
+                                  <p className="text-[9px] text-zinc-500 uppercase tracking-wider">{currentDemo.productPreview.category}</p>
+                                </div>
+                                <div className="text-right shrink-0">
+                                  <p className="text-xs font-black text-emerald-400">{currentDemo.productPreview.price}</p>
+                                  <span className="inline-block mt-0.5 px-1.5 py-0.5 rounded bg-emerald-500/15 text-[8px] font-bold text-emerald-300 border border-emerald-500/20">{currentDemo.productPreview.tag}</span>
+                                </div>
+                              </motion.div>
+                            </div>
+                          </motion.div>
+                        )}
+
+                        {/* Action buttons */}
+                        {demoStep === 'actions' && (
+                          <motion.div
+                            initial={{ opacity: 0, y: 8 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.3 }}
+                            className="flex items-center gap-2 pl-10"
+                          >
+                            {currentDemo.actions.map((action, i) => (
+                              <div
+                                key={i}
+                                className="px-3 py-1.5 rounded-full border border-white/10 bg-white/[0.03] text-[10px] font-bold text-zinc-300 flex items-center gap-1.5 hover:bg-white/[0.06] transition-colors cursor-default"
+                              >
+                                {action.icon === 'eye' && <ChevronRight className="w-2.5 h-2.5 text-emerald-400" />}
+                                {action.icon === 'cart' && <ShoppingBag className="w-2.5 h-2.5 text-emerald-400" />}
+                                {action.icon === 'heart' && <Star className="w-2.5 h-2.5 text-amber-400" />}
+                                {action.icon === 'compare' && <Layers className="w-2.5 h-2.5 text-cyan-400" />}
+                                {action.label}
+                              </div>
+                            ))}
+                          </motion.div>
+                        )}
+                      </motion.div>
+                    </AnimatePresence>
+                  </div>
+
+                  {/* Footer — simulated voice input */}
+                  <div className="px-5 py-4 border-t border-white/5 bg-white/[0.01]">
+                    <div className="flex items-center gap-3">
+                      <motion.div
+                        animate={{
+                          boxShadow: [
+                            '0 0 0 0 rgba(16, 185, 129, 0)',
+                            '0 0 0 8px rgba(16, 185, 129, 0.15)',
+                            '0 0 0 0 rgba(16, 185, 129, 0)',
+                          ],
+                        }}
+                        transition={{ duration: 2, repeat: Infinity }}
+                        className="w-10 h-10 rounded-full bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center shrink-0"
+                      >
+                        <Mic className="w-4 h-4 text-emerald-400" />
+                      </motion.div>
+                      <div className="flex-1">
+                        <div className="flex items-end gap-[2px] h-5">
+                          {Array.from({ length: 24 }, (_, i) => (
+                            <motion.div
+                              key={i}
+                              animate={{
+                                height: ['15%', `${20 + ((i * 13 + 7) % 60)}%`, '15%'],
+                                opacity: [0.2, 0.6, 0.2],
+                              }}
+                              transition={{ duration: 0.4 + (i * 0.02) % 0.3, repeat: Infinity }}
+                              className="w-[3px] rounded-full bg-emerald-400/60"
+                            />
+                          ))}
+                        </div>
+                        <p className="text-[9px] text-zinc-600 mt-1 font-medium">Appuyez pour parler ou tapez votre question...</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Scenario indicator dots */}
+                <div className="flex justify-center gap-2 mt-4">
+                  {DEMO_CONVERSATIONS.map((_, i) => (
+                    <button
                       key={i}
-                      animate={{
-                        y: [-200, 200],
-                        x: [Math.random() * -150, Math.random() * 150],
-                        opacity: [0, 0.5, 0]
-                      }}
-                      transition={{ duration: 5 + i, repeat: Infinity, delay: i * 0.5 }}
-                      className="absolute h-1 w-1 rounded-full bg-[color:var(--color-primary)] blur-[1px]"
+                      onClick={() => { setDemoIndex(i); setDemoStep('user'); }}
+                      className={`w-2 h-2 rounded-full transition-all duration-300 ${i === demoIndex ? 'bg-emerald-400 w-6' : 'bg-white/20 hover:bg-white/40'}`}
                     />
                   ))}
                 </div>
