@@ -405,20 +405,20 @@ export default function AdminProductsTab({ products, categories, onRefresh }: Ad
             const matchesSearch = !searchQuery ||
                 p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 (p.sku && p.sku.toLowerCase().includes(searchQuery.toLowerCase()));
-            
+
             const matchesCategory = selectedCategoryFilter === 'all' || p.category_id === selectedCategoryFilter;
-            
+
             return matchesSearch && matchesCategory;
         }
     );
 
     const handleMassAutoCategorize = async (all: boolean = false) => {
-        let productsToCategorize = all 
-            ? products 
+        let productsToCategorize = all
+            ? products
             : products.filter(p => selectedProductIds.includes(p.id));
 
         if (productsToCategorize.length === 0 || isAutoCategorizing) return;
-        
+
         const desc = all ? `TOUT le catalogue (${products.length} articles)` : `votre sélection (${productsToCategorize.length} articles)`;
         if (!confirm(`Voulez-vous assigner automatiquement des catégories à ${desc} via l'IA ?\nCette opération tourne en arrière-plan.`)) return;
 
@@ -454,10 +454,17 @@ export default function AdminProductsTab({ products, categories, onRefresh }: Ad
                         <ShoppingBag className="w-5 h-5 text-emerald-400" />
                         Inventaire des Produits
                         <div className="flex items-center gap-2 ml-2">
-                            <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-full text-[12px] font-bold leading-none">
+                            <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-full text-[12px] font-bold leading-none transition-all">
                                 {filteredProducts.length} Produits
                             </span>
-
+                            <span className="px-2 py-0.5 bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-full text-[12px] font-bold leading-none flex items-center gap-1" title={`${products.length - productsNeedingEnrichment.length} produits entièrement renseignés par l'IA sur le total du catalogue (${products.length})`}>
+                                <Sparkles className="w-3 h-3" />
+                                {products.length - productsNeedingEnrichment.length} Enrichis
+                            </span>
+                            <span className="px-2 py-0.5 bg-purple-500/10 text-purple-400 border border-purple-500/20 rounded-full text-[12px] font-bold leading-none flex items-center gap-1" title={`${products.length - productsWithoutVectors.length} produits prêts pour la recherche sémantique sur le total du catalogue (${products.length})`}>
+                                <Brain className="w-3 h-3" />
+                                {products.length - productsWithoutVectors.length} Vectorisés
+                            </span>
                         </div>
                     </h2>
                     <p className="text-xs text-zinc-500 mt-1">Gérez votre catalogue et vos niveaux de stock.</p>
@@ -1155,13 +1162,12 @@ export default function AdminProductsTab({ products, categories, onRefresh }: Ad
                                                 {selectedCategoryPath.map((cat, i) => (
                                                     <span key={cat.id} className="flex items-center gap-1">
                                                         {i > 0 && <ChevronRight className="w-3 h-3 text-zinc-500 shrink-0" />}
-                                                        <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
-                                                            i === 0
+                                                        <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${i === 0
                                                                 ? 'bg-emerald-500/10 text-emerald-400'
                                                                 : i === 1
                                                                     ? 'bg-blue-500/10 text-blue-400'
                                                                     : 'bg-purple-500/10 text-purple-400'
-                                                        }`}>
+                                                            }`}>
                                                             {cat.name}
                                                         </span>
                                                     </span>
@@ -1254,7 +1260,7 @@ export default function AdminProductsTab({ products, categories, onRefresh }: Ad
 
                                     <div className="col-span-2 grid grid-cols-2 gap-4 p-4 border border-zinc-800 bg-zinc-900/50 rounded-2xl">
                                         <div className="col-span-2 text-[10px] font-bold uppercase tracking-widest text-emerald-400 mb-2">Compositions & Culture</div>
-                                        
+
                                         <div>
                                             <label className={LABEL}>% CBD</label>
                                             <input
@@ -1312,9 +1318,9 @@ export default function AdminProductsTab({ products, categories, onRefresh }: Ad
                                                 value={productForm.attributes?.effects?.join(', ') ?? ''}
                                                 onChange={(e) => setProductForm({
                                                     ...productForm,
-                                                    attributes: { 
-                                                        ...productForm.attributes, 
-                                                        effects: e.target.value.split(',').map(s => s.trim()).filter(Boolean) 
+                                                    attributes: {
+                                                        ...productForm.attributes,
+                                                        effects: e.target.value.split(',').map(s => s.trim()).filter(Boolean)
                                                     }
                                                 })}
                                                 className={INPUT}
@@ -1368,7 +1374,7 @@ export default function AdminProductsTab({ products, categories, onRefresh }: Ad
                                         <div className="col-span-2 p-4 bg-emerald-500/5 border border-emerald-500/20 rounded-xl space-y-3">
                                             <div className="flex items-center justify-between">
                                                 <label className="text-[10px] font-black uppercase text-emerald-500 tracking-widest">Spécifications Structurées (Propulsé par IA)</label>
-                                                <button 
+                                                <button
                                                     onClick={() => setProductForm({
                                                         ...productForm,
                                                         attributes: { ...productForm.attributes, technical_specs: [] }

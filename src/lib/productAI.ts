@@ -40,34 +40,35 @@ export async function generateProductInfo(productName: string, categoryName?: st
     Génère un JSON e-commerce en français, style premium, luxueux et apaisant.
 
     CONSIGNES DE SÉCURITÉ JSON (CRITIQUE) :
-    - RÉPONDRE EXCLUSIVEMENT AVEC UN OBJET JSON.
-    - NE JAMAIS utiliser de balises comme <components>, <attributes>, <item>, <description>.
+    - RÉPONDRE EXCLUSIVEMENT AVEC UN OBJET JSON VALIDE STRICT.
+    - N'UTILISE JAMAIS de guillemets doubles (") à l'intérieur de tes textes (headline, description, seo). Si tu dois citer, utilise UNIQUEMENT des guillemets simples (').
+    - DANS LE CHAMP 'seo', N'ÉCRIS JAMAIS DE BALISES HTML (interdit d'utiliser </title> ou <meta>).
     - NE JAMAIS inclure de texte explicatif avant ou après le JSON.
-    - Utilise des guillemets doubles (") pour les clés et les valeurs JSON. 
-    - Si tu as besoin de guillemets à l'intérieur d'une chaîne, utilise des guillemets simples (').
-    - Utilise des balises HTML standards (uniquement <p>, <strong>, <ul>, <li>) exclusivement à l'intérieur de la valeur du champ 'description'.
+    - Utilise TOUJOURS des guillemets doubles (") EXCLUSIVEMENT pour encadrer CHAQUE CLÉ et CHAQUE VALEUR de type chaîne de caractères (ex: "category": "Cannabinoïdes").
+    - Vérifie toujours la présence des guillemets ouvrants ET fermants pour chaque mot.
+    - Utilise des balises HTML standards (uniquement <p>, <strong>, <ul>, <li>) exclusivement à l'intérieur de la valeur du champ 'description'. N'utilise pas de guillemets doubles à l'intérieur de ces balises HTML.
 
     INFOS À GÉNÉRER :
-    1. 'headline' : Accroche courte et percutante (ex: 'L'excellence californienne au service de votre détente').
-    2. 'description' : Texte immersif décrivant l'arôme (terpènes), le goût et l'expérience.
-    3. 'seo' : Titre et meta-description optimisés pour le référencement CBD.
+    1. 'headline' : Accroche courte et percutante en texte pur.
+    2. 'description' : Texte immersif décrivant l'arôme, le goût et l'expérience (autorise <p>, pas de guillemets doubles).
+    3. 'seo' : Titre et meta-description optimisés pour le CBD. (PAS DE BALISES HTML ICI, texte pur uniquement).
     4. 'attributes' : 
        - 'brand': Fabricant original ou 'Production Exclusive'.
        - 'cbd_percentage': Valeur numérique entre 5 et 90 (ex: 22.5).
        - 'thc_max': Valeur numérique <= 0.3 (ex: 0.18).
-       - 'techFeatures': 3-5 tags (ex: ['Indoor', 'Bio-Organique', 'Grown in Italy', 'Full Spectrum']).
-       - 'productMetrics': { 'Détente': 8, 'Saveur': 9, 'Arôme': 9, 'Puissance': 7 } (scores sur 10).
-       - 'productSpecs': Liste d'objets { name, description, category, intensity } pour : 
-         * 'Profil de Terpènes' (Détaille Myrcène, Limonène, etc. avec intensité %), 
+       - 'techFeatures': 3-5 tags (ex: ["Indoor", "Bio-Organique", "Grown in Italy", "Full Spectrum"]).
+       - 'productMetrics': { "Détente": 8, "Saveur": 9, "Arôme": 9, "Puissance": 7 } (scores sur 10).
+       - 'productSpecs': Liste d'objets { "name", "description", "category", "intensity" } pour : 
+         * 'Profil de Terpènes' (Détails avec intensité %), 
          * 'Méthode de Culture' (Indoor/Outdoor avec détails techniques), 
-         * 'Concentration Cannabinoïdes' (Détaille CBD, CBG, CBN, THC < 0.3%),
-         * 'Certifications Qualité' (Analyses labo, absence de pesticides).
+         * 'Concentration' (Détaille CBD, CBG, CBN, THC < 0.3%),
+         * 'Certifications' (Analyses labo, absence de pesticides).
 
-    Exemple de structure :
+    Exemple de structure ATTENDUE :
     {
-        "headline": "...",
-        "description": "<p>...</p>",
-        "seo": { "title": "...", "meta_description": "..." },
+        "headline": "Une accroche sans aucun guillemet double à l'intérieur",
+        "description": "<p>Une description avec des balises simples, en utilisant des 'guillemets simples' pour les citations.</p>",
+        "seo": { "title": "Titre sans balise HTML", "meta_description": "Description sans balise HTML" },
         "attributes": {
             "brand": "Green Mood",
             "cbd_percentage": 15.5,
@@ -176,14 +177,15 @@ export async function generateProductInfo(productName: string, categoryName?: st
                 .replace(/[\u201C\u201D\u201E\u201F\u2033\u2036]/g, '"')
                 .replace(/[\u2018\u2019\u201A\u201B\u2032\u2035]/g, "'");
 
-            // 2. Fix unquoted keys or keys with single quotes
-            // This regex finds keys: look for { or , then optional space, then possibly single quote or nothing, then word, then possibly single quote, then :
-            repaired = repaired.replace(/([{,]\s*)(['"]?)([a-zA-Z0-9_]+)(['"]?\s*):/g, '$1"$3":');
+            // 2. Fix unquoted keys or keys with single quotes, allowing accented characters
+            repaired = repaired.replace(/([{,]\s*)(['"]?)([a-zA-ZÀ-ÿ0-9_]+)(['"]?\s*):/g, '$1"$3":');
 
-            // 3. Fix values with single quotes (only if they aren't followed by a comma or brace that is already correctly formatted)
-            // This is risky but often necessary for AI output. 
-            // Simple approach: if it looks like a string value '...', replace with "..."
+            // 3. Fix values with single quotes
             repaired = repaired.replace(/:\s*'([^']*)'/g, ': "$1"');
+
+            // 4. Fix missing opening quotes for string values ending with quote and comma
+            // e.g. "category": Cannabinoïdes", -> "category": "Cannabinoïdes",
+            repaired = repaired.replace(/:\s*([^"'\s{}[\]][^"']*?)["']\s*([,}])/g, ': "$1"$2');
 
             parsed = initialParse(repaired);
             if (parsed) {
