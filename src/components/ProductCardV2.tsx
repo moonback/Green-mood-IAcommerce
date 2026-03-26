@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'motion/react';
 
 import type { Product } from '../lib/types';
 import { applyProductImageFallback, getProductImageSrc } from '../lib/productImage';
+import { stripHtml } from '../lib/utils';
 import { useCartStore } from '../store/cartStore';
 import { useToastStore } from '../store/toastStore';
 import { useWishlistStore } from '../store/wishlistStore';
@@ -257,7 +258,7 @@ function ProductCardV2({
                 )}
                 {product.description && (
                     <p className="text-[11px] text-[color:var(--color-text-subtle)] line-clamp-2 leading-relaxed -mt-0.5">
-                        <span dangerouslySetInnerHTML={{ __html: product.description }} />
+                        {stripHtml(product.description)}
                     </p>
                 )}
                 {(() => {
@@ -268,7 +269,7 @@ function ProductCardV2({
                             {specs.map((s, i) => (
                                 <li key={i} className="flex items-center gap-1.5 text-[10px] text-[color:var(--color-text-muted)]">
                                     <span className="w-1 h-1 rounded-full bg-[color:var(--color-primary)] shrink-0 glow-neon" />
-                                    <span className="truncate">{s}</span>
+                                    <span className="truncate">{stripHtml(s)}</span>
                                 </li>
                             ))}
                         </ul>

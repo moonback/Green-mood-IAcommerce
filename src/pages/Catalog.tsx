@@ -11,6 +11,7 @@ import { matchProductsRpc } from '../lib/matchProductsRpc';
 import { Category, CategoryNode, Product } from '../lib/types';
 import { buildCategoryTree, getCategorySubtreeIds } from '../lib/categoryTree';
 import { applyProductImageFallback, getProductImageSrc } from '../lib/productImage';
+import { stripHtml } from '../lib/utils';
 import ProductCard from '../components/ProductCardV2';
 import AdCard from '../components/AdCard';
 import { useAds, injectAdsIntoGrid } from '../hooks/useAds';
@@ -544,7 +545,7 @@ export default function Catalog() {
                   onChange={() => setSelectedBenefit(selectedBenefit === benefit ? null : benefit)}
                   className="w-3.5 h-3.5 accent-[#2563eb] rounded"
                 />
-                <span className="text-xs text-[color:var(--color-text-muted)]">{benefit}</span>
+                <span className="text-xs text-[color:var(--color-text-muted)]">{stripHtml(benefit)}</span>
               </label>
             ))}
           </div>
@@ -562,7 +563,7 @@ export default function Catalog() {
                   onChange={() => setSelectedAroma(selectedAroma === aroma ? null : aroma)}
                   className="w-3.5 h-3.5 accent-[#2563eb] rounded"
                 />
-                <span className="text-xs text-[color:var(--color-text-muted)]">{aroma}</span>
+                <span className="text-xs text-[color:var(--color-text-muted)]">{stripHtml(aroma)}</span>
               </label>
             ))}
           </div>
@@ -587,7 +588,7 @@ export default function Catalog() {
                   }}
                   className="w-3.5 h-3.5 accent-[#2563eb] rounded"
                 />
-                <span className="text-xs text-[color:var(--color-text-muted)] truncate">{val}</span>
+                <span className="text-xs text-[color:var(--color-text-muted)] truncate">{stripHtml(val)}</span>
               </label>
             ))}
           </div>

@@ -16,3 +16,8 @@ export const isQuotaError = (error: unknown) => {
         || errorText.includes('rate limit')
         || errorText.includes('code":429');
 };
+
+export const stripHtml = (html: string | null | undefined): string => {
+    if (!html) return '';
+    return html.replace(/<[^>]*>?/gm, ' ').replace(/\s+/g, ' ').trim();
+};
