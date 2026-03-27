@@ -992,34 +992,11 @@ export default function AdminBudTenderTab() {
                                     </div>
                                 </motion.div>
 
-                                <motion.div
-                                    whileHover={{ y: -5 }}
-                                    className="relative bg-zinc-950/80 border border-white/5 p-8 rounded-[2.5rem] overflow-hidden group md:col-span-3 lg:col-span-3"
-                                >
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center gap-8">
-                                            <div>
-                                                <div className="text-[10px] font-black tracking-widest uppercase text-blue-400 mb-2 flex items-center gap-2">
-                                                    <MessageSquare className="w-3 h-3" />
-                                                    Texte
-                                                </div>
-                                                <div className="text-4xl font-serif font-black text-white">{stats.conversion.textCount}</div>
-                                            </div>
-                                            <div className="w-px h-12 bg-white/10" />
-                                            <div>
-                                                <div className="text-[10px] font-black tracking-widest uppercase text-emerald-400 mb-2 flex items-center gap-2">
-                                                    <Volume2 className="w-3 h-3" />
-                                                    Vocal
-                                                </div>
-                                                <div className="text-4xl font-serif font-black text-white">{stats.conversion.voiceCount}</div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </motion.div>
+
                             </div>
 
                             {/* Main Charts Row */}
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                            <div className="grid grid-cols-1 gap-8">
                                 <Section icon={FileText} title="Top Questions Clients" description="Interrogations les plus fréquentes.">
                                     {isLoadingStats ? (
                                         <div className="h-64 flex items-center justify-center"><Clock className="w-8 h-8 animate-spin text-zinc-800" /></div>
@@ -1039,30 +1016,7 @@ export default function AdminBudTenderTab() {
                                     )}
                                 </Section>
 
-                                <Section icon={Zap} title="Usages par Canal" description="Breakdown des interactions (écrit vs vocal).">
-                                    {isLoadingStats ? (
-                                        <div className="h-64 flex items-center justify-center"><Clock className="w-8 h-8 animate-spin text-zinc-800" /></div>
-                                    ) : (
-                                        <div className="h-64">
-                                            <ResponsiveContainer width="100%" height="100%">
-                                                <BarChart data={stats.interactionTypes}>
-                                                    <CartesianGrid strokeDasharray="3 3" stroke="#18181b" vertical={false} />
-                                                    <XAxis dataKey="name" stroke="#52525b" fontSize={10} tickLine={false} axisLine={false} />
-                                                    <YAxis stroke="#52525b" fontSize={10} tickLine={false} axisLine={false} />
-                                                    <Tooltip
-                                                        cursor={{ fill: 'rgba(255,255,255,0.02)' }}
-                                                        contentStyle={{ backgroundColor: '#09090b', border: '1px solid #18181b', borderRadius: '16px', fontSize: '12px' }}
-                                                    />
-                                                    <Bar dataKey="value" name="Interactions" radius={[8, 8, 0, 0]}>
-                                                        {stats.interactionTypes.map((_entry, index) => (
-                                                            <Cell key={`cell-${index}`} fill={index === 0 ? '#39ff14' : '#3b82f6'} />
-                                                        ))}
-                                                    </Bar>
-                                                </BarChart>
-                                            </ResponsiveContainer>
-                                        </div>
-                                    )}
-                                </Section>
+
                             </div>
 
                             {/* Satisfaction Detail */}
