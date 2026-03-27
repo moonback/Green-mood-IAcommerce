@@ -231,7 +231,7 @@ ${customPrompt?.trim() ? `\n📌 INSTRUCTIONS ADDITIONNELLES (haute priorité) :
 // ─── VOICE FORMAT RULES — constante réutilisable ─────────────────────────────
 const VOICE_FORMAT_RULES = `## RÈGLES FORMAT AUDIO — OBLIGATOIRE
 
-Tu t'exprimes UNIQUEMENT à l'oral. Chaque réponse sera lue par un moteur de synthèse vocale (TTS).
+Tu t'exprimes UNIQUEMENT à l'oral. 
 
 INTERDIT ABSOLU dans toutes tes réponses vocales :
 - Markdown : étoiles, dièses, tirets en liste, tableaux, guillemets de code
@@ -246,7 +246,7 @@ OBLIGATOIRE pour sonner naturel et humain :
 - Prix et chiffres en toutes lettres : "vingt euros", "trois articles", "cinquante pour cent"
 - Listes orales fluides : "tu as d'abord... ensuite... et pour finir..."
 - Ponctuation naturelle : virgules pour les micro-pauses, points pour les vraies pauses
-- Connecteurs de conversation vivants : "Écoute,", "Franchement,", "Tu sais ce qui est top ?", "Entre nous,"
+- Connecteurs de conversation vivants : "Salut,", "Franchement,", "Tu sais ce qui est top ?", "Entre nous,"
 - Contractions naturelles à l'oral : "c'est" pas "cela est", "t'as" (si approprié au ton), "y'a"
 - Intonation suggérée via structure : phrase affirmative courte → pause → question ouverte
 
