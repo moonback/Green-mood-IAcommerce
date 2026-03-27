@@ -1,6 +1,6 @@
 import { Product } from './types';
 import { BudTenderSettings, QuizOption } from './budtenderSettings';
-import { getQuizPrompt, getChatPrompt } from './budtenderPrompts';
+import { getQuizPrompt } from './budtenderPrompts';
 import { CATEGORY_SLUGS } from './constants';
 import { supabase } from './supabase';
 import { useSettingsStore } from '../store/settingsStore';

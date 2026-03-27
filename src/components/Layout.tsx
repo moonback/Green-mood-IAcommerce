@@ -33,7 +33,7 @@ export default function Layout() {
     <div className="min-h-screen flex flex-col bg-[color:var(--color-bg)] text-[color:var(--color-text)] font-sans selection:bg-[color:var(--color-primary)]/20 selection:text-[color:var(--color-primary-contrast)] transition-colors duration-300">
       <AgeGate />
       <CartSidebar />
-      {user && location.pathname !== '/assistant' && ((!settings) || (settings.budtender_chat_enabled !== false) || (settings.budtender_voice_enabled !== false)) && (
+      {user && ((!settings) || (settings.budtender_voice_enabled !== false)) && (
         <div className="hidden md:block">
           <BudTender />
         </div>

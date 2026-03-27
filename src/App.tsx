@@ -52,7 +52,7 @@ const MachineConformity = lazy(() => import("./pages/MachineConformity"));
 const CGV = lazy(() => import("./pages/CGV"));
 const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
 const FAQPage = lazy(() => import("./pages/FAQPage"));
-const Assistant = lazy(() => import("./pages/Assistant"));
+// Assistant page supprimée — seul le mode vocal est conservé
 
 function PageLoader() {
   return (
@@ -100,7 +100,7 @@ export default function App() {
 
           <Route path="customer-display" element={<CustomerDisplay />} />
           <Route path="afficheur" element={<StoreDisplay />} />
-          <Route path="assistant" element={<Assistant />} />
+          {/* Route /assistant supprimée — vocal uniquement */}
 
           <Route path="/" element={<Layout />}>
             {/* Pages publiques */}

@@ -2,7 +2,7 @@ import { useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { Product } from '../lib/types';
 import { BudTenderSettings } from '../lib/budtenderSettings';
-import { getChatPrompt } from '../lib/budtenderPrompts';
+// getChatPrompt supprimé — ce hook est obsolète (mode vocal uniquement)
 import { Message } from '../lib/budtenderHelpers';
 import { getRelevantProductsForQueryWithEmbedding } from '../lib/budtenderVectorSearch';
 import { getRelevantKnowledge } from '../lib/budtenderKnowledge';
@@ -222,7 +222,7 @@ export function useBudTenderChat({
         const budtenderName = storeSettings.budtender_name || 'Assistant';
         const storeName = storeSettings.store_name || 'My Store';
         const effectiveCustomPrompt = [storeSettings.budtender_base_prompt?.trim(), settings.custom_chat_prompt?.trim()].filter(Boolean).join('\n\n');
-        const systemPrompt = getChatPrompt(text, catalog, userContext, effectiveCustomPrompt, budtenderName, storeName);
+        const systemPrompt = ''; // getChatPrompt supprimé — hook obsolète
 
         const history: { role: 'user' | 'assistant'; content: string }[] = [];
         messages
