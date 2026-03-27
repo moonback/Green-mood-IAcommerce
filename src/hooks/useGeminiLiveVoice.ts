@@ -13,7 +13,7 @@ import { useSettingsStore } from '../store/settingsStore';
 import { useRecentlyViewedStore } from '../store/recentlyViewedStore';
 
 // Stable GA model — the preview model has a known 1008 bug with function calling
-const LIVE_MODEL = 'models/gemini-2.5-flash-native-audio-latest';
+const LIVE_MODEL = 'models/gemini-3.1-flash-live-preview';
 
 
 const INPUT_SAMPLE_RATE = 16000;
@@ -861,7 +861,7 @@ export function useGeminiLiveVoice({
 
         try {
           sessionRef.current.sendRealtimeInput({
-            media: {
+            audio: {
               mimeType: 'audio/pcm',
               data: toBase64(new Uint8Array(pcm.buffer))
             }
