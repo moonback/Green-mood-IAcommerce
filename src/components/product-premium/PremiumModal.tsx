@@ -46,7 +46,7 @@ export default function PremiumModal({ isOpen, onClose, title, children }: Premi
             >
               {/* Header */}
               <div className="flex items-center justify-between border-b border-[color:var(--color-border)] px-8 py-6">
-                <h2 className="text-xl font-black uppercase tracking-widest text-[color:var(--color-text)]">
+                <h2 className="text-base text-[color:var(--color-text)]" style={{ fontFamily: "'DM Mono', monospace", letterSpacing: '0.22em', textTransform: 'uppercase' }}>
                   {title}
                 </h2>
                 <button

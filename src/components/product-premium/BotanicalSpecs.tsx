@@ -35,7 +35,7 @@ export default function ProductSpecs({ specs }: Props) {
             <FlaskConical className="w-3.5 h-3.5" />
             <span className="text-[10px] font-black uppercase tracking-[0.2em] leading-none">Analyse Botanique & Transparence</span>
           </div>
-          <h3 className="text-4xl md:text-5xl font-black text-[color:var(--color-text)] tracking-tight leading-tight">
+          <h3 className="text-4xl md:text-5xl text-[color:var(--color-text)] leading-tight" style={{ fontFamily: "'DM Serif Display', Georgia, serif" }}>
             Transparence <br/>
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-[color:var(--color-primary)] to-emerald-400">
               Absolue.
@@ -156,7 +156,7 @@ export default function ProductSpecs({ specs }: Props) {
                                     </span>
                                   )}
                                 </div>
-                                <h4 className="text-3xl md:text-4xl font-black text-[color:var(--color-text)] tracking-tight">
+                                <h4 className="text-3xl md:text-4xl text-[color:var(--color-text)]" style={{ fontFamily: "'DM Serif Display', Georgia, serif" }}>
                                   {activeSpec.name}
                                 </h4>
                             </div>
@@ -295,7 +295,7 @@ export default function ProductSpecs({ specs }: Props) {
                   </span>
                 </div>
 
-                <h5 className="text-lg font-black text-[color:var(--color-text)] tracking-tight mb-3 leading-tight group-hover:text-[color:var(--color-primary)] transition-colors duration-300">
+                <h5 className="text-lg text-[color:var(--color-text)] mb-3 leading-tight group-hover:text-[color:var(--color-primary)] transition-colors duration-300" style={{ fontFamily: "'DM Serif Display', Georgia, serif" }}>
                   {spec.name}
                 </h5>
 

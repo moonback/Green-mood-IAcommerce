@@ -33,7 +33,7 @@ export default function ConsumptionGuide() {
       <div className="mx-auto max-w-[1200px] px-4 py-16 sm:px-6 lg:px-8">
         <div className="mb-10">
           <p className="text-[10px] font-bold uppercase tracking-[0.35em] text-[color:var(--color-primary)] mb-2">Artisans de la Détente</p>
-          <h3 className="text-3xl font-['Inter',sans-serif] font-bold text-[color:var(--color-text)]">Un Voyage Botanique d'Exception</h3>
+          <h3 className="text-3xl text-[color:var(--color-text)]" style={{ fontFamily: "'DM Serif Display', Georgia, serif" }}>Un Voyage Botanique d'Exception</h3>
           <p className="mt-2 text-sm text-[color:var(--color-text-muted)] max-w-xl">
             {settings.store_name} vous guide vers une expérience de CBD premium, de la sélection des graines à votre rituel quotidien.
           </p>
@@ -64,7 +64,7 @@ export default function ConsumptionGuide() {
                   <span className="text-[color:var(--color-text-subtle)]">·</span>
                   <p className="text-[10px] text-[color:var(--color-text-muted)]">{step.time}</p>
                 </div>
-                <h4 className="text-xl font-['Inter',sans-serif] font-bold text-[color:var(--color-text)] group-hover:text-[color:var(--color-primary)] transition-colors">{step.title}</h4>
+                <h4 className="text-xl text-[color:var(--color-text)] group-hover:text-[color:var(--color-primary)] transition-colors" style={{ fontFamily: "'DM Serif Display', Georgia, serif" }}>{step.title}</h4>
                 <p className="mt-3 text-sm text-[color:var(--color-text-muted)] leading-relaxed">{step.body}</p>
               </div>
             </motion.article>

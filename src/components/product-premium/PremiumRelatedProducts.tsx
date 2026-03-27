@@ -17,7 +17,7 @@ export default function PremiumRelatedProducts({ products }: Props) {
         <div className="flex items-end justify-between mb-10">
           <div>
             <p className="text-[10px] font-black uppercase tracking-[0.35em] text-[color:var(--color-primary)] mb-2">Vous aimerez aussi</p>
-            <h3 className="text-3xl font-['Inter',sans-serif] font-black text-[color:var(--color-text)] uppercase">Produits associés</h3>
+            <h3 className="text-3xl text-[color:var(--color-text)]" style={{ fontFamily: "'DM Serif Display', Georgia, serif" }}>Produits associés</h3>
           </div>
           <Link
             to="/catalogue"

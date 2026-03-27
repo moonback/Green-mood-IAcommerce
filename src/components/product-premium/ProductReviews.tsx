@@ -30,7 +30,7 @@ export default function ProductReviews({ reviews }: Props) {
           <p className="text-[10px] font-black uppercase tracking-[0.35em] text-[color:var(--color-primary)] mb-2">
             Expériences clients
           </p>
-          <h3 className="text-3xl font-['Inter',sans-serif] font-black text-[color:var(--color-text)] uppercase">Avis vérifiés</h3>
+          <h3 className="text-3xl text-[color:var(--color-text)]" style={{ fontFamily: "'DM Serif Display', Georgia, serif" }}>Avis vérifiés</h3>
         </div>
 
         {/* ── Empty state ── */}
@@ -58,7 +58,7 @@ export default function ProductReviews({ reviews }: Props) {
             {/* ── Summary card ── */}
             <div className="rounded-2xl border border-[color:var(--color-border)] bg-[color:var(--color-card)] p-6 space-y-5 h-fit shadow-sm">
               <div className="text-center">
-                <p className="text-6xl font-black text-[color:var(--color-text)]">{average.toFixed(1)}</p>
+                <p className="text-6xl text-[color:var(--color-text)]" style={{ fontFamily: "'DM Serif Display', Georgia, serif" }}>{average.toFixed(1)}</p>
                 <div className="flex justify-center mt-2 gap-0.5">
                   {ratingToStars(Math.round(average)).map((filled, i) => (
                     <Star

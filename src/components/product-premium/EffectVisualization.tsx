@@ -24,7 +24,7 @@ export default function EffectVisualization({ metrics = {} as any }: Props) {
       <div className="mx-auto max-w-[1200px] px-4 py-16 sm:px-6 lg:px-8">
         <div className="mb-10">
           <p className="text-[10px] font-black uppercase tracking-[0.35em] text-[color:var(--color-primary)] mb-2">Analyse produit</p>
-          <h3 className="text-3xl font-['Inter',sans-serif] font-black text-[color:var(--color-text)] uppercase">Évaluation Complète</h3>
+          <h3 className="text-3xl text-[color:var(--color-text)]" style={{ fontFamily: "'DM Serif Display', Georgia, serif" }}>Évaluation Complète</h3>
           <p className="mt-2 text-sm text-[color:var(--color-text-muted)] font-medium">Score sur 10 basé sur la qualité globale, le design et le rapport qualité/prix.</p>
         </div>
 

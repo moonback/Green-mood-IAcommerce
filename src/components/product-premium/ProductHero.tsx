@@ -120,7 +120,7 @@ export default function ProductHero({ product, quantity, onQuantityChange, onAdd
                 )}
               </div>
 
-              <h1 className="text-3xl font-['Inter',sans-serif] font-black text-[color:var(--color-text)] leading-tight md:text-5xl xl:text-6xl uppercase tracking-tighter">
+              <h1 className="text-3xl text-[color:var(--color-text)] leading-tight md:text-5xl xl:text-6xl" style={{ fontFamily: "'DM Serif Display', Georgia, serif" }}>
                 {product.name}
               </h1>
 

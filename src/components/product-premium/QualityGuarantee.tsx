@@ -19,7 +19,7 @@ export default function QualityGuarantee() {
       <div className="mx-auto max-w-[1200px] px-4 py-16 sm:px-6 lg:px-8">
         <div className="mb-10 text-center sm:text-left">
           <p className="text-[10px] font-black uppercase tracking-[0.35em] text-[color:var(--color-primary)] mb-2">Notre engagement</p>
-          <h3 className="text-3xl font-['Inter',sans-serif] font-black text-[color:var(--color-text)] uppercase">L'Excellence du <span className="text-[color:var(--color-primary)]">CBD Premium</span></h3>
+          <h3 className="text-3xl text-[color:var(--color-text)]" style={{ fontFamily: "'DM Serif Display', Georgia, serif" }}>L'Excellence du <span className="text-[color:var(--color-primary)] italic">CBD Premium</span></h3>
           <p className="mt-2 text-sm text-[color:var(--color-text-muted)] max-w-xl font-medium">
             Découvrez une sélection exclusive de produits botaniques chez {settings.store_name}, avec la garantie d'une pureté absolue et d'effets contrôlés.
           </p>

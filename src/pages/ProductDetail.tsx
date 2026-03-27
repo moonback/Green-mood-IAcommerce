@@ -183,6 +183,16 @@ export default function ProductDetail() {
   const [recentlyViewed, setRecentlyViewed] = useState<Array<Pick<BaseProduct, 'id' | 'name' | 'slug' | 'image_url' | 'price'>>>([]);
   const [allCategories, setAllCategories] = useState<Category[]>([]);
 
+  // ── Premium font injection ──
+  useEffect(() => {
+    if (document.querySelector('link[data-account-fonts]')) return;
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.setAttribute('data-account-fonts', '1');
+    link.href = 'https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500;700&display=swap';
+    document.head.appendChild(link);
+  }, []);
+
   // Modal states
   const [activeModal, setActiveModal] = useState<'specs' | 'performance' | 'story' | 'reviews' | 'related' | null>(null);
 
@@ -317,30 +327,33 @@ export default function ProductDetail() {
       <SEO {...buildProductSEO(product)} schema={breadcrumbJsonLd} />
 
       {/* ── Header Area ── */}
-      <div className="flex-none z-20">
-        <div className="mx-auto max-w-[1400px] px-4 pt-6 sm:px-6 lg:px-8 flex items-center justify-between">
-          <nav className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-[color:var(--color-text-subtle)] flex-wrap">
-            <Link to="/" className="hover:text-[color:var(--color-primary)] transition-colors">Accueil</Link>
-            <ChevronRight className="w-3 h-3 flex-shrink-0 text-[color:var(--color-border-strong)]" />
-            <Link to="/catalogue" className="hover:text-[color:var(--color-primary)] transition-colors">Catalogue</Link>
+      <div className="flex-none z-20"
+        style={{ borderBottom: '1px solid color-mix(in srgb, var(--color-border) 50%, transparent)' }}>
+        <div className="mx-auto max-w-[1400px] px-4 py-3.5 sm:px-6 lg:px-8 flex items-center justify-between gap-4">
+          <nav className="flex items-center gap-1.5 flex-wrap min-w-0"
+            style={{ fontFamily: "'DM Mono', monospace", fontSize: '10px', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--color-text-muted)' }}>
+            <Link to="/" className="hover:text-[color:var(--color-primary)] transition-colors shrink-0">Accueil</Link>
+            <ChevronRight className="w-2.5 h-2.5 flex-shrink-0 opacity-40" />
+            <Link to="/catalogue" className="hover:text-[color:var(--color-primary)] transition-colors shrink-0">Catalogue</Link>
             {categoryAncestors.map(cat => (
               <Fragment key={cat.id}>
-                <ChevronRight className="w-3 h-3 flex-shrink-0 text-[color:var(--color-border-strong)]" />
-                <Link to={`/catalogue?category=${cat.slug}`} className="hover:text-[color:var(--color-primary)] transition-colors">
+                <ChevronRight className="w-2.5 h-2.5 flex-shrink-0 opacity-40" />
+                <Link to={`/catalogue?category=${cat.slug}`} className="hover:text-[color:var(--color-primary)] transition-colors shrink-0">
                   {cat.name}
                 </Link>
               </Fragment>
             ))}
-            <ChevronRight className="w-3 h-3 flex-shrink-0 text-[color:var(--color-border-strong)]" />
-            <span className="text-[color:var(--color-primary)] truncate max-w-[180px] font-black">{product.name}</span>
+            <ChevronRight className="w-2.5 h-2.5 flex-shrink-0 opacity-40" />
+            <span className="text-[color:var(--color-primary)] truncate max-w-[200px]">{product.name}</span>
           </nav>
 
           <button
             onClick={() => navigate(-1)}
-            className="flex items-center gap-2 text-xs text-[color:var(--color-text-muted)] hover:text-[color:var(--color-text)] transition-all group font-black uppercase tracking-widest"
+            className="group flex items-center gap-1.5 shrink-0 transition-all"
+            style={{ fontFamily: "'DM Mono', monospace", fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--color-text-muted)' }}
           >
-            <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-            <span>Retour</span>
+            <ArrowLeft className="w-3.5 h-3.5 transition-transform duration-300 group-hover:-translate-x-1 group-hover:text-[color:var(--color-primary)]" />
+            <span className="group-hover:text-[color:var(--color-primary)] transition-colors">Retour</span>
           </button>
         </div>
       </div>

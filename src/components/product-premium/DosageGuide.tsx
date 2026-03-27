@@ -63,10 +63,11 @@ export default function DosageGuide() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: 0.1 }}
-              className="mt-4 text-4xl font-semibold text-[color:var(--color-text)] md:text-5xl"
+              className="mt-4 text-4xl text-[color:var(--color-text)] md:text-5xl"
+              style={{ fontFamily: "'DM Serif Display', Georgia, serif" }}
             >
               Trouvez votre<br />
-              <span className="text-[color:var(--color-text-subtle)] italic font-light">équilibre.</span>
+              <span className="text-[color:var(--color-text-subtle)] italic">équilibre.</span>
             </motion.h3>
 
             <motion.div

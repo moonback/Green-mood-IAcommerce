@@ -59,8 +59,8 @@ export default function ProductStory({ title, text }: Props) {
           </div>
 
           <div className="space-y-6">
-            <h2 className="text-4xl font-black tracking-tight text-[color:var(--color-text)] sm:text-5xl lg:text-6xl uppercase leading-[1.1]">
-              <span className="block text-[color:var(--color-text-subtle)] text-2xl font-bold mb-2 tracking-widest">Zoom sur</span>
+            <h2 className="text-4xl text-[color:var(--color-text)] sm:text-5xl lg:text-6xl leading-[1.1]" style={{ fontFamily: "'DM Serif Display', Georgia, serif" }}>
+              <span className="block text-[color:var(--color-text-subtle)] text-xl mb-2" style={{ fontFamily: "'DM Mono', monospace", fontSize: '11px', letterSpacing: '0.3em', textTransform: 'uppercase' }}>Zoom sur</span>
               {title}
             </h2>
 

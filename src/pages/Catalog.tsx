@@ -127,6 +127,16 @@ export default function Catalog() {
   const addToast = useToastStore((s) => s.addToast);
   const { settings } = useSettingsStore();
 
+  // ── Premium font injection ──
+  useEffect(() => {
+    if (document.querySelector('link[data-account-fonts]')) return;
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.setAttribute('data-account-fonts', '1');
+    link.href = 'https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500;700&display=swap';
+    document.head.appendChild(link);
+  }, []);
+
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -893,6 +903,50 @@ export default function Catalog() {
         </div>
       </div> */}
 
+      {/* ──────────────── PAGE HERO HEADER ──────────────── */}
+      <div style={{ borderBottom: '1px solid color-mix(in srgb, var(--color-border) 100%, transparent)', background: 'color-mix(in srgb, var(--color-card) 40%, transparent)' }}>
+        <div className="max-w-full mx-auto px-4 md:px-10 lg:px-14 py-8 md:py-10">
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-5">
+            <div className="space-y-1.5">
+              <p style={{ fontFamily: "'DM Mono', monospace", fontSize: '10px', letterSpacing: '0.3em', textTransform: 'uppercase', color: 'var(--color-primary)' }}>
+                {settings.store_sector}&nbsp;·&nbsp;{!isLoading ? `${totalCount} produit${totalCount !== 1 ? 's' : ''}` : '…'}
+              </p>
+              <h1 className="text-[color:var(--color-text)] leading-none"
+                style={{ fontFamily: "'DM Serif Display', Georgia, serif", fontSize: 'clamp(1.9rem, 4vw, 2.8rem)' }}>
+                Notre Catalogue
+              </h1>
+            </div>
+            <div className="relative w-full md:w-[340px]">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none text-[color:var(--color-text-muted)]" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Rechercher un produit…"
+                className="w-full rounded-2xl pl-11 pr-10 py-3.5 outline-none transition-all"
+                style={{
+                  background: 'color-mix(in srgb, var(--color-bg) 100%, transparent)',
+                  border: '1px solid color-mix(in srgb, var(--color-border) 100%, transparent)',
+                  color: 'var(--color-text)',
+                  fontFamily: "'DM Mono', monospace",
+                  fontSize: '12px',
+                }}
+                onFocus={(e) => { (e.target as HTMLInputElement).style.borderColor = 'var(--color-primary)'; }}
+                onBlur={(e) => { (e.target as HTMLInputElement).style.borderColor = ''; }}
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 w-7 h-7 rounded-xl flex items-center justify-center text-[color:var(--color-text-muted)] hover:text-[color:var(--color-text)] transition-colors"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* ──────────────── CATEGORY PILLS (Amazon dept nav) ──────────────── */}
       <div className="border-b border-[color:var(--color-border)] bg-[color:var(--color-card)]/85 backdrop-blur-xl">
         <div className="max-w-full mx-auto px-4 md:px-10 lg:px-14">
@@ -936,7 +990,10 @@ export default function Catalog() {
                     <div className="w-8 h-8 rounded-xl bg-green-neon/10 flex items-center justify-center">
                       <SlidersHorizontal className="w-4 h-4 text-green-neon" />
                     </div>
-                    <span className="text-sm font-black uppercase tracking-[0.1em] text-[color:var(--color-text)]">Configuration</span>
+                    <span className="text-[color:var(--color-text)]"
+                      style={{ fontFamily: "'DM Mono', monospace", fontSize: '11px', letterSpacing: '0.18em', textTransform: 'uppercase', fontWeight: 700 }}>
+                      Filtres
+                    </span>
                   </div>
                   {activeFilterCount > 0 && (
                     <button
@@ -962,16 +1019,20 @@ export default function Catalog() {
               <div className="flex items-center gap-3">
                 <p className="text-sm text-[color:var(--color-text)]">
                   {isLoading ? (
-                    <span className="text-[color:var(--color-text-muted)]">Chargement…</span>
+                    <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '11px', color: 'var(--color-text-muted)' }}>Chargement…</span>
                   ) : totalCount === 0 ? (
-                    <span>0 résultat</span>
+                    <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '11px' }}>0 résultat</span>
                   ) : (
-                    <>
-                      <strong className="text-[color:var(--color-text)]">{(currentPage - 1) * PRODUCTS_PER_PAGE + 1}–{Math.min(currentPage * PRODUCTS_PER_PAGE, totalCount)}</strong>
-                      <span className="text-[color:var(--color-text-muted)]"> sur </span>
-                      <strong className="text-[color:var(--color-text)]">{totalCount > 100 ? '100+' : totalCount}</strong>
-                      <span className="text-[color:var(--color-text-muted)]"> résultats</span>
-                    </>
+                    <span style={{ fontFamily: "'DM Mono', monospace", fontSize: '11px', color: 'var(--color-text-muted)' }}>
+                      <span style={{ fontFamily: "'DM Serif Display', serif", fontSize: '1.1rem', color: 'var(--color-text)', fontStyle: 'normal' }}>
+                        {(currentPage - 1) * PRODUCTS_PER_PAGE + 1}–{Math.min(currentPage * PRODUCTS_PER_PAGE, totalCount)}
+                      </span>
+                      {' '}sur{' '}
+                      <span style={{ fontFamily: "'DM Serif Display', serif", fontSize: '1.1rem', color: 'var(--color-text)', fontStyle: 'normal' }}>
+                        {totalCount > 100 ? '100+' : totalCount}
+                      </span>
+                      {' '}résultats
+                    </span>
                   )}
                 </p>
                 {selectedCategory && (
@@ -1080,8 +1141,14 @@ export default function Catalog() {
                   <Search className="w-7 h-7 text-[color:var(--color-text-muted)]" />
                 </div>
                 <div>
-                  <h2 className="text-xl font-['Inter',sans-serif] font-semibold text-[color:var(--color-text)]">Aucun résultat trouvé</h2>
-                  <p className="text-[color:var(--color-text-muted)] mt-1.5 text-sm max-w-sm">Essayez d'élargir votre recherche ou de réinitialiser les filtres.</p>
+                  <h2 className="text-[color:var(--color-text)]"
+                  style={{ fontFamily: "'DM Serif Display', Georgia, serif", fontSize: '1.75rem' }}>
+                  Aucun résultat trouvé
+                </h2>
+                <p className="text-[color:var(--color-text-muted)] mt-1.5 max-w-sm"
+                  style={{ fontFamily: "'DM Mono', monospace", fontSize: '11px', letterSpacing: '0.04em' }}>
+                  Essayez d'élargir votre recherche ou de réinitialiser les filtres.
+                </p>
                 </div>
                 <Button
                   variant="primary"
@@ -1152,7 +1219,7 @@ export default function Catalog() {
                         <div className="w-14 h-14 rounded-2xl bg-[color:var(--color-bg-elevated)] flex items-center justify-center mx-auto border border-[color:var(--color-border)] text-green-neon shadow-lg glow-box-green-sm">
                           <ShieldCheck className="w-7 h-7" />
                         </div>
-                        <h3 className="text-lg font-bold text-[color:var(--color-text)] tracking-tight">Qualité Certifiée</h3>
+                        <h3 className="text-[color:var(--color-text)]" style={{ fontFamily: "'DM Serif Display', Georgia, serif", fontSize: '1.2rem' }}>Qualité Certifiée</h3>
                         <p className="text-xs text-[color:var(--color-text-muted)] leading-relaxed uppercase tracking-widest">Tests techniques & conformité CE</p>
                       </div>
 
@@ -1161,7 +1228,7 @@ export default function Catalog() {
                           <div className="w-14 h-14 rounded-2xl bg-[color:var(--color-bg-elevated)] flex items-center justify-center mx-auto border border-[color:var(--color-border)] text-[color:var(--color-primary)] shadow-lg">
                             <Sparkles className="w-7 h-7" />
                           </div>
-                          <h3 className="text-lg font-bold text-[color:var(--color-text)] tracking-tight">Fidélité Récompensée</h3>
+                          <h3 className="text-[color:var(--color-text)]" style={{ fontFamily: "'DM Serif Display', Georgia, serif", fontSize: '1.2rem' }}>Fidélité Récompensée</h3>
                           <p className="text-xs text-[color:var(--color-text-muted)] leading-relaxed uppercase tracking-widest">Cumulez des {settings.loyalty_currency_name} à chaque achat</p>
                         </div>
                       )}
@@ -1170,7 +1237,7 @@ export default function Catalog() {
                         <div className="w-14 h-14 rounded-2xl bg-[color:var(--color-bg-elevated)] flex items-center justify-center mx-auto border border-[color:var(--color-border)] text-green-neon shadow-lg glow-box-green-sm">
                           <Info className="w-7 h-7" />
                         </div>
-                        <h3 className="text-lg font-bold text-[color:var(--color-text)] tracking-tight">Livraison Express</h3>
+                        <h3 className="text-[color:var(--color-text)]" style={{ fontFamily: "'DM Serif Display', Georgia, serif", fontSize: '1.2rem' }}>Livraison Express</h3>
                         <p className="text-xs text-[color:var(--color-text-muted)] leading-relaxed uppercase tracking-widest">Chez vous en 24h/48h partout en France</p>
                       </div>
                     </div>
