@@ -376,12 +376,7 @@ export default function AdminBudTenderTab() {
             // We use multiple keys: visibility flags and full config
             await Promise.all([
                 supabase.from('store_settings').upsert([
-                    { key: 'budtender_chat_enabled', value: globalSettings.budtender_chat_enabled, updated_at: new Date().toISOString() },
-                    { key: 'budtender_voice_enabled', value: globalSettings.budtender_voice_enabled, updated_at: new Date().toISOString() },
-                    { key: 'budtender_voice_name', value: globalSettings.budtender_voice_name || 'Kore', updated_at: new Date().toISOString() },
-                    { key: 'budtender_name', value: globalSettings.budtender_name || 'Luna', updated_at: new Date().toISOString() },
-                    { key: 'budtender_base_prompt', value: globalSettings.budtender_base_prompt || '', updated_at: new Date().toISOString() },
-                    { key: 'budtender_enabled', value: globalSettings.budtender_chat_enabled || globalSettings.budtender_voice_enabled, updated_at: new Date().toISOString() },
+                    { key: 'budtender_enabled', value: globalSettings.budtender_voice_enabled, updated_at: new Date().toISOString() },
                     { key: 'budtender_config', value: settings, updated_at: new Date().toISOString() }
                 ], { onConflict: 'key' })
             ]);
@@ -478,22 +473,6 @@ export default function AdminBudTenderTab() {
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                             <Section icon={Zap} title="Canaux d'Activation" description="Déterminez sur quels points de contact l'IA BudTender intervient.">
                                 <div className="space-y-4">
-                                    <div className="flex items-center justify-between p-6 bg-zinc-950/40 rounded-3xl border border-white/5 hover:border-emerald-500/20 transition-all group">
-                                        <div className="flex items-center gap-4">
-                                            <div className="w-12 h-12 rounded-2xl bg-zinc-900 flex items-center justify-center text-zinc-400 group-hover:text-emerald-400 transition-colors">
-                                                <MessageSquare className="w-5 h-5" />
-                                            </div>
-                                            <div>
-                                                <p className="text-sm font-bold text-white">Chat Interactif</p>
-                                                <p className="text-[11px] text-zinc-500">Bulle de discussion et quiz guidé</p>
-                                            </div>
-                                        </div>
-                                        <Toggle
-                                            enabled={globalSettings.budtender_chat_enabled}
-                                            onChange={(v) => updateSettingsInStore({ budtender_chat_enabled: v })}
-                                        />
-                                    </div>
-
                                     <div className="flex items-center justify-between p-6 bg-zinc-950/40 rounded-3xl border border-white/5 hover:border-emerald-500/20 transition-all group">
                                         <div className="flex items-center gap-4">
                                             <div className="w-12 h-12 rounded-2xl bg-zinc-900 flex items-center justify-center text-zinc-400 group-hover:text-emerald-400 transition-colors">
@@ -683,25 +662,6 @@ export default function AdminBudTenderTab() {
                                             className={INPUT + ' resize-none font-mono text-[12px] !leading-7 !px-6 !py-5 bg-zinc-950/80'}
                                         />
                                     </div>
-
-                                    <div className="space-y-4">
-                                        <div className="flex items-center justify-between">
-                                            <label className="text-[10px] text-zinc-400 font-black uppercase tracking-[0.2em]">
-                                                Prompt Conversation Libre
-                                            </label>
-                                            <span className={`text-[10px] font-mono ${(settings.custom_chat_prompt ?? '').length > 550 ? 'text-red-400' : 'text-zinc-600'}`}>
-                                                {(settings.custom_chat_prompt ?? '').length}/600
-                                            </span>
-                                        </div>
-                                        <textarea
-                                            value={settings.custom_chat_prompt ?? ''}
-                                            onChange={(e) => update({ custom_chat_prompt: e.target.value })}
-                                            rows={8}
-                                            maxLength={600}
-                                            placeholder="Ex: Utilise un ton décontracté..."
-                                            className={INPUT + ' resize-none font-mono text-[12px] !leading-7 !px-6 !py-5 bg-zinc-950/80'}
-                                        />
-                                    </div>
                                 </div>
 
                                 <div className="mt-8 pt-8 border-t border-white/5 space-y-4">
@@ -728,14 +688,13 @@ export default function AdminBudTenderTab() {
                                     <button
                                         onClick={() => update({
                                             custom_quiz_prompt: BUDTENDER_DEFAULTS.custom_quiz_prompt,
-                                            custom_chat_prompt: BUDTENDER_DEFAULTS.custom_chat_prompt,
                                         })}
                                         className="flex items-center gap-2 px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest bg-zinc-900 text-zinc-500 hover:text-white border border-white/5 transition-all"
                                     >
                                         <Clock className="w-3 h-4" /> Restaurer défauts
                                     </button>
                                     <button
-                                        onClick={() => update({ custom_quiz_prompt: '', custom_chat_prompt: '' })}
+                                        onClick={() => update({ custom_quiz_prompt: '' })}
                                         className="flex items-center gap-2 px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest bg-zinc-900 text-zinc-500 hover:text-red-400 border border-white/5 transition-all"
                                     >
                                         <Trash2 className="w-3 h-4" /> Vider
