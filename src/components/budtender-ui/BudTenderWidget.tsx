@@ -46,9 +46,9 @@ export default function BudTenderWidget({
         try { localStorage.setItem('budtender_widget_hidden', String(next)); } catch { /* noop */ }
     };
 
-    const defaultName = budtenderName || settings.budtender_name || 'BudTender';
+    const defaultName = budtenderName || settings.budtender_name || 'Vendeur IA';
     const displayLabel = label || defaultName;
-    const displaySubLabel = subLabel || 'Assistant Vocal';
+    const displaySubLabel = subLabel || 'Expert Bien-être';
 
     return (
         <motion.div
@@ -143,7 +143,7 @@ export default function BudTenderWidget({
 
                     <div className={`hidden sm:block absolute right-full mr-3 top-1/2 -translate-y-1/2 p-3 rounded-2xl border backdrop-blur-3xl opacity-0 group-hover:opacity-100 translate-x-2 group-hover:translate-x-0 transition-all duration-300 pointer-events-none whitespace-nowrap text-left min-w-[190px] ${isLightTheme ? 'bg-white/95 border-slate-200 shadow-[0_18px_40px_rgba(15,23,42,0.12)]' : 'bg-zinc-950/95 border-white/[0.1] shadow-[0_20px_50px_rgba(0,0,0,0.65)]'}`}>
                         <p className={`text-[10px] font-black uppercase tracking-[0.18em] leading-none ${isLightTheme ? 'text-slate-900' : 'text-white'}`}>
-                            Assistant Vocal
+                            Conseiller IA
                         </p>
                         <p className={`mt-2 text-[9px] font-semibold uppercase tracking-[0.14em] leading-relaxed ${isLightTheme ? 'text-slate-500' : 'text-zinc-400'}`}>
                             Questions produits, suivi
