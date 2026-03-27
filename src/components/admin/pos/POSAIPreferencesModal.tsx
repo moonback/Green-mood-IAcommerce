@@ -10,6 +10,8 @@ interface POSAIPreferencesModalProps {
     onViewOrders?: () => void;
     onClose: () => void;
     isLightTheme?: boolean;
+    products?: any[];
+    onAddToCart?: (product: any) => void;
 }
 
 const PREF_LABELS: Record<string, string> = {
@@ -60,6 +62,8 @@ export default function POSAIPreferencesModal({
     onViewOrders,
     onClose,
     isLightTheme,
+    products,
+    onAddToCart,
 }: POSAIPreferencesModalProps) {
     return (
         <div className="fixed inset-0 z-[120] flex items-center justify-center p-2 sm:p-4 bg-black/60 backdrop-blur-xl">
@@ -171,6 +175,68 @@ export default function POSAIPreferencesModal({
                         <IconCard icon={Clock} label="Format" value={t(preferences.preferred_format)} isLightTheme={isLightTheme} color="text-indigo-500" />
                         <IconCard icon={UserIcon} label="Age" value={t(preferences.age_range)} isLightTheme={isLightTheme} color="text-zinc-500" />
                     </div>
+
+                    {/* ── AI Sales Playbook (Omnicanal) ── */}
+                    <div className={`mt-6 p-5 rounded-[2.5rem] border ${isLightTheme ? 'bg-emerald-600 text-white border-emerald-500' : 'bg-green-500 text-black border-green-400'}`}>
+                        <div className="flex items-center gap-3 mb-4">
+                            <Brain className="w-5 h-5" />
+                            <h4 className="text-[11px] font-black uppercase tracking-[0.2em]">Stratégie de Vente IA</h4>
+                        </div>
+                        <div className="space-y-3">
+                            <div className="flex gap-3 items-start">
+                                <div className={`w-1.5 h-1.5 rounded-full mt-1.5 ${isLightTheme ? 'bg-white' : 'bg-black'}`} />
+                                <p className="text-xs font-bold leading-relaxed">
+                                    {preferences.budget_range === 'low' 
+                                        ? "Client sensible au prix : Proposez des formats 10g ou des Bundles pour un meilleur ratio prix/gramme."
+                                        : "Incitez à la découverte : Ce client a le budget pour tester les nouveautés Premium."}
+                                </p>
+                            </div>
+                            <div className="flex gap-3 items-start">
+                                <div className={`w-1.5 h-1.5 rounded-full mt-1.5 ${isLightTheme ? 'bg-white' : 'bg-black'}`} />
+                                <p className="text-xs font-bold leading-relaxed">
+                                    {preferences.experience_level === 'beginner'
+                                        ? "Profil Débutant : Rassurez sur le dosage et commencez par des produits doux (Infusions ou CBD < 10%)."
+                                        : "Profil Expert : Proposez des résines puissantes ou des extractions à forte concentration."}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* ── AI Recommended Products ── */}
+                    {products && products.length > 0 && (
+                        <div className="mt-8">
+                            <div className="flex items-center gap-3 mb-4">
+                                <Package className={`w-4 h-4 ${isLightTheme ? 'text-emerald-500' : 'text-green-400'}`} />
+                                <span className={`text-[10px] font-black uppercase tracking-[0.2em] ${isLightTheme ? 'text-emerald-950' : 'text-zinc-400'}`}>Recommandations Produits</span>
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                {products
+                                    .filter(p => p.is_active && p.stock_quantity > 0)
+                                    .slice(0, 3)
+                                    .map(product => (
+                                        <button
+                                            key={product.id}
+                                            onClick={() => onAddToCart?.(product)}
+                                            className={`p-3 rounded-[1.5rem] border text-left group transition-all ${isLightTheme ? 'bg-white border-emerald-50 hover:border-emerald-200' : 'bg-zinc-900 border-zinc-800 hover:border-zinc-700'}`}
+                                        >
+                                            <div className="flex gap-3 sm:flex-col sm:gap-2">
+                                                <div className="w-10 h-10 sm:w-full sm:aspect-square bg-zinc-800 rounded-xl overflow-hidden shrink-0">
+                                                    {product.image_url ? (
+                                                        <img src={product.image_url} alt={product.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform" />
+                                                    ) : (
+                                                        <div className="w-full h-full flex items-center justify-center text-zinc-600"><Package size={16} /></div>
+                                                    )}
+                                                </div>
+                                                <div className="flex-1">
+                                                    <p className={`text-[10px] font-bold line-clamp-1 mb-0.5 ${isLightTheme ? 'text-emerald-950' : 'text-white'}`}>{product.name}</p>
+                                                    <p className={`text-[9px] font-black ${isLightTheme ? 'text-emerald-600' : 'text-green-400'}`}>{product.price} €</p>
+                                                </div>
+                                            </div>
+                                        </button>
+                                    ))}
+                            </div>
+                        </div>
+                    )}
 
                     {/* Terpenes Bar */}
                     {(preferences.terpene_preferences?.length || 0) > 0 && (

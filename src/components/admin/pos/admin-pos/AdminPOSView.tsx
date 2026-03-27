@@ -192,7 +192,7 @@ export function AdminPOSView({ onExit, pos }: AdminPOSViewProps) {
 
       {state.showCustomerDetail && state.selectedCustomer && <POSCustomerDetailModal customer={state.selectedCustomer} onClose={() => setters.setShowCustomerDetail(false)} isLightTheme={state.isLightTheme} />}
       {state.showReportModal && state.reportData && <POSReportModal reportData={state.reportData} reportMode={state.reportMode} onClose={() => setters.setShowReportModal(false)} onFinalizeClose={actions.finalizeClose} isLightTheme={state.isLightTheme} />}
-      {state.showAIPreferences && state.selectedCustomerAIPreferences && state.selectedCustomer && <POSAIPreferencesModal preferences={state.selectedCustomerAIPreferences} customer={state.selectedCustomer} defaultAddress={state.selectedCustomerDefaultAddress} orderCount={state.selectedCustomerOrderCount} onViewOrders={() => {
+      {state.showAIPreferences && state.selectedCustomerAIPreferences && state.selectedCustomer && <POSAIPreferencesModal preferences={state.selectedCustomerAIPreferences} customer={state.selectedCustomer} defaultAddress={state.selectedCustomerDefaultAddress} orderCount={state.selectedCustomerOrderCount} products={catalog.products} onAddToCart={actions.addToCart} onViewOrders={() => {
         setters.setShowAIPreferences(false);
         setters.setShowCustomerDetail(true);
       }} onClose={() => setters.setShowAIPreferences(false)} isLightTheme={state.isLightTheme} />}

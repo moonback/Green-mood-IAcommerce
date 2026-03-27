@@ -347,6 +347,7 @@ export interface UserAIPreferences {
   updated_at: string | null;
   age_range: string | null;      // unused — kept for DB compatibility
   intensity_preference: string | null; // players: 'solo' | 'duo' | 'group' | 'multi'
+  terpene_preferences?: string[];
   extra_prefs: Record<string, any> | null;
 }
 
