@@ -24,16 +24,7 @@ interface AIModelMapping {
 
 const aiModels: AIModelMapping[] = [
   {
-    feature: 'Assistant BudTender (Chat)',
-    provider: 'OpenRouter / Google',
-    model: 'google/gemini-2.0-flash-lite-001',
-    role: 'Génération de texte, conseils produits et quiz interactif.',
-    icon: Bot,
-    status: 'active',
-    latency: 'low',
-  },
-  {
-    feature: 'Assistant BudTender (Vocal)',
+    feature: 'Assistant BudTender',
     provider: 'Google AI Native',
     model: 'gemini-2.5-flash-native-audio-preview',
     role: 'Conversation vocale fluide en temps réel avec latence ultra-faible.',
