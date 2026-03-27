@@ -89,7 +89,7 @@ const TESTIMONIALS = [
     city: 'Lyon',
     when: 'Achat vérifié',
     verified: true,
-    content: "L'expert Vendeur IA m'a bluffée. Il a compris mes besoins (sommeil et anxiété) et m'a orientée vers une huile 15% qui a changé mes nuits. Service premium.",
+    content: "L'assistant vocal BudTender m'a bluffée. Il a compris mes besoins (sommeil et anxiété) et m'a orientée vers une huile 15% qui a changé mes nuits. Service premium.",
     rating: 5,
     avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Sophie'
   },
@@ -248,9 +248,9 @@ export default function HomeV2() {
   return (
     <div className="min-h-screen bg-[color:var(--color-bg)] text-[color:var(--color-text)] selection:bg-[color:var(--color-primary)]/40 selection:text-[color:var(--color-text)] relative overflow-hidden">
       <SEO
-        title={`${storeName} | CBD Premium, Boutique de Chanvre Officielle & Vendeur IA`}
-        description={`${storeName} redéfinit l'expérience CBD avec une sélection premium (Fleurs, Huiles, Résines) et un conseiller expert intelligent pour vous guider vers le bien-être.`}
-        keywords={`${storeName}, CBD premium, fleurs CBD, huiles CBD, résines chanvre, vendeur IA, conseiller expert, cannabis légal, bien-être naturel`}
+        title={`${storeName} | CBD Premium, Boutique de Chanvre Officielle & IA BudTender`}
+        description={`${storeName} redéfinit l'expérience CBD avec une sélection premium (Fleurs, Huiles, Résines) et un assistant vocal intelligent pour vous guider vers le bien-être.`}
+        keywords={`${storeName}, CBD premium, fleurs CBD, huiles CBD, résines chanvre, budtender IA, cannabis légal, bien-être naturel`}
         canonical="/"
       />
 
@@ -364,10 +364,10 @@ export default function HomeV2() {
                   </div>
                   <h2 className="text-5xl lg:text-7xl font-black tracking-tighter uppercase italic leading-[0.85]">
                     Votre <br />
-                    <span className="text-[color:var(--color-primary)] bg-clip-text bg-gradient-to-r from-emerald-400 to-emerald-700">Conseiller.</span>
+                    <span className="text-[color:var(--color-primary)] bg-clip-text bg-gradient-to-r from-emerald-400 to-emerald-700">Budtender.</span>
                   </h2>
                   <p className="text-xl text-[color:var(--color-text-muted)] leading-relaxed">
-                    Marre de chercher des heures ? Parlez naturellement à notre <span className="text-white font-bold">Vendeur IA</span>. Il analyse vos envies de détente, vos préférences gustatives et votre budget pour vous proposer la fleur parfaite en un instant.
+                    Marre de chercher des heures ? Parlez naturellement à notre <span className="text-white font-bold">BudTender IA</span>. Il analyse vos envies de détente, vos préférences gustatives et votre budget pour vous proposer la fleur parfaite en un instant.
                   </p>
                 </div>
 
@@ -416,7 +416,7 @@ export default function HomeV2() {
                       <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-400 border-2 border-zinc-950 shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
                     </div>
                     <div>
-                      <p className="text-xs font-black text-white uppercase tracking-wider">{settings.budtender_name || 'Vendeur IA'}</p>
+                      <p className="text-xs font-black text-white uppercase tracking-wider">{settings.budtender_name || 'BudTender'}</p>
                       <p className="text-[10px] text-emerald-400 font-semibold flex items-center gap-1">
                         <Sparkles className="w-2.5 h-2.5" /> En ligne — Mode {currentDemo.mode === 'voice' ? 'vocal' : 'chat'}
                       </p>

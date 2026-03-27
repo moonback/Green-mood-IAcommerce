@@ -1542,48 +1542,30 @@ export function useGeminiLiveVoice({
                 if (c.name === 'suggest_bundle') {
                   const cartProds = (cartItemsRef?.current ?? []) as any[];
                   if (cartProds.length === 0) {
-                    return { name: c.name, id: c.id, response: { note: 'Panier vide — pas de suggestion de bundle possible. Encourage le client à ajouter un premier article.' } };
+                    return { name: c.name, id: c.id, response: { note: 'Panier vide — pas de suggestion de bundle possible.' } };
                   }
-                  
+                  // Use the last added product category to find a complementary item
                   const lastItem = cartProds[cartProds.length - 1];
-                  const lastProductId = lastItem?.product?.id;
                   const lastCategoryId = lastItem?.product?.category_id;
+                  const lastProductId = lastItem?.product?.id;
                   const cartProductIds = cartProds.map((i: any) => i?.product?.id).filter(Boolean);
 
-                  // 1. Look for ACTUAL bundles containing this product or complementary to it
-                  const actualBundles = productsRef.current.filter(p => 
-                    p.is_bundle && 
-                    p.is_active !== false && 
-                    !cartProductIds.includes(p.id)
-                  );
-
-                  // 2. Look for complementary products for "Virtual Bundles"
-                  const complementary = productsRef.current.filter(p =>
+                  const candidates = productsRef.current.filter(p =>
                     p.id !== lastProductId &&
                     !cartProductIds.includes(p.id) &&
                     p.is_active !== false &&
                     (lastCategoryId ? p.category_id !== lastCategoryId : true)
                   );
 
-                  let suggestionMsg = "";
-                  if (actualBundles.length > 0) {
-                    const b = actualBundles[0];
-                    suggestionMsg = `BORDEREAU DE VENTE : Propose le PACK AVANTAGEUX "${b.name}" (${b.price}€). C'est le moment idéal pour booster le panier avec une offre groupée.`;
-                  } else if (complementary.length > 0) {
-                    const p = complementary[0];
-                    suggestionMsg = `VIRTUAL BUNDLE : Propose d'associer "${p.name}" (${p.price}€) à son achat actuel pour créer une routine complète. Argumente sur la synergie entre les deux.`;
-                  } else {
-                    return { name: c.name, id: c.id, response: { note: 'Aucun produit complémentaire trouvé pour le moment.' } };
+                  if (candidates.length === 0) {
+                    return { name: c.name, id: c.id, response: { note: 'Aucun produit complémentaire trouvé.' } };
                   }
-
+                  // Pick top 2 candidates
+                  const picks = candidates.slice(0, 2).map(p => `${p.name} (${p.price}€)`).join(', ');
                   return {
                     name: c.name,
                     id: c.id,
-                    response: { 
-                      result: suggestionMsg,
-                      strategy: "AOV_OPTIMIZATION",
-                      directive: "Utilise un ton persuasif. Ne demande pas 'Si le client veut', propose-le comme une amélioration logique de son expérience."
-                    }
+                    response: { result: `Produits complémentaires suggérés : ${picks}. Propose-en un naturellement au client en lien avec son achat.` }
                   };
                 }
 
