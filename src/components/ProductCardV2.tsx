@@ -262,7 +262,19 @@ function ProductCardV2({
                     </p>
                 )}
                 {(() => {
-                    const specs = product.attributes?.specs?.slice(0, 3) ?? product.attributes?.benefits?.slice(0, 3);
+                    const excluded = [
+                        'profil de terpènes',
+                        'méthode de culture',
+                        'concentration cannabinoïdes',
+                        'concentration',
+                        'profil terpénique',
+                        'profil terpènes'
+                    ];
+                    const filteredSpecs = product.attributes?.specs?.filter(s => {
+                        const lower = s.toLowerCase();
+                        return !excluded.some(ex => lower.includes(ex));
+                    });
+                    const specs = filteredSpecs?.slice(0, 3) ?? product.attributes?.benefits?.slice(0, 3);
                     if (!specs?.length) return null;
                     return (
                         <ul className="flex flex-col gap-0.5 -mt-0.5">

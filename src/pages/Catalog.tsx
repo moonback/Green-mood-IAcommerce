@@ -281,7 +281,21 @@ export default function Catalog() {
         }
       });
     });
-    setAvailableSpecs(specsMap);
+    const excluded = [
+      'profil de terpènes',
+      'méthode de culture',
+      'concentration cannabinoïdes',
+      'concentration',
+      'profil terpénique',
+      'profil terpènes'
+    ];
+    const filteredSpecsMap: Record<string, Set<string>> = {};
+    Object.entries(specsMap).forEach(([label, values]) => {
+      if (!excluded.includes(label.toLowerCase())) {
+        filteredSpecsMap[label] = values;
+      }
+    });
+    setAvailableSpecs(filteredSpecsMap);
 
     // Clear specs that don't belong to the new category
     setSelectedSpecs(prev => {
@@ -300,57 +314,34 @@ export default function Catalog() {
     async function fetchProducts() {
       setIsLoading(true);
 
-      // ── Mode RECHERCHE : vectoriel + ilike fusionnés ──
+      // ── Mode RECHERCHE : vectoriel uniquement (Sémantique IA) ──
       if (searchQuery.trim().length >= 2) {
         try {
           const text = searchQuery.trim();
+          const embedding = await generateEmbedding(text);
+          
+          if (embedding?.length) {
+            const { data: vectorData } = await matchProductsRpc<Product>({
+              embedding,
+              matchThreshold: 0.3, // Seulement les correspondances sémantiques fortes
+              matchCount: 30,
+            });
 
-          // 1. Recherche par mots-clés (rapide)
-          const { data: kwData } = await supabase
-            .from('products')
-            .select(`*, category:categories(*), ratings:product_ratings(avg_rating, review_count)`)
-            .ilike('name', `%${text}%`)
-            .eq('is_active', true)
-            .eq('is_available', true)
-            .gt('stock_quantity', 0)
-            .limit(30);
-
-          const keywordProducts: Product[] = (kwData ?? []).map((p: any) => ({
-            ...p,
-            avg_rating: p.ratings?.[0]?.avg_rating ?? null,
-            review_count: p.ratings?.[0]?.review_count ?? 0,
-          }));
-
-          // Affichage immédiat résultats textuels
-          setProducts(keywordProducts);
-          setTotalCount(keywordProducts.length);
-
-          // 2. Recherche vectorielle (IA) en arrière-plan
-          try {
-            const embedding = await generateEmbedding(text);
-            if (embedding?.length) {
-              const { data: vectorData } = await matchProductsRpc<Product>({
-                embedding,
-                matchThreshold: 0.3,
-                matchCount: 30,
-              });
-
-              if (vectorData?.length) {
-                const mergedMap = new Map<string, Product>();
-                keywordProducts.forEach((p) => mergedMap.set(p.id, p));
-                (vectorData as Product[]).forEach((pv) => {
-                  if (!mergedMap.has(pv.id)) mergedMap.set(pv.id, pv);
-                });
-                const merged = Array.from(mergedMap.values());
-                setProducts(merged);
-                setTotalCount(merged.length);
-              }
+            if (vectorData?.length) {
+              setProducts(vectorData as Product[]);
+              setTotalCount(vectorData.length);
+            } else {
+              setProducts([]);
+              setTotalCount(0);
             }
-          } catch (vErr) {
-            console.warn('[Catalog] Recherche vectorielle ignorée:', vErr);
+          } else {
+            setProducts([]);
+            setTotalCount(0);
           }
         } catch (err) {
-          console.error('[Catalog] Erreur recherche:', err);
+          console.error('[Catalog] Erreur recherche sémantique:', err);
+          setProducts([]);
+          setTotalCount(0);
         }
         setIsLoading(false);
         return;
@@ -825,8 +816,8 @@ export default function Catalog() {
   return (
     <div className="min-h-screen bg-[color:var(--color-bg)] text-[color:var(--color-text)] overflow-x-hidden transition-colors duration-300">
       <SEO
-        title={`Catalogue ${settings.store_sector} | ${settings.store_name}`}
-        description={`Retrouvez des millions d'articles en stock à prix réduits : High-Tech, Culture, Mode et Maison. Comparez et trouvez le bon produit avec l'aide de notre conseiller IA.`}
+        title={`Catalogue CBD | ${settings.store_name}`}
+        description={`Découvrez notre sélection de CBD premium : fleurs, huiles, résines & infusions. THC < 0.3%, analysés en laboratoire, livraison discrète. Trouvez votre CBD idéal avec notre conseiller IA.`}
       />
 
       {showCompareModal && compareProducts.length >= 2 && (
@@ -834,124 +825,10 @@ export default function Catalog() {
       )}
 
 
-
-      {/* ──────────────── TOP SEARCH BAR (Amazon-style) ──────────────── */}
-      {/* <div className="sticky top-0 z-40 border-b border-white/10 bg-slate-950/80 backdrop-blur-2xl">
-        <div className="max-w-full mx-auto px-4 md:px-10 lg:px-14 py-4 flex items-center gap-6">
-
-          <div className="hidden lg:block flex-shrink-0">
-            <p className="text-[9px] uppercase tracking-[0.3em] text-slate-400">Catalogue</p>
-            <h1 className="text-sm font-['Inter',sans-serif] font-bold text-slate-100 leading-tight whitespace-nowrap">Produits {settings.store_sector}</h1>
-          </div>
-
-          <div className="flex-1 relative group">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-cyan-300 transition-colors" />
-            <input
-              id="catalog-search"
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Rechercher bornes, flippers, simulateurs…"
-              className="w-full rounded-xl border border-white/15 bg-white/5 py-2.5 pl-10 pr-10 text-sm text-slate-100 placeholder-zinc-400 focus:outline-none focus:border-[#2563eb]/40 focus:bg-slate-900/80 transition-all shadow-sm"
-            />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery('')}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 w-6 h-6 rounded-lg bg-white/5 text-slate-400 hover:text-[color:var(--color-text)] flex items-center justify-center transition-colors"
-              >
-                <X className="w-3.5 h-3.5 text-slate-400 group-hover:text-slate-100" />
-              </button>
-            )}
-          </div>
-
-          <div className="flex items-center gap-2 flex-shrink-0">
-            <button
-              id="mobile-filter-btn"
-              onClick={() => setShowMobileFilters(true)}
-              className="lg:hidden relative flex items-center gap-1.5 px-3 py-2 rounded-xl border border-white/15 bg-slate-900/80 text-xs text-[color:var(--color-text-subtle)] hover:bg-white/5 transition-all shadow-sm"
-            >
-              <SlidersHorizontal className="w-3.5 h-3.5" />
-              Filtres
-              {activeFilterCount > 0 && (
-                <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-blue-500 text-[color:var(--color-text)] text-[9px] font-bold flex items-center justify-center">
-                  {activeFilterCount}
-                </span>
-              )}
-            </button>
-
-            <button
-              id="compare-mode-btn"
-              onClick={() => { setCompareMode(v => { if (v) setCompareIds([]); return !v; }); }}
-              className={`hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs transition-all ${compareMode ? 'bg-indigo-500/20 border border-indigo-500/40 text-indigo-300' : 'border border-white/10 text-slate-400 hover:text-zinc-200'
-                }`}
-            >
-              <Scale className="w-3.5 h-3.5" />
-              Comparer {compareIds.length > 0 ? `(${compareIds.length})` : ''}
-            </button>
-
-            <button
-              id="share-catalog-btn"
-              onClick={handleShareCatalog}
-              className="w-9 h-9 rounded-xl border border-white/15 bg-slate-900/80 flex items-center justify-center text-slate-400 hover:text-slate-100 hover:border-zinc-300 transition-all shadow-sm"
-              title="Partager ce catalogue"
-            >
-              {shareStatus === 'copied'
-                ? <span className="text-[9px] font-bold text-cyan-300">✓</span>
-                : <Link2 className="w-3.5 h-3.5" />}
-            </button>
-          </div>
-        </div>
-      </div> */}
-
-      {/* ──────────────── PAGE HERO HEADER ──────────────── */}
-      <div style={{ borderBottom: '1px solid color-mix(in srgb, var(--color-border) 100%, transparent)', background: 'color-mix(in srgb, var(--color-card) 40%, transparent)' }}>
-        <div className="max-w-full mx-auto px-4 md:px-10 lg:px-14 py-8 md:py-10">
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-5">
-            <div className="space-y-1.5">
-              <p style={{ fontFamily: "'DM Mono', monospace", fontSize: '10px', letterSpacing: '0.3em', textTransform: 'uppercase', color: 'var(--color-primary)' }}>
-                {settings.store_sector}&nbsp;·&nbsp;{!isLoading ? `${totalCount} produit${totalCount !== 1 ? 's' : ''}` : '…'}
-              </p>
-              <h1 className="text-[color:var(--color-text)] leading-none"
-                style={{ fontFamily: "'DM Serif Display', Georgia, serif", fontSize: 'clamp(1.9rem, 4vw, 2.8rem)' }}>
-                Notre Catalogue
-              </h1>
-            </div>
-            <div className="relative w-full md:w-[340px]">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none text-[color:var(--color-text-muted)]" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Rechercher un produit…"
-                className="w-full rounded-2xl pl-11 pr-10 py-3.5 outline-none transition-all"
-                style={{
-                  background: 'color-mix(in srgb, var(--color-bg) 100%, transparent)',
-                  border: '1px solid color-mix(in srgb, var(--color-border) 100%, transparent)',
-                  color: 'var(--color-text)',
-                  fontFamily: "'DM Mono', monospace",
-                  fontSize: '12px',
-                }}
-                onFocus={(e) => { (e.target as HTMLInputElement).style.borderColor = 'var(--color-primary)'; }}
-                onBlur={(e) => { (e.target as HTMLInputElement).style.borderColor = ''; }}
-              />
-              {searchQuery && (
-                <button
-                  onClick={() => setSearchQuery('')}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 w-7 h-7 rounded-xl flex items-center justify-center text-[color:var(--color-text-muted)] hover:text-[color:var(--color-text)] transition-colors"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* ──────────────── CATEGORY PILLS (Amazon dept nav) ──────────────── */}
+      {/* ──────────────── CATEGORY PILLS ──────────────── */}
       <div className="border-b border-[color:var(--color-border)] bg-[color:var(--color-card)]/85 backdrop-blur-xl">
         <div className="max-w-full mx-auto px-4 md:px-10 lg:px-14">
-          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-2.5">
-            <span className="text-[10px] uppercase tracking-[0.2em] text-[color:var(--color-text-subtle)] flex-shrink-0 mr-1">Département :</span>
+          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-3">
             <button
               onClick={() => setSelectedCategory(null)}
               className={`flex-shrink-0 px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${!selectedCategory
@@ -959,13 +836,13 @@ export default function Catalog() {
                 : 'text-[color:var(--color-text-muted)] hover:text-[color:var(--color-text)] hover:bg-[color:var(--color-bg-elevated)]/80'
                 }`}
             >
-              Tous
+              Tout le catalogue
             </button>
-            {categories.map((cat) => (
+            {categories.filter(c => (c.depth ?? 0) === 0).map((cat) => (
               <button
                 key={cat.id}
                 onClick={() => setSelectedCategory(cat.id)}
-                className={`flex-shrink-0 px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${selectedCategory === cat.id
+                className={`flex-shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${selectedCategory === cat.id
                   ? 'bg-green-neon text-black shadow-[0_0_15px_var(--theme-neon)]'
                   : 'text-[color:var(--color-text-muted)] hover:text-[color:var(--color-text)] hover:bg-[color:var(--color-bg-elevated)]/80'
                   }`}
@@ -976,6 +853,169 @@ export default function Catalog() {
           </div>
         </div>
       </div>
+
+
+      {/* ──────────────── CBD HERO HEADER ──────────────── */}
+      <div className="relative overflow-hidden min-h-[320px] lg:min-h-[380px] flex flex-col justify-end"
+        style={{
+          borderBottom: '1px solid color-mix(in srgb, var(--color-border) 80%, transparent)',
+        }}
+      >
+        {/* Background Image with Glassmorphic Gradient Overlay */}
+        <div className="absolute inset-0 z-0 select-none pointer-events-none">
+          <img
+            src="/account_hero_bg.png"
+            alt="Cannabis Premium Botanique"
+            className="w-full h-full object-cover opacity-100 duration-700 transition-all"
+            loading="eager"
+          />
+          {/* <div className="absolute inset-0 bg-gradient-to-r from-[color:var(--color-bg)] via-[color:var(--color-bg)]/80 to-[color:var(--color-bg)]/20" /> */}
+          <div className="absolute inset-0 bg-gradient-to-t from-[color:var(--color-bg)] via-[color:var(--color-bg)]/60 to-transparent" />
+          {/* <div className="absolute inset-0 bg-[color:var(--color-primary)]/5 mix-blend-overlay" /> */}
+        </div>
+        {/* Botanical SVG — top right */}
+        <div className="absolute top-0 right-0 w-[360px] h-[360px] pointer-events-none select-none opacity-[0.07]" aria-hidden="true" style={{ color: 'var(--color-primary)' }}>
+          <svg viewBox="0 0 360 360" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M290 15 C270 55 230 85 210 125 C190 165 200 205 230 225 C260 245 300 235 320 205 C340 175 330 145 330 115" stroke="currentColor" strokeWidth="1.5" fill="none" />
+            <path d="M230 225 C210 255 170 275 150 305" stroke="currentColor" strokeWidth="1" fill="none" opacity="0.6" />
+            <ellipse cx="210" cy="90" rx="48" ry="23" transform="rotate(-35 210 90)" stroke="currentColor" strokeWidth="1.5" fill="none" />
+            <ellipse cx="250" cy="165" rx="42" ry="21" transform="rotate(15 250 165)" stroke="currentColor" strokeWidth="1.5" fill="none" />
+            <ellipse cx="190" cy="210" rx="40" ry="19" transform="rotate(-22 190 210)" stroke="currentColor" strokeWidth="1.5" fill="none" />
+            <circle cx="210" cy="90" r="3" fill="currentColor" opacity="0.5" />
+            <circle cx="250" cy="165" r="2.5" fill="currentColor" opacity="0.5" />
+            <circle cx="190" cy="210" r="3" fill="currentColor" opacity="0.5" />
+          </svg>
+        </div>
+        {/* Botanical SVG — bottom left */}
+        <div className="absolute bottom-0 left-0 w-[220px] h-[220px] pointer-events-none select-none opacity-[0.05] rotate-180" aria-hidden="true" style={{ color: 'var(--color-primary)' }}>
+          <svg viewBox="0 0 220 220" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M160 15 C140 45 110 65 90 95 C70 125 80 160 110 170 C140 180 170 165 180 145 C190 125 180 105 188 85" stroke="currentColor" strokeWidth="1.5" fill="none" />
+            <ellipse cx="115" cy="75" rx="34" ry="17" transform="rotate(-30 115 75)" stroke="currentColor" strokeWidth="1.5" fill="none" />
+            <ellipse cx="140" cy="130" rx="30" ry="14" transform="rotate(18 140 130)" stroke="currentColor" strokeWidth="1.5" fill="none" />
+          </svg>
+        </div>
+
+        <div className="max-w-full mx-auto px-4 md:px-10 lg:px-14 py-10 md:py-14 relative z-10">
+          <div className="flex flex-col lg:flex-row lg:items-end gap-8 lg:gap-16">
+
+            {/* Left: branding + trust badges + mood selector */}
+            <div className="flex-1 space-y-5 max-w-7xl">
+              <div>
+                <p style={{ fontFamily: "'DM Mono', monospace", fontSize: '10px', letterSpacing: '0.3em', textTransform: 'uppercase', color: 'var(--color-primary)' }} className="mb-2.5">
+                  CBD Premium&nbsp;·&nbsp;{!isLoading ? `${totalCount} produit${totalCount !== 1 ? 's' : ''}` : '…'}
+                </p>
+                <h1 className="text-[color:var(--color-text)] leading-[0.92] mb-3"
+                  style={{ fontFamily: "'DM Serif Display', Georgia, serif", fontSize: 'clamp(2rem, 4.5vw, 3.2rem)' }}>
+                  Votre CBD,{' '}
+                  <em style={{ fontStyle: 'italic', color: 'var(--color-primary)' }}>au naturel</em>
+                </h1>
+                <p className="text-sm text-[color:var(--color-text-muted)] leading-relaxed">
+                  Fleurs, huiles, résines &amp; infusions premium cultivés avec soin — chaque lot analysé en laboratoire indépendant.
+                </p>
+              </div>
+
+              {/* CBD trust badges */}
+              <div className="flex flex-wrap gap-2">
+                {[
+                  { label: 'THC < 0.3%', icon: ShieldCheck },
+                  { label: 'Analysé en labo', icon: FlaskConical },
+                  { label: 'Livraison discrète', icon: CheckCircle2 },
+                  { label: 'Sans ordonnance', icon: Sprout },
+                ].map(({ label, icon: Icon }) => (
+                  <div key={label} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-[color:var(--color-border)] bg-[color:var(--color-card)]/70 backdrop-blur-sm">
+                    <Icon className="w-3 h-3 text-[color:var(--color-primary)]" />
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-[color:var(--color-text-muted)]">{label}</span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Mood / Effect quick selector */}
+              {impacts.length > 0 && (
+                <div>
+                  <p className="text-[10px] uppercase tracking-[0.25em] text-[color:var(--color-text-subtle)] mb-2.5" style={{ fontFamily: "'DM Mono', monospace" }}>
+                    Je recherche :
+                  </p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {impacts.slice(0, 6).map((benefit) => {
+                      const isActive = selectedBenefit === benefit;
+                      return (
+                        <button
+                          key={benefit}
+                          onClick={() => setSelectedBenefit(isActive ? null : benefit)}
+                          className={`flex items-center gap-1.5 px-3.5 py-2 rounded-full text-[11px] font-bold uppercase tracking-wide transition-all border ${isActive
+                            ? 'bg-green-neon border-green-neon text-black shadow-[0_0_15px_var(--theme-neon)]'
+                            : 'border-[color:var(--color-border)] text-[color:var(--color-text-muted)] hover:border-[color:var(--color-primary)]/40 hover:text-[color:var(--color-text)] bg-[color:var(--color-card)]/60'
+                            }`}
+                        >
+                          <Sparkles className="w-3 h-3 opacity-60 flex-shrink-0" />
+                          {benefit}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Right: search bar + mobile filter trigger */}
+            <div className="lg:w-[400px] flex-shrink-0 space-y-3">
+              <div className="relative">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4.5 h-4.5 pointer-events-none text-[color:var(--color-text-muted)]" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Fleur OG Kush, huile 10%, résine…"
+                  className="w-full rounded-2xl pl-12 pr-12 py-4 outline-none transition-all"
+                  style={{
+                    background: 'color-mix(in srgb, var(--color-card) 90%, transparent)',
+                    border: '1.5px solid color-mix(in srgb, var(--color-border) 100%, transparent)',
+                    color: 'var(--color-text)',
+                    fontFamily: "'DM Mono', monospace",
+                    fontSize: '13px',
+                    boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
+                  }}
+                  onFocus={(e) => {
+                    (e.target as HTMLInputElement).style.borderColor = 'var(--color-primary)';
+                    (e.target as HTMLInputElement).style.boxShadow = '0 8px 32px rgba(0,0,0,0.15), 0 0 0 3px color-mix(in srgb, var(--color-primary) 12%, transparent)';
+                  }}
+                  onBlur={(e) => {
+                    (e.target as HTMLInputElement).style.borderColor = '';
+                    (e.target as HTMLInputElement).style.boxShadow = '0 8px 32px rgba(0,0,0,0.12)';
+                  }}
+                />
+                {searchQuery ? (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 w-7 h-7 rounded-xl flex items-center justify-center text-[color:var(--color-text-muted)] hover:text-[color:var(--color-text)] transition-colors"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                ) : (
+                  <Sparkles className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[color:var(--color-primary)] opacity-40 pointer-events-none" />
+                )}
+              </div>
+
+              {/* Mobile filter trigger */}
+              <button
+                onClick={() => setShowMobileFilters(true)}
+                className="lg:hidden w-full flex items-center justify-center gap-2 py-3 rounded-2xl border border-[color:var(--color-border)] bg-[color:var(--color-card)]/60 text-xs font-bold uppercase tracking-widest text-[color:var(--color-text-muted)] hover:text-[color:var(--color-text)] hover:border-[color:var(--color-primary)]/30 transition-all"
+              >
+                <SlidersHorizontal className="w-3.5 h-3.5" />
+                Filtres
+                {activeFilterCount > 0 && (
+                  <span className="w-5 h-5 rounded-full bg-green-neon text-black text-[10px] font-black flex items-center justify-center shadow-[0_0_8px_var(--theme-neon)]">
+                    {activeFilterCount}
+                  </span>
+                )}
+              </button>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+
 
       {/* ──────────────── MAIN LAYOUT ──────────────── */}
       <div className="max-w-full mx-auto px-4 md:px-10 lg:px-14 pt-8 pb-28">
@@ -1238,28 +1278,33 @@ export default function Catalog() {
                   </AnimatePresence>
                 </div>
 
-                {/* Sales Boosting Section: Trust Signals */}
+                {/* CBD Trust Signals */}
                 {!isLoading && products.length > 0 && (
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
-                    className="mt-16 mb-16 p-8 lg:p-12 rounded-[3.5rem] bg-gradient-to-br from-[color:var(--color-primary)]/12 via-[color:var(--color-card)] to-emerald-500/10 border border-[color:var(--color-border)] relative overflow-hidden shadow-[var(--shadow-card)]"
+                    className="mt-16 mb-16 p-8 lg:p-12 rounded-[3.5rem] bg-gradient-to-br from-[color:var(--color-primary)]/10 via-[color:var(--color-card)] to-emerald-500/8 border border-[color:var(--color-border)] relative overflow-hidden shadow-[var(--shadow-card)]"
                   >
-                    <div className="absolute top-0 right-0 p-12 opacity-[0.03] pointer-events-none">
-                      <Sparkles className="w-64 h-64 -rotate-12" />
+                    {/* Subtle botanical decoration */}
+                    <div className="absolute top-0 right-0 w-48 h-48 pointer-events-none opacity-[0.04]" style={{ color: 'var(--color-primary)' }}>
+                      <svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M160 10 C140 40 110 60 90 90 C70 120 80 155 110 165 C140 175 170 160 180 140 C190 120 180 100 188 80" stroke="currentColor" strokeWidth="1.5" fill="none" />
+                        <ellipse cx="115" cy="68" rx="32" ry="16" transform="rotate(-28 115 68)" stroke="currentColor" strokeWidth="1" fill="none" />
+                        <ellipse cx="138" cy="125" rx="28" ry="13" transform="rotate(16 138 125)" stroke="currentColor" strokeWidth="1" fill="none" />
+                      </svg>
                     </div>
 
                     <div className="relative grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
                       <div className="space-y-3">
                         <div className="w-14 h-14 rounded-2xl bg-[color:var(--color-bg-elevated)] flex items-center justify-center mx-auto border border-[color:var(--color-border)] text-green-neon shadow-lg glow-box-green-sm">
-                          <ShieldCheck className="w-7 h-7" />
+                          <Beaker className="w-7 h-7" />
                         </div>
-                        <h3 className="text-[color:var(--color-text)]" style={{ fontFamily: "'DM Serif Display', Georgia, serif", fontSize: '1.2rem' }}>Qualité Certifiée</h3>
-                        <p className="text-xs text-[color:var(--color-text-muted)] leading-relaxed uppercase tracking-widest">Tests techniques & conformité CE</p>
+                        <h3 className="text-[color:var(--color-text)]" style={{ fontFamily: "'DM Serif Display', Georgia, serif", fontSize: '1.2rem' }}>Analyses Laboratoires</h3>
+                        <p className="text-xs text-[color:var(--color-text-muted)] leading-relaxed uppercase tracking-widest">Chaque lot certifié par un laboratoire accrédité indépendant</p>
                       </div>
 
-                      {settings.loyalty_program_enabled && (
+                      {settings.loyalty_program_enabled ? (
                         <div className="space-y-3">
                           <div className="w-14 h-14 rounded-2xl bg-[color:var(--color-bg-elevated)] flex items-center justify-center mx-auto border border-[color:var(--color-border)] text-[color:var(--color-primary)] shadow-lg">
                             <Sparkles className="w-7 h-7" />
@@ -1267,14 +1312,22 @@ export default function Catalog() {
                           <h3 className="text-[color:var(--color-text)]" style={{ fontFamily: "'DM Serif Display', Georgia, serif", fontSize: '1.2rem' }}>Fidélité Récompensée</h3>
                           <p className="text-xs text-[color:var(--color-text-muted)] leading-relaxed uppercase tracking-widest">Cumulez des {settings.loyalty_currency_name} à chaque achat</p>
                         </div>
+                      ) : (
+                        <div className="space-y-3">
+                          <div className="w-14 h-14 rounded-2xl bg-[color:var(--color-bg-elevated)] flex items-center justify-center mx-auto border border-[color:var(--color-border)] text-green-neon shadow-lg glow-box-green-sm">
+                            <Sprout className="w-7 h-7" />
+                          </div>
+                          <h3 className="text-[color:var(--color-text)]" style={{ fontFamily: "'DM Serif Display', Georgia, serif", fontSize: '1.2rem' }}>Culture Responsable</h3>
+                          <p className="text-xs text-[color:var(--color-text-muted)] leading-relaxed uppercase tracking-widest">Sélection de producteurs certifiés, pratiques éco-responsables</p>
+                        </div>
                       )}
 
                       <div className="space-y-3">
                         <div className="w-14 h-14 rounded-2xl bg-[color:var(--color-bg-elevated)] flex items-center justify-center mx-auto border border-[color:var(--color-border)] text-green-neon shadow-lg glow-box-green-sm">
-                          <Info className="w-7 h-7" />
+                          <ShieldCheck className="w-7 h-7" />
                         </div>
-                        <h3 className="text-[color:var(--color-text)]" style={{ fontFamily: "'DM Serif Display', Georgia, serif", fontSize: '1.2rem' }}>Livraison Express</h3>
-                        <p className="text-xs text-[color:var(--color-text-muted)] leading-relaxed uppercase tracking-widest">Chez vous en 24h/48h partout en France</p>
+                        <h3 className="text-[color:var(--color-text)]" style={{ fontFamily: "'DM Serif Display', Georgia, serif", fontSize: '1.2rem' }}>THC &lt; 0.3% Garanti</h3>
+                        <p className="text-xs text-[color:var(--color-text-muted)] leading-relaxed uppercase tracking-widest">Conformité totale avec la réglementation française &amp; européenne</p>
                       </div>
                     </div>
                   </motion.div>
@@ -1331,21 +1384,32 @@ export default function Catalog() {
             )}
 
 
-            {/* ─── Compliance footer ─── */}
-            <div className="mt-16 pt-10 border-t border-[color:var(--color-border)] grid grid-cols-1 md:grid-cols-3 gap-8">
-              {[
-                { icon: <ShieldCheck className="w-4 h-4" />, title: 'Produits conformes', text: 'Sélection certifiée et contrôlée avant mise en ligne pour un achat plus serein.' },
-                { icon: <Microscope className="w-4 h-4" />, title: 'Le meilleur au plus petit prix', text: 'Culture, High-Tech, Mode et Maison : trouvez les références idéales sans vous ruiner.' },
-                { icon: <Info className="w-4 h-4" />, title: 'SAV réactif', text: 'Support France, suivi de commande et accompagnement rapide après achat.' },
-              ].map((item, idx) => (
-                <div key={idx} className="group space-y-2.5">
-                  <h4 className="text-[10px] font-bold uppercase tracking-[0.3em] text-[color:var(--color-text-subtle)] flex items-center gap-2 group-hover:text-[color:var(--color-text)] transition-colors">
-                    <span className="text-green-neon">{item.icon}</span>
-                    {item.title}
-                  </h4>
-                  <p className="text-xs text-[color:var(--color-text-subtle)] leading-relaxed group-hover:text-[color:var(--color-text-muted)] transition-colors">{item.text}</p>
-                </div>
-              ))}
+            {/* ─── CBD Quality & Legal Footer ─── */}
+            <div className="mt-16 pt-10 border-t border-[color:var(--color-border)] space-y-8">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                {[
+                  { icon: <Beaker className="w-4 h-4" />, title: 'Analyses de laboratoire', text: 'Chaque lot est testé par un laboratoire accrédité et indépendant. Certificats d\'analyse disponibles sur demande.' },
+                  { icon: <ShieldCheck className="w-4 h-4" />, title: 'Conformité légale CBD', text: 'Taux THC < 0.3% garanti, conforme au droit français et à la réglementation européenne. Achat légal et sans risque.' },
+                  { icon: <Sparkles className="w-4 h-4" />, title: 'Conseil personnalisé IA', text: 'Notre assistant IA vous guide pour trouver le produit CBD adapté à vos besoins. Disponible 24h/24.' },
+                ].map((item, idx) => (
+                  <div key={idx} className="group space-y-2.5">
+                    <h4 className="text-[10px] font-bold uppercase tracking-[0.3em] text-[color:var(--color-text-subtle)] flex items-center gap-2 group-hover:text-[color:var(--color-text)] transition-colors">
+                      <span className="text-green-neon">{item.icon}</span>
+                      {item.title}
+                    </h4>
+                    <p className="text-xs text-[color:var(--color-text-subtle)] leading-relaxed group-hover:text-[color:var(--color-text-muted)] transition-colors">{item.text}</p>
+                  </div>
+                ))}
+              </div>
+
+              {/* Legal notice */}
+              <div className="flex items-start gap-3 p-4 rounded-2xl border border-[color:var(--color-border)]/60 bg-[color:var(--color-card)]/30">
+                <Info className="w-4 h-4 text-[color:var(--color-text-subtle)] flex-shrink-0 mt-0.5" />
+                <p className="text-[10px] text-[color:var(--color-text-subtle)] leading-relaxed">
+                  <span className="font-bold uppercase tracking-wider">Mention légale —</span>{' '}
+                  Les produits CBD proposés sur ce site contiennent un taux de THC inférieur à 0,3 % conformément au règlement européen et à la législation française en vigueur. Ils sont destinés à un usage adulte uniquement (18 ans et plus). Ces produits ne sont pas des médicaments et ne sont pas destinés à diagnostiquer, traiter ou prévenir une maladie.
+                </p>
+              </div>
             </div>
           </div>
         </div>
