@@ -5,17 +5,21 @@ import { Product as PremiumProduct, Review } from '../types/premiumProduct';
 interface BudtenderStore {
   isVoiceOpen: boolean;
   activeProduct: (PremiumProduct & { reviews: Review[]; relatedProducts?: Product[] }) | null;
+  customPrompt: string | null;
   openVoice: () => void;
   closeVoice: () => void;
   toggleVoice: () => void;
   setActiveProduct: (product: (PremiumProduct & { reviews: Review[]; relatedProducts?: Product[] }) | null) => void;
+  setCustomPrompt: (prompt: string | null) => void;
 }
 
 export const useBudtenderStore = create<BudtenderStore>((set) => ({
   isVoiceOpen: false,
   activeProduct: null,
+  customPrompt: null,
   openVoice: () => set({ isVoiceOpen: true }),
   closeVoice: () => set({ isVoiceOpen: false }),
   toggleVoice: () => set((state) => ({ isVoiceOpen: !state.isVoiceOpen })),
   setActiveProduct: (product) => set({ activeProduct: product }),
+  setCustomPrompt: (prompt) => set({ customPrompt: prompt }),
 }));

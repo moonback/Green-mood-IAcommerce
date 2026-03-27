@@ -8,6 +8,7 @@ import { useGeminiLiveVoice, VoiceState } from '../hooks/useGeminiLiveVoice';
 import { useSettingsStore } from '../store/settingsStore';
 import { useTheme } from './ThemeProvider';
 import { useWishlistStore } from '../store/wishlistStore';
+import { useBudtenderStore } from '../store/budtenderStore';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -181,6 +182,7 @@ export default function VoiceAdvisor({
     const { resolvedTheme } = useTheme();
     const isLightTheme = resolvedTheme === 'light';
     const { items: wishlistItems, toggleItem: onToggleFavorite } = useWishlistStore();
+    const setStoreCustomPrompt = useBudtenderStore(s => s.setCustomPrompt);
 
     const { voiceState, error, isMuted, isSupported, compatibilityError, startSession, stopSession, toggleMute } =
         useGeminiLiveVoice({
@@ -238,11 +240,13 @@ export default function VoiceAdvisor({
 
     const handleClose = () => {
         stopSession();
+        setStoreCustomPrompt(null);
         onClose();
     };
 
     const handleHangup = () => {
         stopSession();
+        setStoreCustomPrompt(null);
         onClose();
         if (onHangup) onHangup();
     };

@@ -11,6 +11,7 @@ import { getVoicePrompt } from '../lib/budtenderPrompts';
 import { searchCannabisKnowledge } from '../lib/cannabisKnowledgeService';
 import { useSettingsStore } from '../store/settingsStore';
 import { useRecentlyViewedStore } from '../store/recentlyViewedStore';
+import { useBudtenderStore } from '../store/budtenderStore';
 
 // Stable GA model — the preview model has a known 1008 bug with function calling
 const LIVE_MODEL = 'models/gemini-2.5-flash-native-audio-latest';
@@ -248,6 +249,7 @@ export function useGeminiLiveVoice({
 }: Options) {
   const globalSettings = useSettingsStore(s => s.settings);
   const recentlyViewed = useRecentlyViewedStore(s => s.items);
+  const storeCustomPrompt = useBudtenderStore(s => s.customPrompt);
   const [voiceState, setVoiceState] = useState<VoiceState>('idle');
   const [error, setError] = useState<string | null>(null);
   const [isMuted, setIsMuted] = useState(false);
@@ -398,7 +400,11 @@ export function useGeminiLiveVoice({
   }, []);
 
   const buildSystemPrompt = useCallback((): string => {
-    const effectiveCustomPrompt = [globalSettings.budtender_base_prompt?.trim(), customPrompt?.trim()].filter(Boolean).join('\n\n');
+    const effectiveCustomPrompt = [
+      globalSettings.budtender_base_prompt?.trim(), 
+      customPrompt?.trim(),
+      storeCustomPrompt?.trim()
+    ].filter(Boolean).join('\n\n');
     const prompt = getVoicePrompt(
       productsRef.current, savedPrefs, userName, pastProducts, pastOrders,
       deliveryFee, deliveryFreeThreshold, cartItems, effectiveCustomPrompt,
@@ -409,7 +415,7 @@ export function useGeminiLiveVoice({
     );
     console.info('[Voice][Prompt] System instruction generated (length:', prompt.length, ')');
     return prompt;
-  }, [userName, deliveryFee, deliveryFreeThreshold, savedPrefs, pastProducts, pastOrders, cartItems, customPrompt, loyaltyPoints, globalSettings.budtender_name, globalSettings.loyalty_tiers, allowCloseSession, recentlyViewed, globalSettings.store_name, globalSettings.budtender_base_prompt, globalSettings.loyalty_currency_name, activeProduct]);
+  }, [userName, deliveryFee, deliveryFreeThreshold, savedPrefs, pastProducts, pastOrders, cartItems, customPrompt, storeCustomPrompt, loyaltyPoints, globalSettings.budtender_name, globalSettings.loyalty_tiers, allowCloseSession, recentlyViewed, globalSettings.store_name, globalSettings.budtender_base_prompt, globalSettings.loyalty_currency_name, activeProduct]);
 
   const fetchEphemeralToken = useCallback(async (forceRefresh: boolean = false): Promise<{ token: string }> => {
     const now = Date.now();

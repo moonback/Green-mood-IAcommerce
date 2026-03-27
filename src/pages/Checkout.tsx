@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { Package, Truck, MapPin, Plus, CreditCard, Coins, ArrowLeft, ShieldCheck, Sparkles, CheckCircle2, Check, Star, Crown, FlaskConical, ArrowRight } from 'lucide-react';
+import { Package, Truck, MapPin, Plus, CreditCard, Coins, ArrowLeft, ShieldCheck, Sparkles, CheckCircle2, Check, Star, Crown, FlaskConical, ArrowRight, Headphones } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { trackEvent } from '../lib/analytics';
 import { Address } from '../lib/types';
@@ -12,6 +12,9 @@ import SEO from '../components/SEO';
 import PromoCodeInput, { AppliedPromo } from '../components/PromoCodeInput';
 import StripePaymentForm from '../components/StripePaymentForm';
 import LoyaltyRedemption from '../components/LoyaltyRedemption';
+import { useBudtenderStore } from '../store/budtenderStore';
+import ProductCard from '../components/ProductCardV2';
+import { useBudTenderMemory } from '../hooks/useBudTenderMemory';
 
 // ─── Dev-only payment simulator ──────────────────────────────────────────────
 function PaymentSimulator({
@@ -103,6 +106,22 @@ export default function Checkout() {
   const [checkoutStep, setCheckoutStep] = useState<'form' | 'payment'>('form');
   const [pendingOrderId, setPendingOrderId] = useState<string | null>(null);
   const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const { openVoice, setCustomPrompt } = useBudtenderStore();
+  const { pastProducts, savedPrefs } = useBudTenderMemory();
+  const [showSupportHint, setShowSupportHint] = useState(false);
+
+  // Proactive support timer
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowSupportHint(true);
+    }, 45000); // Show help hint after 45s of hesitation
+    return () => clearTimeout(timer);
+  }, []);
+
+  const startCheckoutSupport = () => {
+    setCustomPrompt("[PAGE: CHECKOUT] Le client est en train de finaliser sa commande. Son panier contient : " + items.map(i => i.product.name).join(', ') + ". Ta mission : rassurer sur le choix, répondre aux doutes techniques ou logistiques, et proposer un dernier petit complément si pertinent.");
+    openVoice();
+  };
 
   // New address form
   const [newAddress, setNewAddress] = useState({
@@ -788,11 +807,65 @@ export default function Checkout() {
                     </div>
                   </div>
 
-                  {error && (
-                    <div className="rounded-2xl border border-red-500/20 bg-red-500/10 p-4 text-sm font-medium text-red-400">
-                      {error}
+                  {/* ── UPSELL SECTION ──────────────────────────── */}
+                  <div className="rounded-[2rem] border border-emerald-500/20 bg-emerald-500/5 p-6 backdrop-blur-xl">
+                    <div className="mb-4 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Sparkles className="h-4 w-4 text-emerald-400" />
+                        <p className="text-[11px] font-black uppercase tracking-[0.2em] text-white">Complétez votre routine</p>
+                      </div>
+                      <span className="rounded-full bg-emerald-500/20 px-2.5 py-1 text-[9px] font-black text-emerald-400 uppercase">Offre Flash</span>
                     </div>
-                  )}
+
+                    <div className="space-y-4">
+                      {/* Placeholder for simple logic: suggest a default complementary category if not present */}
+                      <p className="text-xs text-slate-400 leading-relaxed">
+                        Saviez-vous que nos infusions complètent parfaitement les effets de vos fleurs pour une nuit paisible ?
+                      </p>
+                      <button 
+                        onClick={() => navigate('/catalogue?category=infusions')}
+                        className="flex w-full items-center justify-between rounded-2xl bg-white/5 border border-white/10 p-3 hover:bg-white/10 transition-all group"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="h-10 w-10 rounded-xl bg-slate-950 flex items-center justify-center">
+                            <Package className="h-5 w-5 text-emerald-500/60" />
+                          </div>
+                          <div className="text-left">
+                            <p className="text-[11px] font-bold text-white uppercase tracking-tight">Pack Infusion Bio</p>
+                            <p className="text-[9px] text-slate-500">Dès 12.90 €</p>
+                          </div>
+                        </div>
+                        <ArrowRight className="h-4 w-4 text-emerald-500 group-hover:translate-x-1 transition-transform" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* ── AI SUPPORT TRIGGER ────────────────────────── */}
+                  <div className="rounded-[2rem] border border-white/10 bg-slate-900/40 p-6">
+                    <div className="flex items-center gap-4">
+                      <div className="relative">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-500/10 text-emerald-400">
+                          <Headphones className="h-6 w-6" />
+                        </div>
+                        {showSupportHint && (
+                          <span className="absolute -right-1 -top-1 flex h-4 w-4">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-4 w-4 bg-emerald-500"></span>
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-xs font-black text-white uppercase tracking-wider">Un doute ?</p>
+                        <p className="text-[11px] text-slate-500 mt-1">Notre Vendeur IA vous aide à finaliser votre pack idéal.</p>
+                      </div>
+                      <button
+                        onClick={startCheckoutSupport}
+                        className="rounded-xl bg-white px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-black hover:bg-emerald-400 transition-colors"
+                      >
+                        Parler
+                      </button>
+                    </div>
+                  </div>
 
                   <div className="space-y-4">
                     <button
