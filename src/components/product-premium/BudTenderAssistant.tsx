@@ -21,7 +21,7 @@ export default function BudTenderAssistant({ product }: Props) {
 
   const ask = (text: string) => {
     const t = text.toLowerCase();
-    let a = "Je suis votre expert Budtender. Je peux vous renseigner sur les effets, les arômes ou les conseils d'utilisation de cette variété.";
+    let a = "Je suis votre Vendeur IA. Je peux vous renseigner sur les effets, les arômes ou les conseils d'utilisation de cette variété.";
     if (t.includes('effet') || t.includes('détente') || t.includes('puissance') || t.includes('relax')) a = quickAnswers.effects;
     else if (t.includes('goût') || t.includes('saveur') || t.includes('arôme') || t.includes('parfum')) a = quickAnswers.flavor;
     else if (t.includes('usage') || t.includes('conseil') || t.includes('utiliser') || t.includes('consommer')) a = quickAnswers.usage;
