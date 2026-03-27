@@ -118,13 +118,17 @@ const NON_RETRYABLE_CODES = new Set([1000, 1001, 4000, 4001, 4003, 4008]);
 
 export type VoiceState = 'idle' | 'connecting' | 'listening' | 'speaking' | 'error';
 
+// Helper for robust string normalization
+const normalizeStr = (s: string) => 
+  s.toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
 interface Options {
   products: Product[];
   pastProducts?: PastProduct[];
   pastOrders?: PastOrderSummary[];
   savedPrefs?: SavedPrefs | null;
   userName?: string | null;
-  cartItems?: any[];
+  cartItems?: { product: Product; quantity: number }[];
   onAddItem?: (product: Product, quantity: number) => void;
   deliveryFee?: number;
   deliveryFreeThreshold?: number;
@@ -145,44 +149,18 @@ interface Options {
   proactiveGreeting?: string;            // Am6: used when voice is triggered proactively
 }
 
-function downsampleBuffer(buf: Float32Array, fromRate: number, toRate: number): Float32Array {
-  if (fromRate === toRate) return buf;
-  const ratio = fromRate / toRate;
-  const outLen = Math.floor(buf.length / ratio);
-  const out = new Float32Array(outLen);
-  for (let i = 0; i < outLen; i++) {
-    const start = Math.floor(i * ratio);
-    const end = Math.min(Math.floor((i + 1) * ratio), buf.length);
-    let sum = 0;
-    for (let j = start; j < end; j++) sum += buf[j];
-    out[i] = sum / (end - start);
+let audioWorkerSingleton: Worker | null = null;
+function getAudioWorker(): Worker {
+  if (!audioWorkerSingleton && typeof window !== 'undefined') {
+    audioWorkerSingleton = new Worker('/downsample-worker.js');
   }
-  return out;
-}
-
-function float32ToInt16(buf: Float32Array): Int16Array {
-  const out = new Int16Array(buf.length);
-  for (let i = 0; i < buf.length; i++) {
-    const s = Math.max(-1, Math.min(1, buf[i]));
-    out[i] = s < 0 ? s * 0x8000 : s * 0x7fff;
-  }
-  return out;
+  return audioWorkerSingleton!;
 }
 
 function toBase64(bytes: Uint8Array): string {
   let binary = '';
   for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
   return btoa(binary);
-}
-
-function getRms(samples: Float32Array): number {
-  if (!samples || samples.length === 0) return 0;
-  let sumSq = 0;
-  for (let i = 0; i < samples.length; i++) {
-    const s = samples[i];
-    sumSq += s * s;
-  }
-  return Math.sqrt(sumSq / samples.length);
 }
 
 /**
@@ -285,6 +263,7 @@ export function useGeminiLiveVoice({
   const wishlistItemsRef = useRef(wishlistItems);
   wishlistItemsRef.current = wishlistItems;
 
+  const lastStartSessionCallRef = useRef<number>(0);
   const sessionRef = useRef<Session | null>(null);
   const startTimeRef = useRef<number | null>(null);
   const interactionIdRef = useRef<string | null>(null);
@@ -328,9 +307,28 @@ export function useGeminiLiveVoice({
   const outputTranscriptTimerRef = useRef<number | null>(null);
   const greetingTriggerSentRef = useRef(false);
 
+  const silenceTimerRef = useRef<number | null>(null);
+  const resetSilenceTimer = useCallback(() => {
+    if (silenceTimerRef.current) window.clearTimeout(silenceTimerRef.current);
+    silenceTimerRef.current = window.setTimeout(() => {
+      // Check if session is still alive and listening
+      if (voiceStateRef.current === 'listening' && !isManualCloseRef.current && sessionRef.current) {
+         console.info('[Voice] Silence prolongé détecté (15s), envoi d\'une relance proactive.');
+         try {
+           sessionRef.current.sendClientContent({
+             turns: [{ role: 'user', parts: [{ text: "[SILENCE] Le client n'a rien dit depuis plus de 15 secondes. Relance-le très doucement et brièvement (ex: 'Vous êtes toujours là ?', 'Une question sur nos produits ?') pour savoir s'il a encore besoin d'aide, ou propose de fermer la session." }] }],
+             turnComplete: true
+           });
+         } catch(e) {}
+      }
+    }, 15000); // 15 secondes d'inactivité
+  }, []);
+
   useEffect(() => {
     voiceStateRef.current = voiceState;
   }, [voiceState]);
+
+  const productCacheRef = useRef<Map<string, Product>>(new Map());
 
   // ── Unified product lookup with 4 fallback levels ────────────────────────
   // Level 1: exact name match
@@ -339,29 +337,34 @@ export function useGeminiLiveVoice({
   // Level 4: Supabase ilike fallback (catches typos, accent differences, etc.)
   // This runs in both add_to_cart and view_product so neither fails on first call.
   const findProduct = useCallback(async (prodName: string): Promise<Product | undefined> => {
-    const q = prodName.toLowerCase().trim();
+    const q = normalizeStr(prodName);
     if (!q) return undefined;  // Guard: empty product name must never match anything
+    
+    if (productCacheRef.current.has(q)) {
+      return productCacheRef.current.get(q);
+    }
+
     const allKnown = [...productsRef.current, ...searchResultsRef.current];
 
     // L1 – exact
-    let found = allKnown.find(i => i.name.toLowerCase() === q);
-    if (found) return found;
+    let found = allKnown.find(i => normalizeStr(i.name) === q);
+    if (found) { productCacheRef.current.set(q, found); return found; }
 
     // L2 – substring (either direction), requires at least 4 chars to avoid broad category matches
     if (q.length >= 4) {
-      found = allKnown.find(i => i.name.toLowerCase().includes(q) || q.includes(i.name.toLowerCase()));
-      if (found) return found;
+      found = allKnown.find(i => normalizeStr(i.name).includes(q) || q.includes(normalizeStr(i.name)));
+      if (found) { productCacheRef.current.set(q, found); return found; }
     }
 
     // L3 – ALL words present (min length 1 to catch short words like "OG", "CB")
     const words = q.split(/\s+/).filter(w => w.length > 1);
     if (words.length > 0) {
-      found = allKnown.find(i => words.every(w => i.name.toLowerCase().includes(w)));
-      if (found) return found;
+      found = allKnown.find(i => words.every(w => normalizeStr(i.name).includes(w)));
+      if (found) { productCacheRef.current.set(q, found); return found; }
 
       // L3b – ANY word present (looser)
-      found = allKnown.find(i => words.some(w => i.name.toLowerCase().includes(w)));
-      if (found) return found;
+      found = allKnown.find(i => words.some(w => normalizeStr(i.name).includes(w)));
+      if (found) { productCacheRef.current.set(q, found); return found; }
     }
 
     // L4 – Supabase ilike (last resort, handles accent differences & typos)
@@ -376,9 +379,11 @@ export function useGeminiLiveVoice({
       if (data && data.length > 0) {
         // Pick the closest match by name length proximity
         const sorted = [...data].sort((a, b) =>
-          Math.abs(a.name.length - prodName.length) - Math.abs(b.name.length - prodName.length)
+          Math.abs(normalizeStr(a.name).length - q.length) - Math.abs(normalizeStr(b.name).length - q.length)
         );
-        return sorted[0] as Product;
+        const best = sorted[0] as Product;
+        productCacheRef.current.set(q, best);
+        return best;
       }
     } catch (e) {
       console.error('[Voice] Supabase product lookup failed:', e);
@@ -561,6 +566,7 @@ export function useGeminiLiveVoice({
     noiseSamplesRef.current = [];
     if (inputTranscriptTimerRef.current) clearTimeout(inputTranscriptTimerRef.current);
     if (outputTranscriptTimerRef.current) clearTimeout(outputTranscriptTimerRef.current);
+    if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
 
     (sessionRef.current as any)?._ws?.close?.();
     sessionRef.current?.close();
@@ -745,21 +751,20 @@ export function useGeminiLiveVoice({
     const source = ctx.createMediaStreamSource(stream);
     const worklet = new AudioWorkletNode(ctx, 'mic-processor');
     processorRef.current = worklet;
-    worklet.port.onmessage = (e) => {
+    const worker = getAudioWorker();
+
+    worker.onmessage = (msg) => {
       if (isMutedRef.current || !canSendRealtimeInput()) return;
 
       // Synchronous race-condition guard: check WS state right before send to catch
       // CLOSING transitions that slip through between canSendRealtimeInput() and here.
-      // The SDK swallows the resulting DOMException internally and logs it as a
-      // console.warn — our try/catch can't intercept it, so we must prevent the call.
       try {
         const ws = wsRef.current ?? (sessionRef.current as any)?._ws;
         if (ws && ws.readyState !== WebSocket.OPEN) return;
       } catch { /* ignore if _ws is not accessible */ }
 
       try {
-        const chunk = e.data as Float32Array;
-        const rms = getRms(chunk);
+        const { rms, pcm } = msg.data;
         const now = Date.now();
 
         // Am4: noise calibration — collect RMS samples silently during calibration window
@@ -801,9 +806,6 @@ export function useGeminiLiveVoice({
           }
         }
 
-        const down = downsampleBuffer(chunk, ctx.sampleRate, INPUT_SAMPLE_RATE);
-        const pcm = float32ToInt16(down);
-
         // Final guard: re-check right before the SDK call to minimize the race window
         if (isClosingRef.current || !sessionRef.current) return;
         
@@ -822,12 +824,23 @@ export function useGeminiLiveVoice({
         }
       } catch (err: any) {
         // Silently discard any socket teardown errors (CLOSED, CLOSING, InvalidStateError)
-        const msg = String(err?.message ?? err).toLowerCase();
-        if (msg.includes('closed') || msg.includes('closing') || msg.includes('invalid state') || msg.includes('websocket')) {
+        const msgStr = String(err?.message ?? err).toLowerCase();
+        if (msgStr.includes('closed') || msgStr.includes('closing') || msgStr.includes('invalid state') || msgStr.includes('websocket')) {
           return;
         }
         console.warn('[Voice] Mic capture error:', err);
       }
+    };
+
+    worklet.port.onmessage = (e) => {
+      if (isMutedRef.current || !canSendRealtimeInput()) return;
+      const chunk = e.data as Float32Array;
+      worker.postMessage({
+        chunk,
+        fromRate: captureCtxRef.current?.sampleRate ?? 48000,
+        toRate: INPUT_SAMPLE_RATE,
+        bargeInThreshold: adaptiveBargeInThresholdRef.current
+      }, [chunk.buffer]);
     };
 
     const silent = ctx.createGain();
@@ -841,6 +854,13 @@ export function useGeminiLiveVoice({
   const startSessionRef = useRef<((forceFresh?: boolean) => Promise<void>) | undefined>(undefined);
 
   const startSession = useCallback(async (forceFreshToken: boolean = false) => {
+    const now = Date.now();
+    if (now - lastStartSessionCallRef.current < 1000) {
+      console.warn('[Voice] startSession ignoré (debounce).');
+      return;
+    }
+    lastStartSessionCallRef.current = now;
+
     if (startInFlightRef.current) return;
     cleanup();
     isManualCloseRef.current = false;
