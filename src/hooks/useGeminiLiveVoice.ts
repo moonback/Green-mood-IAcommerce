@@ -72,6 +72,21 @@ function fallbackKeywordSearch(query: string, products: Product[]): Product[] {
     .map((x) => x.p);
 }
 
+function levenshteinDistance(a: string, b: string): number {
+  if (a.length === 0) return b.length;
+  if (b.length === 0) return a.length;
+  const matrix = Array.from({ length: a.length + 1 }, () => new Array(b.length + 1).fill(0));
+  for (let i = 0; i <= a.length; i++) matrix[i][0] = i;
+  for (let j = 0; j <= b.length; j++) matrix[0][j] = j;
+  for (let i = 1; i <= a.length; i++) {
+    for (let j = 1; j <= b.length; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      matrix[i][j] = Math.min(matrix[i - 1][j] + 1, matrix[i][j - 1] + 1, matrix[i - 1][j - 1] + cost);
+    }
+  }
+  return matrix[a.length][b.length];
+}
+
 function isVectorDimensionRpcError(error: unknown): boolean {
   const message = String((error as { message?: string })?.message || '').toLowerCase();
   return message.includes('different vector dimensions') || (message.includes('vector') && message.includes('dimensions'));
@@ -307,22 +322,25 @@ export function useGeminiLiveVoice({
   const outputTranscriptTimerRef = useRef<number | null>(null);
   const greetingTriggerSentRef = useRef(false);
 
+  const messageQueueRef = useRef<string[]>([]);
   const silenceTimerRef = useRef<number | null>(null);
+
   const resetSilenceTimer = useCallback(() => {
     if (silenceTimerRef.current) window.clearTimeout(silenceTimerRef.current);
+    const delay = cartItems.length > 0 ? 8000 : 15000;
     silenceTimerRef.current = window.setTimeout(() => {
       // Check if session is still alive and listening
       if (voiceStateRef.current === 'listening' && !isManualCloseRef.current && sessionRef.current) {
-         console.info('[Voice] Silence prolongé détecté (15s), envoi d\'une relance proactive.');
+         console.info(`[Voice] Silence prolongé détecté (${delay/1000}s), envoi d\'une relance proactive.`);
          try {
            sessionRef.current.sendClientContent({
-             turns: [{ role: 'user', parts: [{ text: "[SILENCE] Le client n'a rien dit depuis plus de 15 secondes. Relance-le très doucement et brièvement (ex: 'Vous êtes toujours là ?', 'Une question sur nos produits ?') pour savoir s'il a encore besoin d'aide, ou propose de fermer la session." }] }],
+             turns: [{ role: 'user', parts: [{ text: `[SILENCE] Le client n'a rien dit depuis plus de ${delay/1000} secondes. Relance-le très doucement et brièvement (ex: 'Vous êtes toujours là ?', 'Une question sur nos produits ?') pour savoir s'il a encore besoin d'aide. L'utilisateur a ${cartItems.length} article(s) dans son panier.` }] }],
              turnComplete: true
            });
          } catch(e) {}
       }
-    }, 15000); // 15 secondes d'inactivité
-  }, []);
+    }, delay);
+  }, [cartItems.length]);
 
   useEffect(() => {
     voiceStateRef.current = voiceState;
@@ -365,6 +383,17 @@ export function useGeminiLiveVoice({
       // L3b – ANY word present (looser)
       found = allKnown.find(i => words.some(w => normalizeStr(i.name).includes(w)));
       if (found) { productCacheRef.current.set(q, found); return found; }
+    }
+
+    // L3.5 – Fuzzy Match local (Levenshtein) sur les produits connus (rattrape les typos comme "Bleu Dream")
+    if (q.length > 4) {
+      for (const i of allKnown) {
+        const normName = normalizeStr(i.name);
+        if (Math.abs(normName.length - q.length) <= 3 && levenshteinDistance(normName, q) <= 2) {
+          productCacheRef.current.set(q, i);
+          return i;
+        }
+      }
     }
 
     // L4 – Supabase ilike (last resort, handles accent differences & typos)
@@ -602,69 +631,82 @@ export function useGeminiLiveVoice({
     return () => cleanup();
   }, [cleanup]);
 
-  // Sync cart state if it changes mid-session
-  // OPTIMIZATION: Debounce and guarding against state transitions to avoid 1011 race conditions
+  // File d'attente globale pour différer les messages texte quand le WS n'est pas prêt
+  const queueClientMessage = useCallback((text: string) => {
+    const ws = wsRef.current ?? (sessionRef.current as any)?._ws;
+    if (sessionRef.current && voiceStateRef.current === 'listening' && !isManualCloseRef.current && ws && ws.readyState === 1) {
+      try {
+        sessionRef.current.sendClientContent({ turns: [{ role: 'user', parts: [{ text }] }], turnComplete: false });
+      } catch (err) {
+        messageQueueRef.current.push(text);
+      }
+    } else {
+      messageQueueRef.current.push(text);
+    }
+  }, []);
+
+  // Flush de la Message Queue lorsque l'IA "écoute" à nouveau
+  useEffect(() => {
+    if (voiceState === 'listening' && messageQueueRef.current.length > 0 && sessionRef.current && !isManualCloseRef.current) {
+      const ws = wsRef.current ?? (sessionRef.current as any)?._ws;
+      if (ws && ws.readyState === 1) {
+        try {
+          // On envoie chaque message empilé
+          for (const text of messageQueueRef.current) {
+            sessionRef.current.sendClientContent({ turns: [{ role: 'user', parts: [{ text }] }], turnComplete: false });
+          }
+          messageQueueRef.current = [];
+        } catch (err) {
+          console.warn('[Voice] Failed to flush message queue:', err);
+        }
+      }
+    }
+  }, [voiceState]);
+
+  // Sync cart state mid-session (utilise désormais la message queue)
   const prevCartItemsRef = useRef(cartItems);
   const lastSyncTextRef = useRef('');
   useEffect(() => {
-    if (sessionRef.current && voiceState === 'listening' && !isManualCloseRef.current) {
-      const isDifferent = JSON.stringify(cartItems) !== JSON.stringify(prevCartItemsRef.current);
-      if (isDifferent) {
-        const cartStr = cartItems.length > 0
-          ? cartItems.map(i => `${i.quantity}x ${i.product.name}`).join(', ')
-          : 'panier vide';
+    if (!sessionRef.current || isManualCloseRef.current) return;
+    const isDifferent = JSON.stringify(cartItems) !== JSON.stringify(prevCartItemsRef.current);
+    if (isDifferent) {
+      const cartStr = cartItems.length > 0
+        ? cartItems.map(i => `${i.quantity}x ${i.product.name}`).join(', ')
+        : 'panier vide';
 
-        const syncText = `[VÉRITÉ PANIER] Le panier actuel contient : ${cartStr}. Ceci est l'unique source de vérité.`;
+      const syncText = `[VÉRITÉ PANIER] Le panier actuel contient : ${cartStr}. Ceci est l'unique source de vérité.`;
 
-        if (syncText !== lastSyncTextRef.current) {
-          const timer = setTimeout(() => {
-            if (!sessionRef.current || voiceState !== 'listening' || isManualCloseRef.current) return;
-            try {
-              sessionRef.current.sendClientContent({
-                turns: [{ role: 'user', parts: [{ text: syncText }] }],
-                turnComplete: false
-              });
-              lastSyncTextRef.current = syncText;
-            } catch (err) {
-              console.warn('[Voice] Failed to sync cart state:', err);
-            }
-          }, 1200);
-          return () => clearTimeout(timer);
-        }
-        prevCartItemsRef.current = cartItems;
-      }
-    }
-  }, [cartItems, voiceState]);
-
-  // Sync active product state if it changes mid-session (navigation)
-  const prevActiveProductRef = useRef(activeProduct);
-  useEffect(() => {
-    if (sessionRef.current && voiceState === 'listening' && activeProduct && !isManualCloseRef.current) {
-      if (activeProduct.id !== prevActiveProductRef.current?.id) {
-        const specs = (activeProduct as any).attributes?.productSpecs?.map((s: any) => `• ${s.name}: ${s.description}`).join('\n') || 'Non spécifiées';
-        const metrics = (activeProduct as any).attributes?.botanicalProfile ? Object.entries((activeProduct as any).attributes.botanicalProfile).map(([k, v]) => `${k}: ${v}/10`).join(', ') : 'Non disponibles';
-
-        const syncText = `[NAVIGATION] Le client regarde maintenant : ${activeProduct.name}.\n` +
-          `Détails botaniques :\n${specs}\n` +
-          `Profil sensoriel : ${metrics}\n` +
-          `Utilise ces informations pour tes futures réponses tant que le client est sur cette page.`;
-
+      if (syncText !== lastSyncTextRef.current) {
         const timer = setTimeout(() => {
-          if (!sessionRef.current || voiceState !== 'listening' || isManualCloseRef.current) return;
-          try {
-            sessionRef.current.sendClientContent({
-              turns: [{ role: 'user', parts: [{ text: syncText }] }],
-              turnComplete: false
-            });
-            prevActiveProductRef.current = activeProduct;
-          } catch (err) {
-            console.warn('[Voice] Failed to sync active product state:', err);
-          }
-        }, 1500);
+          queueClientMessage(syncText);
+          lastSyncTextRef.current = syncText;
+        }, 1200);
         return () => clearTimeout(timer);
       }
+      prevCartItemsRef.current = cartItems;
     }
-  }, [activeProduct, voiceState]);
+  }, [cartItems, queueClientMessage]);
+
+  // Sync active product state mid-session (utilise désormais la message queue)
+  const prevActiveProductRef = useRef(activeProduct);
+  useEffect(() => {
+    if (!sessionRef.current || isManualCloseRef.current || !activeProduct) return;
+    if (activeProduct.id !== prevActiveProductRef.current?.id) {
+      const specs = (activeProduct as any).attributes?.productSpecs?.map((s: any) => `• ${s.name}: ${s.description}`).join('\n') || 'Non spécifiées';
+      const metrics = (activeProduct as any).attributes?.botanicalProfile ? Object.entries((activeProduct as any).attributes.botanicalProfile).map(([k, v]) => `${k}: ${v}/10`).join(', ') : 'Non disponibles';
+
+      const syncText = `[NAVIGATION] Le client regarde maintenant : ${activeProduct.name}.\n` +
+        `Détails botaniques :\n${specs}\n` +
+        `Profil sensoriel : ${metrics}\n` +
+        `Utilise ces informations pour tes futures réponses tant que le client est sur cette page.`;
+
+      const timer = setTimeout(() => {
+        queueClientMessage(syncText);
+        prevActiveProductRef.current = activeProduct;
+      }, 1500);
+      return () => clearTimeout(timer);
+    }
+  }, [activeProduct, queueClientMessage]);
 
   // Global unhandledrejection suppressor for SDK's internal uncatchable fire-and-forget WS throws.
   // When the WS enters CLOSING state (readyState 2) before onclose fires, the SDK synchronously throws 

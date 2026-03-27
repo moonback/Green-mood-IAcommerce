@@ -373,7 +373,6 @@ export const getVoicePrompt = (
     _buildAnalysisProtocol(userName),
     _buildSkillsContext(),
     `## CONTEXTE CLIENT\n${clientContext}`,
-    `## EXTRAIT DU CATALOGUE\n${_buildCatalog(products, 10)}`,
     customPrompt?.trim() ? `## INSTRUCTIONS SPÉCIFIQUES\n${customPrompt.trim()}` : '',
   ].filter(Boolean).join('\n\n');
 };
