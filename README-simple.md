@@ -27,9 +27,9 @@ Contrairement aux solutions classiques (Shopify, WooCommerce) qui nécessitent d
 
 ### 🤖 1. L'IA au Service de vos Clients (BudTender IA Expert)
 Transformez chaque visiteur en acheteur grâce à notre conseiller **BudTender** disponible 24h/24.
-- **Conseiller Vocal & Textuel** : Une IA experte en CBD qui parle et comprend vos clients pour les guider, comparer les fiches produits (taux de CBD, terpènes, effets) et gérer leurs favoris par simple commande vocale.
-- **Recherche Sémantique** : Trouvez les fleurs, huiles ou infusions par effet ou usage (ex: "une fleur pour l'anxiété" ou "un produit pour mieux dormir") plutôt que par simples mots-clés.
-- **Mémoire Évolutive** : L'IA identifie les préférences du client (goûts, besoins de relaxation, budget) pour adapter son discours et ses recommandations.
+- **Conseiller Vocal Expert** (Vendeur IA) : Une IA proactive qui parle et comprend vos clients pour les guider via un protocole de vente éprouvé (Qualifier, Recommander, Upsell, Close).
+- **Auto-Learning Loop** : L'IA apprend des tendances du marché en temps réel via `get_market_insights`.
+- **Mémoire Évolutive** : L'IA identifie les préférences du client (traits dynamiques) pour personnaliser chaque conseil.
 
 ### 🛒 2. Une Expérience d'Achat "Premium"
 Offrez à vos clients le confort des plus grandes enseignes mondiales.
@@ -38,10 +38,9 @@ Offrez à vos clients le confort des plus grandes enseignes mondiales.
 - **Paiements de pointe** : Apple Pay, Google Pay et Cartes Bancaires, 100% sécurisés via Stripe.
 
 ### 🏢 3. Un Magasin Physique Connecté (Omnicanal)
-Gérez votre point de vente physique avec la même simplicité que votre site web.
-- **Logiciel de Caisse (POS)** : Interface tactile optimisée, gestion des stocks en temps réel et tickets de caisse digitaux.
-- **Écrans Publicitaires (TV)** : Transformez n'importe quel écran en panneau publicitaire dynamique affichant vos promotions et nouveautés.
-- **Affichage Client** : Un écran dédié pour vos clients lors du passage en caisse.
+- **Caisse POS AI-Augmented** : Affichez le "Playbook de Vente" au comptoir avec les préférences clients synchronisées.
+- **Performance IA Dashboard** : Pilotez votre ROI avec des métriques précises sur l'impact de l'IA (Revenus, Conversion).
+- **Écrans Publicitaires (TV)** : Rotation produits et promotions dynamiques.
 
 ### 📈 4. Fidélisation & Marketing 3.0
 Ne cherchez plus de nouveaux clients, chouchoutez ceux que vous avez déjà.

@@ -49,13 +49,13 @@ No context providers for data — components fetch directly from Supabase or use
 
 ### Admin Dashboard
 
-`src/pages/Admin.tsx` is the central data loader — fetches all categories flat and passes them as props to 28+ tab components in `src/components/admin/`. The Admin page owns the top-level data; tabs receive it as props rather than fetching independently.
+`src/pages/Admin.tsx` is the central data loader — fetches all categories flat and passes them as props to 29+ tab components in `src/components/admin/`. Includes the **AI Performance Dashboard** (`AdminAIPerformanceTab.tsx`) for tracking AI-driven ROI, conversion rates, and session metrics.
 
 ### AI / Voice System
 
-- **Voice** (`src/hooks/useGeminiLiveVoice.ts`, 83 KB): WebSocket to Gemini Live API, streams 16 kHz PCM audio in / 24 kHz PCM out. Handles 20+ client-side tool calls (product search, cart ops, etc.) with 2500 ms deduplication.
+- **Voice** (`src/hooks/useGeminiLiveVoice.ts`, 86 KB): WebSocket to Gemini Live API, streams 16 kHz PCM audio in / 24 kHz PCM out. Handles 21+ client-side tool calls (product search, cart ops, `get_market_insights`, etc.) with 2500 ms deduplication.
 - **Text chat** (`src/hooks/useBudTenderChat.ts`): OpenRouter LLM streaming with conversation state.
-- **Prompts** (`src/lib/budtenderPrompts.ts`, 31 KB): Modular system prompt builder. `VOICE_FORMAT_RULES` forbids markdown, emojis, and bullets (TTS-friendly output).
+- **Prompts** (`src/lib/budtenderPrompts.ts`, 32 KB): Modular system prompt builder with **AI Sales Persona** orchestration (Understand -> Qualify -> Segment -> Recommend -> Upsell -> Close) and **Auto-learning** instructions.
 - **Memory** (`src/hooks/useBudTenderMemory.ts`): Persists user quiz responses and preferences in Supabase JSONB.
 
 ### Theming & Styling

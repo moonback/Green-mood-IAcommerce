@@ -70,11 +70,15 @@ La majorité des solutions e-commerce existantes (Shopify, WooCommerce) sont des
   - Abonnements récurrents (hebdo / bimensuel / mensuel)
 
 ### 🤖 Intelligence Artificielle de Pointe
-- **Conseiller BudTender IA 24/7** :
-  - **Chat Multimodal** : Recommandations contextuelles basées sur catalogue + préférences
-  - **Interaction Vocale Native** : Gemini Live API, conversation temps réel < 500ms latence
-- **Mémoire & Personnalisation** : Préférences persistées en base, historique de conversation
-  - **Moteur Vectoriel (RAG)** : `pgvector` + OpenRouter pour des réponses métier précises
+- **Vendeur IA Élite (Multi-Action)** :
+  - **Persona Vendeur** : Orchestration proactive (Comprendre, Qualifier, Recommander, Upsell, Close).
+  - **Interaction Vocale Native** : Gemini Live API, conversation temps réel < 500ms latence.
+  - **Bundling Intelligent** : Suggestion automatique de bundles pour maximiser l'AOV.
+- **Mémoire & Personnalisation Prédictive** :
+  - **Profil Dynamique** : Analyse des traits (`objectif`, `budget`, `fréquence`) persistés en base.
+  - **Moteur Vectoriel (RAG)** : `pgvector` + OpenRouter pour des réponses métiers expertes.
+- **Auto-Learning & Market Insights** :
+  - **Intelligence Temps Réel** : L'IA analyse les tendances de vente via `get_market_insights` pour conseiller les best-sellers.
 - **Génération de Contenu Admin** : Titres Hero, accroches, FAQ en un clic
 - **Auto-complétion Produits** : Descriptions générées automatiquement via IA
 - **Génération dans le Wizard** : Choix entre saisie manuelle et génération IA automatique
@@ -85,12 +89,10 @@ La majorité des solutions e-commerce existantes (Shopify, WooCommerce) sont des
 
 Les dernières fonctionnalités ajoutées sont documentées dans [`explication-fonctionnement/`](explication-fonctionnement/README.md).
 
-- **SEO produits automatisé** : génération IA des balises `title` + `meta description` et exploitation directe côté front.
-- **Blog automatique via RAG** : génération de guides SEO à partir de la base de connaissances.
-- **Sitemap enrichi** : injection automatique des URLs produits et guides pour améliorer l'indexation.
-- **Import PDF pour base de connaissances** : possibilité d'importer des notices PDF pour enrichir la base de connaissances du conseiller IA.
-- **Gestion vocale des favoris** : l'IA BudTender peut désormais ajouter, retirer et lister les produits favoris du client directement par commande vocale.
-- **Endpoints IA sécurisés** : implémentation de la validation JWT pour les Edge Functions (`gemini-token`, `ai-chat`, `ai-embeddings`) et vérification automatique des rôles administrateurs.
+- **Transformation "AI-Native Sales"** : Rebranding du BudTender en une machine de vente proactive avec gestion des Bundles et du Checkout Upsell.
+- **Intelligence Omnicanale** : Intégration du playbook de vente IA dans le POS pour le personnel en magasin.
+- **Auto-Learning Loop** : Nouvel outil `get_market_insights` permettant à l'IA d'analyser les tendances de ventes réelles.
+- **Dashboard ROI/Performance IA** : Interface d'administration dédiée pour piloter l'impact de l'IA sur le chiffre d'affaires.
 
 ### Démarrage rapide des nouveautés
 
@@ -103,10 +105,11 @@ npx tsx scripts/generate-sitemap.ts
 ```
 
 ### 🏪 Omnicanalité & Magasin Physique
-- **Terminal POS** : Interface tactile, scanner QR, encaissement hybride (espèces / carte)
-- **Rapports X & Z** : Clôture de caisse certifiée
-- **Affichage TV (Digital Signage)** : Rotation produits, flash promos avec compte à rebours, météo locale
-- **Écran Client Dédié** : Affichage secondaire WebSocket lors de l'encaissement
+- **Terminal POS "AI-Augmented"** :
+  - **Playbook de Vente** : Affichage des préférences IA et conseils de vente pour le personnel en magasin.
+  - **Synchronisation Online/Offline** : Profils clients et paniers unifiés.
+- **Affichage TV (Digital Signage)** : Rotation produits, flash promos avec compte à rebours, météo locale.
+- **Performance IA Dashboard** : Suivi du CA généré par l'IA, taux de conversion et engagement client.
 
 ### 🔐 Administration & Back-Office "Power User"
 - **28 Modules de Gestion** : Stock, Commandes (liste & Kanban), CRM, Marketing, Analytique
