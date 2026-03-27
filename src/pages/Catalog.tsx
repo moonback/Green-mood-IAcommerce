@@ -34,7 +34,7 @@ function FilterSection({
   title,
   icon: Icon,
   children,
-  defaultOpen = true,
+  defaultOpen = false,
   activeCount = 0,
   onClear
 }: {
@@ -675,8 +675,8 @@ export default function Catalog() {
                   key={aroma}
                   onClick={() => setSelectedAroma(selectedAroma === aroma ? null : aroma)}
                   className={`px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider transition-all border ${selectedAroma === aroma
-                      ? 'bg-green-neon border-green-neon text-black shadow-[0_4px_12px_var(--theme-neon-transparent)]'
-                      : 'border-[color:var(--color-border)] text-[color:var(--color-text-muted)] hover:border-green-neon/50 hover:text-[color:var(--color-text)]'
+                    ? 'bg-green-neon border-green-neon text-black shadow-[0_4px_12px_var(--theme-neon-transparent)]'
+                    : 'border-[color:var(--color-border)] text-[color:var(--color-text-muted)] hover:border-green-neon/50 hover:text-[color:var(--color-text)]'
                     }`}
                 >
                   {stripHtml(aroma)}
@@ -700,7 +700,7 @@ export default function Catalog() {
               key={label}
               title={label}
               icon={getIconForSpec(label)}
-              defaultOpen={isConcentration || isTerpene}
+              defaultOpen={false}
               activeCount={selectedSpecs[label]?.length || 0}
               onClear={() => setSelectedSpecs(prev => { const n = { ...prev }; delete n[label]; return n; })}
             >
@@ -982,32 +982,68 @@ export default function Catalog() {
         <div className="flex gap-6">
 
           {/* ── DESKTOP SIDEBAR ── */}
-          <aside className="hidden lg:block w-[260px] xl:w-[280px] flex-shrink-0">
-            <div className="sticky top-[104px]">
-              <div className="rounded-[2.5rem] border border-[color:var(--color-border)]/50 bg-[color:var(--color-card)]/70 p-6 shadow-[var(--shadow-card)] backdrop-blur-2xl transition-all duration-500 hover:shadow-2xl hover:border-green-neon/20">
-                <div className="flex items-center justify-between mb-8">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-xl bg-green-neon/10 flex items-center justify-center">
-                      <SlidersHorizontal className="w-4 h-4 text-green-neon" />
+          <aside className="hidden lg:block w-[260px] xl:w-[280px] flex-shrink-0 group/sidebar">
+            <div className="sticky top-[204px] transition-all duration-700 group-hover/sidebar:top-[198px]">
+              <div className="relative rounded-[2.5rem] border border-[color:var(--color-border)]/40 bg-[color:var(--color-card)]/60 p-7 shadow-[var(--shadow-card)] backdrop-blur-3xl transition-all duration-700 hover:shadow-[0_32px_80px_rgba(0,0,0,0.6)] hover:border-green-neon/30 overflow-hidden">
+
+                {/* Subtle background glow effect on hover */}
+                <div className="absolute -top-24 -right-24 w-48 h-48 bg-green-neon/5 blur-[80px] rounded-full opacity-0 group-hover/sidebar:opacity-100 transition-opacity duration-700 pointer-events-none" />
+
+                <div className="relative flex items-center justify-between mb-8">
+                  <div className="flex items-center gap-3">
+                    <div className="relative">
+                      <div className="w-9 h-9 rounded-xl bg-green-neon/10 flex items-center justify-center transition-transform duration-500 group-hover/sidebar:rotate-12">
+                        <SlidersHorizontal className="w-4.5 h-4.5 text-green-neon" />
+                      </div>
+                      {activeFilterCount > 0 && (
+                        <motion.span
+                          initial={{ scale: 0 }}
+                          animate={{ scale: 1 }}
+                          className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-green-neon text-black text-[10px] font-black flex items-center justify-center shadow-[0_0_12px_var(--theme-neon)] ring-2 ring-[color:var(--color-card)]"
+                        >
+                          {activeFilterCount}
+                        </motion.span>
+                      )}
                     </div>
-                    <span className="text-[color:var(--color-text)]"
-                      style={{ fontFamily: "'DM Mono', monospace", fontSize: '11px', letterSpacing: '0.18em', textTransform: 'uppercase', fontWeight: 700 }}>
-                      Filtres
-                    </span>
+                    <div className="flex flex-col">
+                      <span className="text-[color:var(--color-text)] leading-none mb-1.5"
+                        style={{ fontFamily: "'DM Mono', monospace", fontSize: '11px', letterSpacing: '0.2em', textTransform: 'uppercase', fontWeight: 800 }}>
+                        Filtres
+                      </span>
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-1 h-1 rounded-full bg-green-neon animate-pulse" />
+                        <span className="text-[9px] text-[color:var(--color-text-subtle)] uppercase tracking-widest font-bold opacity-60">
+                          Configuration
+                        </span>
+                      </div>
+                    </div>
                   </div>
+
                   {activeFilterCount > 0 && (
                     <button
                       onClick={resetAllFilters}
-                      className="text-[10px] font-bold text-[color:var(--color-text-subtle)] hover:text-red-500 transition-colors"
+                      className="group/reset flex items-center gap-1.5 py-1.5 px-2.5 rounded-lg bg-red-500/5 hover:bg-red-500/15 border border-red-500/10 hover:border-red-500/30 transition-all duration-300"
                     >
-                      Reset All
+                      <X className="w-2.5 h-2.5 text-red-500 group-hover/reset:rotate-90 transition-transform duration-300" />
+                      <span className="text-[9px] font-black text-red-500 uppercase tracking-tighter">
+                        Reset
+                      </span>
                     </button>
                   )}
                 </div>
-                <div className="max-h-[calc(100vh-280px)] overflow-y-auto no-scrollbar pr-1">
-                  <SidebarContent />
+
+                <div className="relative">
+                  <div className="max-h-[calc(150vh-320px)] overflow-y-auto no-scrollbar pr-1 scrollbar-none">
+                    <SidebarContent />
+                  </div>
+
+                  {/* Bottom fade for content continuity */}
+                  <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-[color:var(--color-card)]/80 via-[color:var(--color-card)]/40 to-transparent z-10 pointer-events-none rounded-b-[2rem]" />
                 </div>
               </div>
+
+              {/* Decorative accent element */}
+              <div className="absolute -left-1 top-12 bottom-12 w-[2px] bg-gradient-to-b from-transparent via-green-neon/20 to-transparent opacity-0 group-hover/sidebar:opacity-100 transition-opacity duration-700" />
             </div>
           </aside>
 
@@ -1142,13 +1178,13 @@ export default function Catalog() {
                 </div>
                 <div>
                   <h2 className="text-[color:var(--color-text)]"
-                  style={{ fontFamily: "'DM Serif Display', Georgia, serif", fontSize: '1.75rem' }}>
-                  Aucun résultat trouvé
-                </h2>
-                <p className="text-[color:var(--color-text-muted)] mt-1.5 max-w-sm"
-                  style={{ fontFamily: "'DM Mono', monospace", fontSize: '11px', letterSpacing: '0.04em' }}>
-                  Essayez d'élargir votre recherche ou de réinitialiser les filtres.
-                </p>
+                    style={{ fontFamily: "'DM Serif Display', Georgia, serif", fontSize: '1.75rem' }}>
+                    Aucun résultat trouvé
+                  </h2>
+                  <p className="text-[color:var(--color-text-muted)] mt-1.5 max-w-sm"
+                    style={{ fontFamily: "'DM Mono', monospace", fontSize: '11px', letterSpacing: '0.04em' }}>
+                    Essayez d'élargir votre recherche ou de réinitialiser les filtres.
+                  </p>
                 </div>
                 <Button
                   variant="primary"
@@ -1333,13 +1369,26 @@ export default function Catalog() {
               transition={{ type: 'spring', damping: 28, stiffness: 280 }}
               className="lg:hidden fixed inset-y-0 left-0 z-50 w-72 bg-[color:var(--color-card)] border-r border-[color:var(--color-border)] flex flex-col backdrop-blur-2xl"
             >
-              <div className="flex items-center justify-between p-4 border-b border-[color:var(--color-border)]">
-                <span className="font-['Inter',sans-serif] text-base font-semibold">Filtres</span>
+              <div className="flex items-center justify-between p-6 border-b border-[color:var(--color-border)]/50">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-green-neon/10 flex items-center justify-center">
+                    <SlidersHorizontal className="w-4.5 h-4.5 text-green-neon" />
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-[color:var(--color-text)] leading-none mb-1"
+                      style={{ fontFamily: "'DM Mono', monospace", fontSize: '11px', letterSpacing: '0.2em', textTransform: 'uppercase', fontWeight: 800 }}>
+                      Filtres
+                    </span>
+                    <span className="text-[9px] text-[color:var(--color-text-subtle)] uppercase tracking-widest font-bold opacity-60">
+                      Configuration
+                    </span>
+                  </div>
+                </div>
                 <button
                   onClick={() => setShowMobileFilters(false)}
-                  className="w-8 h-8 rounded-xl bg-[color:var(--color-bg-elevated)] flex items-center justify-center text-[color:var(--color-text-muted)] hover:text-[color:var(--color-text)] transition-colors"
+                  className="w-10 h-10 rounded-2xl bg-[color:var(--color-bg-elevated)] border border-[color:var(--color-border)] flex items-center justify-center text-[color:var(--color-text-muted)] hover:text-red-500 transition-all active:scale-90"
                 >
-                  <X className="w-4 h-4" />
+                  <X className="w-5 h-5" />
                 </button>
               </div>
               <div className="flex-1 overflow-y-auto p-4 scrollbar-thin">
