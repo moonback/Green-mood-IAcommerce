@@ -19,7 +19,7 @@ import {
   X,
   Package,
   Settings,
-  MessageSquare,
+
   Mic,
   Sparkles,
   LogOut,
@@ -279,34 +279,7 @@ const HeaderV2: React.FC<HeaderV2Props> = ({ setIsSearchOpen, setIsLoyaltyModalO
                 {/* AI Shortcuts */}
                 {user && (
                   <div className="hidden lg:flex items-center gap-1 border-r border-[color:var(--color-border)] pr-3 mr-1">
-                    {settings.budtender_chat_enabled !== false && (
-                      <Link
-                        to="/assistant"
-                        className={`relative flex flex-col items-center px-2.5 py-1.5 rounded-xl transition-all group overflow-hidden ${location.pathname === '/assistant'
-                          ? 'bg-[color:var(--color-primary)]/15 shadow-[var(--shadow-glow)]'
-                          : 'hover:bg-[color:var(--color-bg-elevated)]'
-                          }`}
-                        aria-label="Conseiller Chat IA"
-                      >
-                        {location.pathname === '/assistant' && (
-                          <span className="absolute inset-0 rounded-xl border border-[color:var(--color-primary)]/30" />
-                        )}
-                        <MessageSquare
-                          className={`w-4 h-4 transition-all duration-300 ${location.pathname === '/assistant'
-                            ? 'text-[color:var(--color-primary)] scale-110'
-                            : 'text-[color:var(--color-text-subtle)] group-hover:text-[color:var(--color-primary)] group-hover:scale-110'
-                            }`}
-                        />
-                        <span
-                          className={`text-[10px] font-bold uppercase tracking-tight mt-0.5 leading-none ${location.pathname === '/assistant'
-                            ? 'text-[color:var(--color-primary)]'
-                            : 'text-[color:var(--color-text-subtle)] group-hover:text-[color:var(--color-text)]'
-                            }`}
-                        >
-                          Chat IA
-                        </span>
-                      </Link>
-                    )}
+
                     {settings.budtender_voice_enabled !== false && (
                       <button
                         onClick={toggleVoice}
@@ -611,19 +584,7 @@ const HeaderV2: React.FC<HeaderV2Props> = ({ setIsSearchOpen, setIsLoyaltyModalO
                     <div className="mt-3 space-y-2">
                       <p className="text-[10px] font-bold uppercase tracking-widest text-[color:var(--color-text-subtle)] px-1">Assistants IA</p>
                       <div className="grid grid-cols-2 gap-2">
-                        {settings.budtender_chat_enabled !== false && (
-                          <Link
-                            to="/assistant"
-                            onClick={() => setMobileMenuOpen(false)}
-                            className={`flex items-center gap-2 px-3 py-2.5 rounded-xl transition-all border ${location.pathname === '/assistant'
-                              ? 'bg-[color:var(--color-primary)]/15 border-[color:var(--color-primary)]/30 text-[color:var(--color-primary)]'
-                              : 'bg-[color:var(--color-bg-elevated)] border-[color:var(--color-border)] text-[color:var(--color-text-muted)]'
-                              }`}
-                          >
-                            <MessageSquare className="w-4 h-4" />
-                            <span className="text-xs font-bold">Chat IA</span>
-                          </Link>
-                        )}
+
                         {settings.budtender_voice_enabled !== false && (
                           <button
                             onClick={() => {

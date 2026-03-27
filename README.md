@@ -74,7 +74,7 @@ La majorité des solutions e-commerce existantes (Shopify, WooCommerce) sont des
   - **Chat Multimodal** : Recommandations contextuelles basées sur catalogue + préférences
   - **Interaction Vocale Native** : Gemini Live API, conversation temps réel < 500ms latence
 - **Mémoire & Personnalisation** : Préférences persistées en base, historique de conversation
-- **Moteur Vectoriel (RAG)** : `pgvector` + OpenRouter pour des réponses métier précises
+  - **Moteur Vectoriel (RAG)** : `pgvector` + OpenRouter pour des réponses métier précises
 - **Génération de Contenu Admin** : Titres Hero, accroches, FAQ en un clic
 - **Auto-complétion Produits** : Descriptions générées automatiquement via IA
 - **Génération dans le Wizard** : Choix entre saisie manuelle et génération IA automatique
@@ -178,7 +178,7 @@ npx tsx scripts/generate-sitemap.ts
 |--------|------|---------------|
 | **Storefront** | Pages publiques, catalogue, panier, commandes | `src/pages/*.tsx` |
 | **Admin Panel** | Dashboard, CRUD, analytics, configuration | `src/components/admin/` |
-| **BudTender AI** | Conseiller IA chat + voix (Moteur de Skills) | `src/skills/`, `src/lib/budtenderPrompts.ts` |
+| **BudTender AI** | Conseiller IA vocal expert CBD (Moteur de Skills) | `src/skills/`, `src/lib/budtenderPrompts.ts` |
 | **POS System** | Terminal de caisse physique | `src/components/admin/pos/`, `src/pages/POSPage.tsx` |
 | **State Management** | Stores Zustand globaux | `src/store/*.ts` |
 | **Supabase Layer** | Requêtes DB, auth, storage | `src/lib/supabase.ts` |
@@ -191,18 +191,17 @@ npx tsx scripts/generate-sitemap.ts
 Le comportement de l'IA (Melina) est piloté par un système modulaire de fichiers Markdown :
 
 1. **Chargement Dynamique** : `import.meta.glob` dans `budtenderPrompts.ts`.
-2. **Filtrage Intelligent** : Les skills sont injectés selon le canal (`vocal` vs `chat`).
+2. **Filtrage Intelligent** : Les skills sont injectés au vol.
 3. **Minification Audio** : Nettoyage automatique des marqueurs de mise en forme pour une lecture TTS fluide.
 
 | Skill | Rôle Technique | Canal |
 |-------|----------------|-------|
 | `skill.md` | Déclaration et orchestrations des **Action Tools** | Vocal |
 | `vocal_actions.md` | Feedback audio simultané et gestion du délai | Vocal |
-| `chat_actions.md` | Règles d'affichage Markdown et qualification | Chat |
-| `botanique_expert.md` | Expertise RAG (Terpènes, Cannabinoïdes) | Hybride |
-| `objections.md` | Logique de levée de doute et techniques de vente | Hybride |
-| `fidelite.md` | Promotion active du programme de points Carats | Hybride |
-| `legal_confidentialite` | Disclaimers et conformité légale automatique | Hybride |
+| `botanique_expert.md` | Expertise RAG (Terpènes, Cannabinoïdes) | Vocal |
+| `objections.md` | Logique de levée de doute et techniques de vente | Vocal |
+| `fidelite.md` | Promotion active du programme de points Carats | Vocal |
+| `legal_confidentialite` | Disclaimers et conformité légale automatique | Vocal |
 
 ---
 
@@ -265,7 +264,7 @@ cp .env.example .env
 VITE_SUPABASE_URL=https://votre-projet.supabase.co
 VITE_SUPABASE_ANON_KEY=eyJhbGci...
 
-# OpenRouter — Requis pour IA chat + embeddings
+# OpenRouter — Requis pour IA embeddings
 OPENROUTER_API_KEY=sk-or-...
 
 # Google Gemini — Requis pour l'IA vocale
@@ -292,7 +291,6 @@ npx supabase db push
 
 ```bash
 # Déployer toutes les fonctions
-npx supabase functions deploy ai-chat
 npx supabase functions deploy ai-embeddings
 npx supabase functions deploy gemini-token
 npx supabase functions deploy stripe-payment
@@ -367,7 +365,6 @@ ecommerce-full/
 │   │   └── backgroundTaskStore.ts # Tâches IA en arrière-plan
 │   │
 │   ├── hooks/                     # Hooks React personnalisés
-│   │   ├── useBudTenderChat.ts    # Logique chat IA
 │   │   ├── useBudTenderMemory.ts  # Mémoire préférences utilisateur
 │   │   ├── useBudTenderQuiz.ts    # Machine d'état quiz IA
 │   │   ├── useGeminiLiveVoice.ts  # Chat vocal Gemini Live
@@ -404,7 +401,6 @@ ecommerce-full/
 │   ├── boutique-vierge.sql        # Schéma complet de la base
 │   ├── migration_v8_esil_data.sql # Données d'exemple
 │   └── functions/                 # Edge Functions Deno
-│       ├── ai-chat/index.ts       # Wrapper OpenRouter
 │       ├── ai-embeddings/index.ts # Génération embeddings
 │       └── gemini-token/index.ts  # Token Gemini Live
 │
@@ -432,7 +428,7 @@ Home (hero dynamique + contenu via settingsStore)
     ↓
 Navigation: Catalogue → ProductDetail
     ↓
-BudTender Widget (chat ou voix) ──→ Recommandations de fleurs, huiles et produits CBD
+BudTender Widget (vocal) ──→ Recommandations de fleurs, huiles et produits CBD
     ↓
 AddToCart → CartSidebar (calcul livraison + promo liée au CBD)
     ↓
@@ -463,25 +459,21 @@ Onglets spécialisés (26 modules)
 ### Flux IA (BudTender)
 
 ```
-Utilisateur active BudTender (chat ou voix)
+Utilisateur active BudTender (voix)
     ↓
-Quiz initial (besoin: sommeil/stress/douleur, budget, type: fleur/huile, intensité)
-    ↓
-useBudTenderChat → buildPrompt avec contexte:
+useGeminiLiveVoice → buildPrompt avec contexte:
     - Catalogue complet
     - Préférences utilisateur (DB)
     - Historique de commandes
     - Panier actuel
     - Mémoire session
     ↓
-Appel Supabase Edge Function "ai-chat"
-    → OpenRouter API (modèle configurable)
+Connexion WebSocket API Google Gemini Live Mode
     ↓
-Extraction des recommandations produits (regex + JSON)
+Interaction fluide bidirectionnelle (< 500ms)
     ↓
-pgvector similarity search en fallback
+Utilisation des tools (navigation, recherche)
     ↓
-Affichage: ProductRecommendation cards + message texte
 ```
 
 ---
@@ -528,13 +520,6 @@ Accessible depuis le Dashboard, l'overlay wizard guide en **8 étapes** :
 ---
 
 ## 🤖 Fonctionnalités IA Détaillées
-
-### BudTender Chat
-- **Localisation** : `src/components/budtender/`, `src/hooks/useBudTenderChat.ts`
-- Mode quiz guidé (4 étapes) ou conversation libre
-- Recommandations avec scoring produits
-- Mémoire persistée (table `user_ai_preferences`)
-- Historique des conversations (table `user_sessions` implicite)
 
 ### BudTender Voix (Gemini Live)
 - **Localisation** : `src/hooks/useGeminiLiveVoice.ts`
@@ -719,7 +704,7 @@ Green-mood embarque un système d'analytics **first-party** complet, sans dépen
 - Top produits & revenus par catégorie
 - Distribution des statuts de commandes
 - Acquisition client par jour
-- Interactions BudTender IA (voix, chat, quiz, feedback)
+- Interactions BudTender IA (voix, feedback)
 
 #### Nouvelles métriques (Sprint 2)
 - **Funnel de conversion** — Taux panier → checkout → achat avec % d'abandon par étape

@@ -119,7 +119,6 @@ Green-mood est la solution ultime pour les commerçants qui refusent le compromi
 | State | Zustand 5 |
 | Backend | Supabase (PostgreSQL + PostgREST + Edge Functions Deno) |
 | IA Voix | Google Gemini Live `models/gemini-2.5-flash-audio-latest` |
-| IA Chat | OpenRouter (Gemini / Mistral / Llama) |
 | Paiements | Stripe (Elements Native + Webhooks) |
 | Charts | Recharts |
 | Tests | Vitest + Playwright (**377 passing tests**) |
@@ -137,7 +136,6 @@ src/
 ├── hooks/
 │   ├── useGeminiLiveVoice.ts   # Session vocale native (Bidi)
 │   ├── useGeminiAdminVoice.ts  # Commandes vocales Back-office
-│   ├── useBudTenderChat.ts     # Chat IA texte expert CBD
 │   ├── useBudTenderQuiz.ts     # Machine d'état diagnostic CBD
 │   └── useBudTenderMemory.ts   # Mémoire JSONB des préférences client├── lib/
 │   ├── budtenderPrompts.ts     # Moteur de personnalisation (System Prompts)
@@ -174,7 +172,7 @@ Réponse audio BudTender (24kHz PCM) ──► AudioContext
 
 ### Prompt System (`src/lib/budtenderPrompts.ts`)
 
-Architecture modulaire et dynamique — `getVoicePrompt()` et `getChatPrompt()` composent le prompt en chargeant automatiquement les fichiers Markdown depuis `src/skills/*.md`.
+Architecture modulaire et dynamique —  `_buildSkillsContext()` compose le prompt en chargeant automatiquement les fichiers Markdown depuis `src/skills/*.md`.
 
 | Composant | Rôle |
 | :--- | :--- |
@@ -188,8 +186,7 @@ Architecture modulaire et dynamique — `getVoicePrompt()` et `getChatPrompt()` 
 Le comportement de l'IA est maintenant découplé du code et piloté par des fichiers Markdown spécialisés :
 
 - **`skill.md`** : Définition et règles d'usage des Action Tools.
-- **`vocal_actions.md`** : Protocole de feedback audio et séquençage (exclusif Vocal).
-- **`chat_actions.md`** : Règles de qualification et d'affichage (exclusif Chat).
+- **`vocal_actions.md`** : Protocole de feedback audio et séquençage.
 - **`botanique_expert.md`** : Connaissances approfondies (terpènes, cannabinoïdes).
 - **`objections.md`** : Stratégies de rassurance et levée de doutes sur le prix/qualité.
 - **`fidelite.md`** : Engagement autour du programme Carats.
@@ -197,7 +194,7 @@ Le comportement de l'IA est maintenant découplé du code et piloté par des fic
 - **`legal_confidentialite.md`** : Disclaimer médical et conformité THC < 0.3%.
 - **`faq_boutique.md`** : Réponses sur la logistique, paiements et retours.
 
-> **Optimisation intelligente** : Le système filtre automatiquement les skills selon le canal (ex: l'assistant vocal ne reçoit pas les règles de mise en forme du chat) pour garantir des performances optimales et une stabilité WebRTC.
+> **Optimisation intelligente** : L'assistant vocal charge uniquement les règles essentielles.
 
 **`VOICE_FORMAT_RULES`** : interdit le markdown, les emojis, les puces et tout caractère qui serait lu par la synthèse vocale. Tout output doit être du français oral naturel.
 
@@ -278,7 +275,6 @@ Utilitaires dans `src/lib/categoryTree.ts` :
 | Fonction | Rôle |
 |---|---|
 | `gemini-token` | Token éphémère Gemini Live + injection outils + prompt |
-| `ai-chat` | Chat IA texte streamé |
 | `ai-embeddings` | Génération vecteurs `text-embedding-004` |
 | `stripe-payment` | Création session Stripe Checkout |
 | `stripe-webhook` | `checkout.session.completed` → `process_checkout` (idempotent) |
@@ -325,7 +321,6 @@ supabase secrets set STRIPE_WEBHOOK_SECRET=...
 | `/cart` | Panier + code promo |
 | `/checkout` | Paiement Stripe |
 | `/account` | Espace client (commandes, profil, adresses) |
-| `/assistant` | Chat IA texte |
 | `/admin` | Panneau admin complet |
 | `/pos` | Terminal point de vente |
 | `/store-display` | Écran vitrine dynamique |

@@ -5,7 +5,7 @@ import { QuizStep } from './budtenderSettings';
 // Charge les fichiers .md de manière dynamique via Vite
 const skillsFiles = import.meta.glob('../skills/*.md', { query: '?raw', eager: true, import: 'default' });
 
-const _buildSkillsContext = (mode?: 'vocal' | 'chat') => {
+const _buildSkillsContext = () => {
   const filePaths = Object.keys(skillsFiles);
   if (filePaths.length === 0) return '';
 
@@ -25,25 +25,17 @@ const _buildSkillsContext = (mode?: 'vocal' | 'chat') => {
     const fileName = path.split('/').pop() || '';
     const skillName = fileName.replace('.md', '');
 
-    // Filtrage par canal
-    if (mode === 'vocal' && fileName === 'chat_actions.md') continue;
-    if (mode === 'chat' && fileName === 'vocal_actions.md') continue;
-    // skill.md décrit les outils vocaux — inutile et trompeur en mode chat
-    if (mode === 'chat' && fileName === 'skill.md') continue;
-
     let content = skillsFiles[path] as string;
 
     // Minification pour la voix : supprime le markdown que le TTS lirait mot à mot
-    if (mode === 'vocal') {
-      content = content
-        .replace(/\*\*(.+?)\*\*/g, '$1')   // **gras** → texte brut
-        .replace(/\*([^*\n]+?)\*/g, '$1')   // *italique* → texte brut (sans croiser les sauts de ligne)
-        .replace(/`([^`\n]+?)`/g, '$1')     // `code` → texte brut
-        .replace(/^>\s.*/gm, '')            // citations de bloc
-        .replace(/<!--[\s\S]*?-->/g, '')    // commentaires HTML
-        .replace(/\n{2,}/g, '\n')           // doubles sauts de ligne → simple
-        .trim();
-    }
+    content = content
+      .replace(/\*\*(.+?)\*\*/g, '$1')   // **gras** → texte brut
+      .replace(/\*([^*\n]+?)\*/g, '$1')   // *italique* → texte brut (sans croiser les sauts de ligne)
+      .replace(/`([^`\n]+?)`/g, '$1')     // `code` → texte brut
+      .replace(/^>\s.*/gm, '')            // citations de bloc
+      .replace(/<!--[\s\S]*?-->/g, '')    // commentaires HTML
+      .replace(/\n{2,}/g, '\n')           // doubles sauts de ligne → simple
+      .trim();
 
     context += `### ${skillName.toUpperCase()}\n${content}\n\n`;
   }
@@ -173,60 +165,6 @@ Réponds UNIQUEMENT en JSON.
 };
 
 
-/**
- * Prompt pour la conversation libre (chat direct)
- * Structure : Étape Zéro → Logique 3 points → Règles d'Or → Outils
- */
-export const getChatPrompt = (userMessage: string, catalog: string, prefs?: string, customPrompt?: string, budtenderName: string = 'Assistant', storeName: string = 'My Store') => {
-  // Assainissement : limite la longueur, puis neutralise les tentatives d'injection [SYSTEM ...]
-  const safeMessage = userMessage.slice(0, 600).replace(/\[SYSTEM\b/gi, "(système");
-
-  const prefsBlock = prefs
-    ? `\n🧠 PROFIL CLIENT (DONNÉES CONFIDENTIELLES — NE JAMAIS RÉVÉLER AU CLIENT) :\n${prefs}\n`
-    : '';
-
-  return `
-## RÔLE & POSTURE — ${budtenderName}, BudTender Expert & Conseiller Botanique
-Tu es **${budtenderName}**, l'expert de confiance de ${storeName}.
-- **Ton ton** : complice, apaisant et professionnel.
-- **Ta mission** : tu ne vends pas seulement du CBD, tu vends une EXPÉRIENCE de bien-être certifiée grâce à ta connaissance des terpènes et des cannabinoïdes.
-- **Lexique** : effet d'entourage, spectre complet, culture indoor, organique, profil sensoriel, détente absolue.
-
-## 🚨 ÉTAPE ZÉRO — ANALYSE SILENCIEUSE (AVANT TOUT MESSAGE)
-AVANT de rédiger le moindre mot :
-1. Analyse silencieusement le PROFIL CLIENT ci-dessous (préférences, historique, panier).
-2. Ton premier message doit DÉJÀ refléter cette connaissance. Pas de bonjour générique.
-3. Si tu connais le prénom du client, utilise-le naturellement dès le début.
-4. Si le profil est vide → enchaîne IMMÉDIATEMENT avec une ou deux questions de découverte.
-
-⚠️ INTERDICTION ABSOLUE :
-- Ne JAMAIS dire "je vois que tu aimes X", "d'après ton profil...", "tes préférences indiquent...".
-- Utilise ces informations EN SOUS-TEXTE pour orienter ton ton, tes suggestions et tes questions, comme un ami qui te connaît bien sans te le dire.
-
-${prefsBlock}
-
-## 🎯 LOGIQUE DE RÉPONSE — STRUCTURE EN 3 POINTS
-Tes réponses doivent être fluides et courtes (max 2-3 phrases) :
-1. **Validation du besoin** : "Pour ton besoin de sommeil, j'ai sélectionné cette variété particulièrement riche en Myrcène..."
-2. **Argument de qualité** : "C'est une pépite de notre catalogue pour sa culture organique et sa puissance naturelle..."
-3. **Question de validation** : Termine TOUJOURS par une question ouverte — "Est-ce que ce type d'arôme fruité t'attire ?", "C'est ce niveau de relaxation que tu recherches ?".
-
-${_buildSkillsContext('chat')}
-
-### Catalogue Exclusif
-Suggère UNIQUEMENT depuis le catalogue autorisé ci-dessous. Ne fabrique jamais de produit fictif.
-
-📦 CATALOGUE AUTORISÉ :
-${catalog}
-
-[DÉBUT DU MESSAGE CLIENT]
-${safeMessage}
-[FIN DU MESSAGE CLIENT]
-
-Réponds en Français avec la sérénité d'un expert shopping premium.
-${customPrompt?.trim() ? `\n📌 INSTRUCTIONS ADDITIONNELLES (haute priorité) :\n${customPrompt.trim()}` : ''}
-`;
-};
 
 // ─── VOICE FORMAT RULES — constante réutilisable ─────────────────────────────
 const VOICE_FORMAT_RULES = `## RÈGLES FORMAT AUDIO — OBLIGATOIRE
@@ -296,12 +234,6 @@ Règle d'or de discrétion : Utilise les données du profil client en SOUS-TEXTE
 
 // Séquence d'exécution obligatoire moved to skills/vocal_actions.md`;
 };
-
-// Function _buildResponseLogic removed as it is now handled via skills/.md files
-
-// Function _buildGoldenRules removed as it is now handled via skills/.md files
-
-// Function _buildToolsTable removed as it is now handled via skills/.md files
 
 const _buildClientContext = (
   userName: string | null | undefined,
@@ -439,7 +371,7 @@ export const getVoicePrompt = (
     _buildIdentity(budtenderName, storeName),
     VOICE_FORMAT_RULES,
     _buildAnalysisProtocol(userName),
-    _buildSkillsContext('vocal'),
+    _buildSkillsContext(),
     `## CONTEXTE CLIENT\n${clientContext}`,
     `## EXTRAIT DU CATALOGUE\n${_buildCatalog(products, 10)}`,
     customPrompt?.trim() ? `## INSTRUCTIONS SPÉCIFIQUES\n${customPrompt.trim()}` : '',
