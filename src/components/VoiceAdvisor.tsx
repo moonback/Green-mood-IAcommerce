@@ -313,7 +313,7 @@ export default function VoiceAdvisor({
                                 </div>
                                 <div className="flex items-center gap-1.5">
                                     <span className={`text-[10px] font-black uppercase tracking-[0.15em] ${isLightTheme ? 'text-slate-800' : 'text-white'}`}>
-                                        {settings.budtender_name || 'Vendeur'} IA
+                                        {settings.budtender_name || 'Bud'} AI
                                     </span>
                                     {isActive && (
                                         <motion.span
@@ -347,7 +347,7 @@ export default function VoiceAdvisor({
                                         initial={{ opacity: 0, x: -5 }} animate={{ opacity: 1, x: 0 }}
                                         className={`text-[11px] font-bold tracking-tight ${STATUS_COLOR[voiceState]}`}
                                     >
-                                        {STATUS(settings.budtender_name || 'Vendeur IA')[voiceState]}
+                                        {STATUS(settings.budtender_name || 'BudTender')[voiceState]}
                                     </motion.p>
                                     <WaveformBars state={voiceState} />
                                 </div>
