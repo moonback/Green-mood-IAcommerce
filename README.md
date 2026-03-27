@@ -25,7 +25,7 @@
 
 ### Objectif du projet
 
-**Green-mood** est une plateforme e-commerce "AI-First" spécialisée dans le domaine du CBD, construite avec React 19, TypeScript et Supabase. Elle intègre nativement l'intelligence artificielle à tous les niveaux : conseiller **BudTender IA** vocal et textuel expert en cannabinoïdes, génération de contenu automatisée, recherche vectorielle par effets, recommandations personnalisées et assistance administrative par commande vocale.
+**Green-mood** est une plateforme e-commerce "AI-First" spécialisée dans le domaine du CBD, construite avec React 19, TypeScript et Supabase. Elle intègre nativement l'intelligence artificielle à tous les niveaux : conseiller **BudTender IA vocal** (Gemini Live Native Audio) expert en cannabinoïdes, génération de contenu automatisée, recherche vectorielle par effets, recommandations personnalisées, intelligence omnicanale (web + POS + affichage digital) et assistance administrative par commande vocale.
 
 ### Problème résolu
 
@@ -69,12 +69,16 @@ La majorité des solutions e-commerce existantes (Shopify, WooCommerce) sont des
   - Parrainage automatisé avec dashboard de suivi
   - Abonnements récurrents (hebdo / bimensuel / mensuel)
 
-- **Interaction Vocale Native (Gemini Live)** :
+- **Interaction Vocale Native (Gemini Live — Voice-Only)** :
+  - **Modèle** : Gemini 2.5 Flash Native Audio pour une expérience conversationnelle ultra-naturelle.
   - **Performance Temps Réel** : Latence < 500ms via **AudioWorklet** et **Web Worker** dédié (downsampling Int16).
   - **Infrastructure Zero-Copy** : Utilisation des *Transferable Objects* pour un transfert de données audio sans surcharge CPU.
-  - **Recherche Floue Assistée (pg_trgm)** : Tolérance aux fautes de frappe vocales via recherche trigramme côté serveur (PostgreSQL).
+  - **Recherche Floue Assistée (pg_trgm)** : Tolérance aux fautes de frappe vocales via recherche trigramme côté serveur (PostgreSQL `fuzzystrmatch` + index GIST).
   - **Robustesse du Flux** : **Message Queue** intégrée pour synchroniser le panier et la navigation sans perte en cas de reconnexion WebSocket.
   - **UX Adaptative** : Détection de silence dynamique (8s/15s) pour une assistance proactive intelligente.
+  - **Moteur de Skills Modulaire** : 8 fichiers `.md` injectés dynamiquement pour piloter le comportement vocal (expertise, objections, fidélité, légal, cross-selling, FAQ).
+  - **Optimisation TTFT** : Passage en **Function Calling exclusif** pour le catalogue, éliminant l'injection du catalogue dans le prompt initial.
+  - **Cache Produit FIFO** : Limite à 100 entrées pour éviter les fuites mémoire sur sessions longues.
 - **Mémoire & Personnalisation** : Préférences persistées en base, historique de conversation
   - **Moteur Vectoriel (RAG)** : `pgvector` + OpenRouter pour des réponses métier précises
 - **Génération de Contenu Admin** : Titres Hero, accroches, FAQ en un clic
@@ -83,10 +87,26 @@ La majorité des solutions e-commerce existantes (Shopify, WooCommerce) sont des
 - **Actions IA de Masse** : Enrichissement automatique et vectorisation forcée de tous les produits d'une catégorie en un clic.
 - **Cross-Selling Intelligent (IA)** : Suggestions automatiques de produits complémentaires via recherche vectorielle sémantique et gestion assistée par IA.
 
+### 🧠 Intelligence Omnicanale (Phase 3)
+- **Dashboard IA POS** : Insights IA temps réel intégrés à l'interface caisse physique pour le personnel en magasin.
+- **Boucle Auto-Apprenante** : Feedback loop optimisant automatiquement les recommandations produit à partir des données de ventes en temps réel.
+- **Dashboard Performance IA** : Métriques de conversion, revenus générés par l'IA, et taux de recommandation avec suivi temporel.
+
 ## 🆕 Nouveautés ajoutées
 
 Les dernières fonctionnalités ajoutées sont documentées dans [`explication-fonctionnement/`](explication-fonctionnement/README.md).
 
+- **Transition Voice-Only** : Suppression complète du chat textuel. Le BudTender est désormais 100% vocal (Gemini Live Native Audio).
+- **Optimisations Performances Vocales** :
+  - **AudioWorklet + Web Worker** : Traitement audio déporté hors du thread principal.
+  - **Transferable Objects** : Transfert zero-copy entre threads pour réduire la latence CPU.
+  - **Message Queue** : File d'attente garantissant la synchronisation panier/navigation même en cas de reconnexion WebSocket.
+  - **Cache Produit FIFO** : Limitation à 100 entrées pour éviter les fuites mémoire.
+  - **Fuzzy Search Serveur (pg_trgm)** : Recherche floue déléguée à PostgreSQL via RPC `search_products_fuzzy` avec index GIST.
+- **Intelligence Omnicanale (Phase 3)** :
+  - Dashboard IA intégré au POS pour le personnel en magasin.
+  - Boucle auto-apprenante pour l'optimisation continue des recommandations.
+  - Dashboard de performance IA avec métriques de conversion et revenus.
 - **SEO produits automatisé** : génération IA des balises `title` + `meta description` et exploitation directe côté front.
 - **Blog automatique via RAG** : génération de guides SEO à partir de la base de connaissances.
 - **Sitemap enrichi** : injection automatique des URLs produits et guides pour améliorer l'indexation.
@@ -190,20 +210,22 @@ npx tsx scripts/generate-sitemap.ts
 
 ### 📂 Architecture BudTender Skills (`src/skills/`)
 
-Le comportement de l'IA (Melina) est piloté par un système modulaire de fichiers Markdown :
+Le comportement de l'IA est piloté par un système modulaire de **8 fichiers Markdown** :
 
 1. **Chargement Dynamique** : `import.meta.glob` dans `budtenderPrompts.ts`.
-2. **Filtrage Intelligent** : Les skills sont injectés au vol.
+2. **Filtrage Intelligent** : Les skills sont injectés au vol selon le contexte.
 3. **Minification Audio** : Nettoyage automatique des marqueurs de mise en forme pour une lecture TTS fluide.
 
 | Skill | Rôle Technique | Canal |
 |-------|----------------|-------|
-| `skill.md` | Déclaration et orchestrations des **Action Tools** | Vocal |
-| `vocal_actions.md` | Feedback audio simultané et gestion du délai | Vocal |
-| `botanique_expert.md` | Expertise RAG (Terpènes, Cannabinoïdes) | Vocal |
-| `objections.md` | Logique de levée de doute et techniques de vente | Vocal |
-| `fidelite.md` | Promotion active du programme de points Carats | Vocal |
-| `legal_confidentialite` | Disclaimers et conformité légale automatique | Vocal |
+| `skill.md` | Déclaration et orchestration des **Action Tools** (20+ outils) | Vocal |
+| `vocal_actions.md` | Protocole vocal : feedback simultané, gestion du délai, phrases de transition | Vocal |
+| `botanique_expert.md` | Expertise terpènes, cannabinoïdes, effet d'entourage, variétés | Vocal |
+| `cross_selling.md` | Stratégie de bundles, associations logiques, upselling discret | Vocal |
+| `objections.md` | Levée de doutes : prix, qualité, hésitation, concurrence | Vocal |
+| `fidelite.md` | Programme Carats : paliers, conversion, parrainage, gamification | Vocal |
+| `faq_boutique.md` | Logistique : livraison, paiement, retours, support, origine | Vocal |
+| `legal_confidentialite.md` | Disclaimers médicaux, THC < 0.3%, RGPD, discrétion livraison | Vocal |
 
 ---
 
@@ -402,6 +424,8 @@ ecommerce-full/
 │   ├── config.toml                # Configuration Supabase local
 │   ├── boutique-vierge.sql        # Schéma complet de la base
 │   ├── migration_v8_esil_data.sql # Données d'exemple
+│   ├── migrations/
+│   │   └── 20260327_fuzzy_search.sql # Extension pg_trgm + RPC fuzzy search
 │   └── functions/                 # Edge Functions Deno
 │       ├── ai-embeddings/index.ts # Génération embeddings
 │       └── gemini-token/index.ts  # Token Gemini Live
@@ -525,15 +549,19 @@ Accessible depuis le Dashboard, l'overlay wizard guide en **8 étapes** :
 
 ## 🤖 Fonctionnalités IA Détaillées
 
-### BudTender Voix (Gemini Live)
-- **Localisation** : `src/hooks/useGeminiLiveVoice.ts`
+### BudTender Voix (Gemini Live — Voice-Only)
+- **Localisation** : `src/hooks/useGeminiLiveVoice.ts`, `src/lib/budtenderPrompts.ts`
+- **Modèle** : Gemini 2.5 Flash Native Audio (`gemini-2.5-flash-preview-native-audio-dialog`)
 - **Architecture de Performance** :
-  - **Thread-Separation** : Traitement de l'audio dans un `AudioWorklet` (micro) + `Web Worker` (downsampling), communiquant via **Transferable Objects** (zero-copy).
-  - **Search Intelligence** : Système à 4 niveaux : Cache FIFO (100 entrées) → Exact Match → Substring → **Fuzzy Search Serveur (RPC pg_trgm)**.
-  - **Sync Robustness** : File d'attente de messages pour garantir l'envoi des états (panier, activeProduct) même pendant les gaps de connexion.
-- **Optimisation de Latence (TTFT)** : Passage en **Function Calling exclusif** pour le catalogue, réduisant drastiquement le prompt système initial.
-- **Outils Intégrés** : Recherche catalogue complexe, affichage produit, ajout au panier, navigation, gestion des favoris, base de connaissances experte.
-- **Moteur de Skills** : Injection dynamique de fichiers `.md` minifiés pour le TTS.
+  - **Thread-Separation** : Traitement de l'audio dans un `AudioWorklet` (micro) + `Web Worker` statique (`/downsample-worker.js`), communiquant via **Transferable Objects** (zero-copy).
+  - **Search Intelligence** : Système à 4 niveaux : Cache FIFO (100 entrées, `MAX_PRODUCT_CACHE_SIZE`) → Exact Match → Substring → **Fuzzy Search Serveur (RPC `search_products_fuzzy` via pg_trgm + index GIST)**.
+  - **Sync Robustness** : `messageQueueRef` pour garantir l'envoi des états (panier, activeProduct) même pendant les gaps de connexion WebSocket.
+  - **Timers Dynamiques** : Relance proactive après 8s (panier actif) ou 15s (navigation seule) pour une assistance intelligente.
+- **Optimisation de Latence (TTFT)** : Passage en **Function Calling exclusif** pour le catalogue. Le prompt système n'inclut plus le catalogue complet, réduisant drastiquement le temps de première réponse.
+- **Prompt Système Optimisé** : Architecture modulaire (Identity + Format Rules + Protocol + Skills + Client Context) avec injection dynamique des données utilisateur.
+- **Outils Intégrés (20+)** : `search_catalog`, `filter_catalog`, `view_product`, `add_to_cart`, `suggest_bundle`, `compare_products`, `navigate_to`, `track_order`, `save_preferences`, `toggle_favorite`, `get_favorites`, `watch_stock`, `open_product_modal`, `search_knowledge`, `search_cannabis_conditions`, `search_expert_data`.
+- **Moteur de Skills** : 8 fichiers `.md` chargés dynamiquement via `import.meta.glob`, minifiés automatiquement pour le TTS.
+- **Migration SQL** : `supabase/migrations/20260327_fuzzy_search.sql` (extension `pg_trgm` + fonction RPC + index GIST).
 
 ### Admin Voice Commands
 - **Localisation** : `src/hooks/useGeminiAdminVoice.ts`
@@ -642,6 +670,8 @@ GEMINI_API_KEY=AIzaSy...
 - [ ] Variables d'environnement définies sur la plateforme
 - [ ] Bucket `product-images` créé dans Supabase Storage (public)
 - [ ] Extension pgvector activée dans Supabase
+- [ ] Extension pg_trgm activée (`CREATE EXTENSION IF NOT EXISTS pg_trgm`)
+- [ ] Migration fuzzy search appliquée (`supabase/migrations/20260327_fuzzy_search.sql`)
 - [ ] Règles RLS configurées correctement
 - [ ] Configuration du store (Nom, email, etc.) via le Setup Wizard
 
