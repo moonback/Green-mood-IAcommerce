@@ -5,7 +5,7 @@ import { QuizStep } from './budtenderSettings';
 // Charge les fichiers .md de manière dynamique via Vite
 const skillsFiles = import.meta.glob('../skills/*.md', { query: '?raw', eager: true, import: 'default' });
 
-const _buildSkillsContext = (mode?: 'vocal' | 'chat') => {
+const _buildSkillsContext = () => {
   const filePaths = Object.keys(skillsFiles);
   if (filePaths.length === 0) return '';
 
@@ -25,22 +25,17 @@ const _buildSkillsContext = (mode?: 'vocal' | 'chat') => {
     const fileName = path.split('/').pop() || '';
     const skillName = fileName.replace('.md', '');
 
-    // Filtrage par canal
-    if (mode === 'vocal' && fileName === 'chat_actions.md') continue;
-
     let content = skillsFiles[path] as string;
 
     // Minification pour la voix : supprime le markdown que le TTS lirait mot à mot
-    if (mode === 'vocal') {
-      content = content
-        .replace(/\*\*(.+?)\*\*/g, '$1')   // **gras** → texte brut
-        .replace(/\*([^*\n]+?)\*/g, '$1')   // *italique* → texte brut (sans croiser les sauts de ligne)
-        .replace(/`([^`\n]+?)`/g, '$1')     // `code` → texte brut
-        .replace(/^>\s.*/gm, '')            // citations de bloc
-        .replace(/<!--[\s\S]*?-->/g, '')    // commentaires HTML
-        .replace(/\n{2,}/g, '\n')           // doubles sauts de ligne → simple
-        .trim();
-    }
+    content = content
+      .replace(/\*\*(.+?)\*\*/g, '$1')   // **gras** → texte brut
+      .replace(/\*([^*\n]+?)\*/g, '$1')   // *italique* → texte brut (sans croiser les sauts de ligne)
+      .replace(/`([^`\n]+?)`/g, '$1')     // `code` → texte brut
+      .replace(/^>\s.*/gm, '')            // citations de bloc
+      .replace(/<!--[\s\S]*?-->/g, '')    // commentaires HTML
+      .replace(/\n{2,}/g, '\n')           // doubles sauts de ligne → simple
+      .trim();
 
     context += `### ${skillName.toUpperCase()}\n${content}\n\n`;
   }
@@ -170,7 +165,6 @@ Réponds UNIQUEMENT en JSON.
 };
 
 
-// getChatPrompt supprimé — seul le mode vocal est conservé
 
 // ─── VOICE FORMAT RULES — constante réutilisable ─────────────────────────────
 const VOICE_FORMAT_RULES = `## RÈGLES FORMAT AUDIO — OBLIGATOIRE
@@ -240,12 +234,6 @@ Règle d'or de discrétion : Utilise les données du profil client en SOUS-TEXTE
 
 // Séquence d'exécution obligatoire moved to skills/vocal_actions.md`;
 };
-
-// Function _buildResponseLogic removed as it is now handled via skills/.md files
-
-// Function _buildGoldenRules removed as it is now handled via skills/.md files
-
-// Function _buildToolsTable removed as it is now handled via skills/.md files
 
 const _buildClientContext = (
   userName: string | null | undefined,
@@ -383,7 +371,7 @@ export const getVoicePrompt = (
     _buildIdentity(budtenderName, storeName),
     VOICE_FORMAT_RULES,
     _buildAnalysisProtocol(userName),
-    _buildSkillsContext('vocal'),
+    _buildSkillsContext(),
     `## CONTEXTE CLIENT\n${clientContext}`,
     `## EXTRAIT DU CATALOGUE\n${_buildCatalog(products, 10)}`,
     customPrompt?.trim() ? `## INSTRUCTIONS SPÉCIFIQUES\n${customPrompt.trim()}` : '',
