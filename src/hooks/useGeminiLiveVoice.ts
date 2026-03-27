@@ -1075,7 +1075,8 @@ export function useGeminiLiveVoice({
               'search_cannabis_knowledge', 'search_expert_data', 'track_order',
               'get_favorites', 'filter_catalog', 'get_referral_link',
               'compare_products', 'suggest_bundle', 'watch_stock',
-              'submit_review', 'apply_promo', 'open_product_modal', 'save_preferences'
+              'submit_review', 'apply_promo', 'open_product_modal', 'save_preferences',
+              'get_market_insights'
             ]);
             const phase1Calls = calls.filter(c => PHASE_1_TOOLS.has(c.name!));
             const phase2Calls = calls.filter(c => !PHASE_1_TOOLS.has(c.name!));
@@ -1318,6 +1319,50 @@ export function useGeminiLiveVoice({
                   }
                   
                   return { name: c.name, id: c.id, response: { error: `Nav impossible` } };
+                }
+
+                if (c.name === 'get_market_insights') {
+                  try {
+                    const { data, error } = await supabase
+                      .from('order_items')
+                      .select('product_name, unit_price, product:products(name, price, attributes, category:categories(name))')
+                      .not('product_id', 'is', null)
+                      .order('created_at', { ascending: false })
+                      .limit(100);
+
+                    if (error) throw error;
+                    
+                    const counts: Record<string, { name: string; price: number; qty: number; category: string }> = {};
+                    (data as any[] || []).forEach(item => {
+                      const name = item.product?.name || item.product_name || 'Produit';
+                      if (!counts[name]) {
+                        counts[name] = { 
+                          name, 
+                          price: item.product?.price || item.unit_price || 0, 
+                          qty: 0,
+                          category: item.product?.category?.name || 'Inconnue'
+                        };
+                      }
+                      counts[name].qty += 1;
+                    });
+
+                    const top = Object.values(counts)
+                      .sort((a, b) => b.qty - a.qty)
+                      .slice(0, 5)
+                      .map(p => `• ${p.name} (${p.category}) — ${p.price}€ (Tendance forte)`)
+                      .join('\n');
+
+                    return {
+                      name: c.name,
+                      id: c.id,
+                      response: {
+                        result: top || "Données de vente insuffisantes pour identifier une tendance précise.",
+                        note: "Utilise ces informations pour orienter tes conseils vers les produits les plus populaires."
+                      }
+                    };
+                  } catch (err) {
+                    return { name: c.name, id: c.id, response: { error: 'Impossible de récupérer les insights marché.' } };
+                  }
                 }
 
                 if (c.name === 'search_catalog') {

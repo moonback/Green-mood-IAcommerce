@@ -71,6 +71,7 @@ export type Tab =
   | 'loyalty'
   | 'ads'
   | 'blog'
+  | 'ai_performance'
   | 'ai_models';
 
 export interface NavItem {
@@ -142,6 +143,7 @@ export const sidebarCategories = [
       { key: 'budtender', label: 'BudTender IA', icon: Leaf },
       { key: 'recommendations', label: 'Recommandations', icon: TrendingUp },
       { key: 'marketing', label: 'Marketing IA', icon: Megaphone },
+      { key: 'ai_performance', label: 'Performance IA', icon: LineChart },
       { key: 'knowledge', label: 'Connaissances IA', icon: BookOpen },
       { key: 'cannabis_conditions', label: 'Machines & infos', icon: Stethoscope },
       { key: 'ai_models', label: 'Modèles IA', icon: Cpu },

@@ -225,6 +225,14 @@ const BUDTENDER_TOOLS = [{
       },
     },
     {
+      name: 'get_market_insights',
+      description: "Récupérer les tendances actuelles de vente (best-sellers) pour conseiller les produits les plus populaires.",
+      parameters: {
+        type: 'OBJECT',
+        properties: {},
+      },
+    },
+    {
       name: 'close_session',
       description: "Terminer la discussion et fermer la fenêtre vocale (à utiliser après avoir dit au revoir).",
       parameters: {

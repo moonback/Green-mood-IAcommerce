@@ -40,6 +40,7 @@ import AdminCannabisConditionsTab from '../components/admin/AdminCannabisConditi
 import AdminAdsTab from '../components/admin/AdminAdsTab';
 import AdminBlogTab from '../components/admin/AdminBlogTab';
 import AdminAIModelsTab from '../components/admin/AdminAIModelsTab';
+import AdminAIPerformanceTab from '../components/admin/AdminAIPerformanceTab';
 
 export default function Admin() {
   const [tab, setTab] = useState<Tab>('dashboard');
@@ -307,6 +308,7 @@ export default function Admin() {
           {tab === 'ads' && <AdminAdsTab />}
           {tab === 'blog' && <AdminBlogTab />}
           {tab === 'ai_models' && <AdminAIModelsTab />}
+          {tab === 'ai_performance' && <AdminAIPerformanceTab isLightTheme={false} />}
         </motion.div>
       </AnimatePresence>
 
