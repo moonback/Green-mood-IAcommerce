@@ -386,7 +386,7 @@ export function useGeminiLiveVoice({
     }
 
     // L3.5 – Fuzzy Match local (Levenshtein) sur les produits connus (rattrape les typos comme "Bleu Dream")
-    if (q.length > 4) {
+    if (q.length > 4 && allKnown.length <= 300) {
       for (const i of allKnown) {
         const normName = normalizeStr(i.name);
         if (Math.abs(normName.length - q.length) <= 3 && levenshteinDistance(normName, q) <= 2) {
@@ -596,6 +596,7 @@ export function useGeminiLiveVoice({
     if (inputTranscriptTimerRef.current) clearTimeout(inputTranscriptTimerRef.current);
     if (outputTranscriptTimerRef.current) clearTimeout(outputTranscriptTimerRef.current);
     if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+    productCacheRef.current.clear();
 
     (sessionRef.current as any)?._ws?.close?.();
     sessionRef.current?.close();
