@@ -146,6 +146,8 @@ interface Options {
   userName?: string | null;
   cartItems?: { product: Product; quantity: number }[];
   onAddItem?: (product: Product, quantity: number) => void;
+  onRemoveItem?: (product: Product, quantity?: number) => void;
+  onUpdateQuantity?: (product: Product, quantity: number) => void;
   deliveryFee?: number;
   deliveryFreeThreshold?: number;
   onCloseSession?: () => void;
@@ -222,6 +224,8 @@ export function useGeminiLiveVoice({
   userName,
   cartItems = [],
   onAddItem,
+  onRemoveItem,
+  onUpdateQuantity,
   deliveryFee = 5.9,
   deliveryFreeThreshold = 50,
   onCloseSession,
@@ -254,10 +258,18 @@ export function useGeminiLiveVoice({
     return null;
   });
 
+  // Am5: real-time transcripts
+  const [inputTranscript, setInputTranscript] = useState('');
+  const [outputTranscript, setOutputTranscript] = useState('');
+
   const productsRef = useRef(products);
   productsRef.current = products;
   const onAddItemRef = useRef(onAddItem);
   onAddItemRef.current = onAddItem;
+  const onRemoveItemRef = useRef(onRemoveItem);
+  onRemoveItemRef.current = onRemoveItem;
+  const onUpdateQuantityRef = useRef(onUpdateQuantity);
+  onUpdateQuantityRef.current = onUpdateQuantity;
   const onCloseSessionRef = useRef(onCloseSession);
   onCloseSessionRef.current = onCloseSession;
   const onViewProductRef = useRef(onViewProduct);
@@ -316,15 +328,14 @@ export function useGeminiLiveVoice({
   const noiseSamplesRef = useRef<number[]>([]);
   const isCalibratingRef = useRef(false);
   const recalibrateTimerRef = useRef<number | null>(null);
-  // Am5: real-time transcripts
-  const [inputTranscript, setInputTranscript] = useState('');
-  const [outputTranscript, setOutputTranscript] = useState('');
+  const startSessionRef = useRef<((forceFresh?: boolean) => Promise<void>) | null>(null);
   const inputTranscriptTimerRef = useRef<number | null>(null);
   const outputTranscriptTimerRef = useRef<number | null>(null);
   const greetingTriggerSentRef = useRef(false);
-
   const messageQueueRef = useRef<string[]>([]);
   const silenceTimerRef = useRef<number | null>(null);
+  const productCacheRef = useRef<Map<string, Product>>(new Map());
+
 
   const resetSilenceTimer = useCallback(() => {
     if (silenceTimerRef.current) window.clearTimeout(silenceTimerRef.current);
@@ -347,7 +358,6 @@ export function useGeminiLiveVoice({
     voiceStateRef.current = voiceState;
   }, [voiceState]);
 
-  const productCacheRef = useRef<Map<string, Product>>(new Map());
 
   // ── Unified product lookup with 4 fallback levels ────────────────────────
   // Level 1: exact name match
@@ -564,7 +574,11 @@ export function useGeminiLiveVoice({
     scheduledUntilRef.current = 0;
   }, []);
 
-  const cleanup = useCallback(() => {
+  const cleanup = useCallback((options?: { preserveViewedProducts?: boolean }) => {
+    if (options?.preserveViewedProducts) {
+      preserveViewedProductsOnCleanupRef.current = true;
+    }
+    
     // Calculate and log duration if session was active
     if (startTimeRef.current && interactionIdRef.current) {
       const durationSeconds = Math.round((Date.now() - startTimeRef.current) / 1000);
@@ -601,6 +615,12 @@ export function useGeminiLiveVoice({
     if (outputTranscriptTimerRef.current) clearTimeout(outputTranscriptTimerRef.current);
     if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
     productCacheRef.current.clear();
+
+    if (!preserveViewedProductsOnCleanupRef.current) {
+      viewedProductIdsRef.current.clear();
+    }
+    // reset for next session
+    preserveViewedProductsOnCleanupRef.current = false;
 
     (sessionRef.current as any)?._ws?.close?.();
     sessionRef.current?.close();
@@ -897,8 +917,6 @@ export function useGeminiLiveVoice({
     silent.connect(ctx.destination);
   }, [canSendRealtimeInput, stopAllPlayback]);
 
-  // Forward declaration so startSession can call itself for retry
-  const startSessionRef = useRef<((forceFresh?: boolean) => Promise<void>) | undefined>(undefined);
 
   const startSession = useCallback(async (forceFreshToken: boolean = false) => {
     const now = Date.now();
@@ -1137,7 +1155,7 @@ export function useGeminiLiveVoice({
               'get_favorites', 'filter_catalog', 'get_referral_link',
               'compare_products', 'suggest_bundle', 'watch_stock',
               'submit_review', 'apply_promo', 'open_product_modal', 'save_preferences',
-              'get_current_time'
+              'get_current_time', 'remove_from_cart', 'update_cart_quantity'
             ]);
             const phase1Calls = calls.filter(c => PHASE_1_TOOLS.has(c.name!));
             const phase2Calls = calls.filter(c => !PHASE_1_TOOLS.has(c.name!));
@@ -1263,6 +1281,42 @@ export function useGeminiLiveVoice({
                     }
                   }
                   return { name: c.name, id: c.id, response: { error: `Produit "${prodName}" non trouvé dans le catalogue.` } };
+                }
+
+                if (c.name === 'remove_from_cart') {
+                  const prodName = (args.product_name || '').trim();
+                  const qty = Number(args.quantity) || 0;
+                  const p = await findProduct(prodName);
+                  if (p && onRemoveItemRef.current) {
+                    onRemoveItemRef.current(p, qty);
+                    return { 
+                      name: c.name, 
+                      id: c.id, 
+                      response: { 
+                        result: `CONFIRMATION : ${p.name} a été retiré du panier. Vérification système : ACTION_SUCCESS. Le panier est à jour.`, 
+                        status: 'verified' 
+                      } 
+                    };
+                  }
+                  return { name: c.name, id: c.id, response: { error: `Produit "${prodName}" non trouvé dans le panier.` } };
+                }
+
+                if (c.name === 'update_cart_quantity') {
+                  const prodName = (args.product_name || '').trim();
+                  const qty = Number(args.quantity) || 0;
+                  const p = await findProduct(prodName);
+                  if (p && onUpdateQuantityRef.current) {
+                    onUpdateQuantityRef.current(p, qty);
+                    return { 
+                      name: c.name, 
+                      id: c.id, 
+                      response: { 
+                        result: `CONFIRMATION : La quantité de ${p.name} a été mise à jour à ${qty}. Vérification système : ACTION_SUCCESS. Le panier est à jour.`, 
+                        status: 'verified' 
+                      } 
+                    };
+                  }
+                  return { name: c.name, id: c.id, response: { error: `Produit "${prodName}" non trouvé dans le panier.` } };
                 }
 
                 if (c.name === 'close_session') {

@@ -26,6 +26,8 @@ interface Props {
     onOpenModal?: (modalName: string) => void;
     onSavePrefs?: (prefs: any) => void;
     onApplyPromo?: (code: string) => Promise<{ success: boolean; discount?: number; message?: string }>;
+    onRemoveItem?: (product: Product, quantity?: number) => void;
+    onUpdateQuantity?: (product: Product, quantity: number) => void;
     activeProduct?: (PremiumProduct & { reviews: PremiumReview[]; relatedProducts?: Product[] }) | null;
     showUI?: boolean;
     cartItems?: any[];
@@ -173,7 +175,7 @@ function MicOrb({ voiceState, isMuted }: { voiceState: VoiceState; isMuted: bool
 
 export default function VoiceAdvisor({
     products, pastProducts, pastOrders, savedPrefs, userName,
-    isOpen, onClose, onHangup, onAddItem, onViewProduct, onNavigate, onOpenModal, onSavePrefs, onApplyPromo,
+    isOpen, onClose, onHangup, onAddItem, onRemoveItem, onUpdateQuantity, onViewProduct, onNavigate, onOpenModal, onSavePrefs, onApplyPromo,
     activeProduct,
     showUI = true, cartItems = [], customPrompt, loyaltyPoints, allowCloseSession = true,
 }: Props) {
@@ -191,6 +193,8 @@ export default function VoiceAdvisor({
             userName,
             activeProduct,
             onAddItem,
+            onRemoveItem,
+            onUpdateQuantity,
             deliveryFee: settings.delivery_fee,
             deliveryFreeThreshold: settings.delivery_free_threshold,
             onCloseSession: onClose,

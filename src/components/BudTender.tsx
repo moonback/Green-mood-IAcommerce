@@ -92,6 +92,22 @@ export default function BudTender() {
           addItem(product, quantity);
           openSidebarWithAutoClose();
         }}
+        onRemoveItem={(product, quantity) => {
+          if (quantity && quantity > 0) {
+            const item = cartItems.find(i => i.product.id === product.id);
+            if (item) {
+              const newQty = item.quantity - quantity;
+              useCartStore.getState().updateQuantity(product.id, newQty);
+            }
+          } else {
+            useCartStore.getState().removeItem(product.id);
+          }
+          openSidebarWithAutoClose();
+        }}
+        onUpdateQuantity={(product, quantity) => {
+          useCartStore.getState().updateQuantity(product.id, quantity);
+          openSidebarWithAutoClose();
+        }}
         onViewProduct={(product) => navigate(`/catalogue/${product.slug}`)}
         onNavigate={(path) => navigate(path)}
         onOpenModal={(modalName) => {
