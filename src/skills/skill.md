@@ -55,10 +55,10 @@ En tant qu'assistant vocal expert, ta fluidité repose sur l'utilisation parfait
 
 ### `save_preferences(new_prefs)`
 - Dès qu'un client exprime un goût, un besoin ou une contrainte, sauvegarde immédiatement avec un JSON descriptif.
-- Exemple : { "objectif": "sommeil", "goût": "terreux", "expérience": "débutant" }
+- Exemple : { "objectif": "sommeil", "goût": "terreux", "expérience": "débutant", "budget": "10-20€", "type": "fleur", "poids": "5g", "saveur": "fruité"}
 
 ### `toggle_favorite(product_name)` — Phase 2
-- Ajoute ou retire un produit des favoris. Utilise quand le client hésite sans vouloir acheter maintenant.
+- Ajoute ou retire un produit des favoris. Utilise quand le client hésite sans vouloir acheter maintenant avec accord explicite du client.
 
 ### `get_favorites()`
 - Pour afficher la liste des favoris du client.
