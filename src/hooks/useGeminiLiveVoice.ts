@@ -20,21 +20,21 @@ const INPUT_SAMPLE_RATE = 16000;
 const OUTPUT_SAMPLE_RATE = 24000;
 
 // ── Timeouts & retry policy ──────────────────────────────────────────────────
-const CONNECTION_TIMEOUT_MS = 18000;   // 18s — generous for slow mobile connections
+const CONNECTION_TIMEOUT_MS = 10000;   // 18s — generous for slow mobile connections
 const AUDIO_SCHEDULE_AHEAD_SEC = 0.05; // 50ms — prevents audio gaps on CPU spikes
 const MAX_AUTO_RETRIES = 2;           // Retry up to 2 times on non-intentional closes
-const RETRY_DELAY_MS = 1000;          // Wait 1s between retries (faster recovery)
+const RETRY_DELAY_MS = 500;          // Wait 1s between retries (faster recovery)
 
 
 const TOKEN_MAX_RETRIES = 2;
 const TOKEN_RETRY_DELAY_MS = 1200;
-const TOOL_DEDUP_WINDOW_MS = 2500;
+const TOOL_DEDUP_WINDOW_MS = 800;
 const TOKEN_PREFETCH_MAX_AGE_MS = 50 * 1000; // keep a small safety margin before expiry
-const INITIAL_GREETING_DELAY_MS = 500;
+const INITIAL_GREETING_DELAY_MS = 200;
 const BARGE_IN_RMS_THRESHOLD_FALLBACK = 0.22; // used if noise calibration hasn't run yet
-const BARGE_IN_MIN_DURATION_MS = 180;
-const BARGE_IN_STABILITY_FRAMES = 3;
-const BARGE_IN_COOLDOWN_MS = 1200;
+const BARGE_IN_MIN_DURATION_MS = 80;
+const BARGE_IN_STABILITY_FRAMES = 1;
+const BARGE_IN_COOLDOWN_MS = 500;
 // Adaptive noise floor calibration (Am4)
 const BARGE_IN_NOISE_SAMPLE_MS = 2000;       // 2s of ambient noise sampling on session start
 const BARGE_IN_NOISE_MULTIPLIER = 3.5;       // threshold = noiseFloor * 3.5
