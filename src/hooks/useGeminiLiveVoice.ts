@@ -41,6 +41,7 @@ const BARGE_IN_NOISE_MULTIPLIER = 3.5;       // threshold = noiseFloor * 3.5
 const BARGE_IN_NOISE_MIN = 0.02;             // clamp: never below 0.02
 const BARGE_IN_NOISE_MAX = 0.12;             // clamp: never above 0.12 (loud environments)
 const BARGE_IN_RECALIBRATE_INTERVAL_MS = 60_000; // recalibrate every 60s
+const MAX_PRODUCT_CACHE_SIZE = 100;
 
 function fallbackKeywordSearch(query: string, products: Product[]): Product[] {
   const keywords = query
@@ -356,66 +357,69 @@ export function useGeminiLiveVoice({
   // This runs in both add_to_cart and view_product so neither fails on first call.
   const findProduct = useCallback(async (prodName: string): Promise<Product | undefined> => {
     const q = normalizeStr(prodName);
-    if (!q) return undefined;  // Guard: empty product name must never match anything
+    if (!q) return undefined;
     
     if (productCacheRef.current.has(q)) {
       return productCacheRef.current.get(q);
     }
 
+    const addToCache = (key: string, val: Product) => {
+      if (productCacheRef.current.size >= MAX_PRODUCT_CACHE_SIZE) {
+        const firstKey = productCacheRef.current.keys().next().value;
+        if (firstKey !== undefined) productCacheRef.current.delete(firstKey);
+      }
+      productCacheRef.current.set(key, val);
+    };
+
     const allKnown = [...productsRef.current, ...searchResultsRef.current];
 
     // L1 – exact
     let found = allKnown.find(i => normalizeStr(i.name) === q);
-    if (found) { productCacheRef.current.set(q, found); return found; }
+    if (found) { addToCache(q, found); return found; }
 
-    // L2 – substring (either direction), requires at least 4 chars to avoid broad category matches
+    // L2 – substring
     if (q.length >= 4) {
       found = allKnown.find(i => normalizeStr(i.name).includes(q) || q.includes(normalizeStr(i.name)));
-      if (found) { productCacheRef.current.set(q, found); return found; }
+      if (found) { addToCache(q, found); return found; }
     }
 
-    // L3 – ALL words present (min length 1 to catch short words like "OG", "CB")
+    // L3 – ALL words present
     const words = q.split(/\s+/).filter(w => w.length > 1);
     if (words.length > 0) {
       found = allKnown.find(i => words.every(w => normalizeStr(i.name).includes(w)));
-      if (found) { productCacheRef.current.set(q, found); return found; }
+      if (found) { addToCache(q, found); return found; }
 
-      // L3b – ANY word present (looser)
+      // L3b – ANY word present
       found = allKnown.find(i => words.some(w => normalizeStr(i.name).includes(w)));
-      if (found) { productCacheRef.current.set(q, found); return found; }
+      if (found) { addToCache(q, found); return found; }
     }
 
-    // L3.5 – Fuzzy Match local (Levenshtein) sur les produits connus (rattrape les typos comme "Bleu Dream")
+    // L3.5 – Fuzzy Match local (Levenshtein) sur les produits connus (max 300)
     if (q.length > 4 && allKnown.length <= 300) {
       for (const i of allKnown) {
         const normName = normalizeStr(i.name);
         if (Math.abs(normName.length - q.length) <= 3 && levenshteinDistance(normName, q) <= 2) {
-          productCacheRef.current.set(q, i);
+          addToCache(q, i);
           return i;
         }
       }
     }
 
-    // L4 – Supabase ilike (last resort, handles accent differences & typos)
+    // L4 – Supabase Fuzzy Search RPC (pg_trgm)
     try {
-      // Try exact name first, then a broader search
-      const { data } = await supabase
-        .from('products')
-        .select('*, category:categories(slug, name)')
-        .ilike('name', `%${prodName}%`)
-        .eq('is_active', true)
-        .limit(3);
+      const { data, error } = await supabase.rpc('search_products_fuzzy', {
+        search_text: prodName,
+        match_threshold: 0.3,
+        match_count: 3
+      });
+      if (error) throw error;
       if (data && data.length > 0) {
-        // Pick the closest match by name length proximity
-        const sorted = [...data].sort((a, b) =>
-          Math.abs(normalizeStr(a.name).length - q.length) - Math.abs(normalizeStr(b.name).length - q.length)
-        );
-        const best = sorted[0] as Product;
-        productCacheRef.current.set(q, best);
+        const best = data[0] as Product;
+        addToCache(q, best);
         return best;
       }
     } catch (e) {
-      console.error('[Voice] Supabase product lookup failed:', e);
+      console.error('[Voice] Supabase fuzzy search RPC failed:', e);
     }
 
     return undefined;
