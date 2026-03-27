@@ -1136,7 +1136,8 @@ export function useGeminiLiveVoice({
               'search_cannabis_knowledge', 'search_expert_data', 'track_order',
               'get_favorites', 'filter_catalog', 'get_referral_link',
               'compare_products', 'suggest_bundle', 'watch_stock',
-              'submit_review', 'apply_promo', 'open_product_modal', 'save_preferences'
+              'submit_review', 'apply_promo', 'open_product_modal', 'save_preferences',
+              'get_current_time'
             ]);
             const phase1Calls = calls.filter(c => PHASE_1_TOOLS.has(c.name!));
             const phase2Calls = calls.filter(c => !PHASE_1_TOOLS.has(c.name!));
@@ -1184,6 +1185,19 @@ export function useGeminiLiveVoice({
                       directive: 'Raisonnement enregistré. Si tu as annoncé une recherche vocalement (ex: "Je regarde..."), appelle l\'outil de recherche (search_catalog, search_knowledge, etc.) IMPÉRATIVEMENT dans ce même tour.'
                     }
                   };
+                }
+                
+                if (c.name === 'get_current_time') {
+                  const now = new Date();
+                  const result = now.toLocaleString('fr-FR', { 
+                    weekday: 'long', 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric', 
+                    hour: '2-digit', 
+                    minute: '2-digit' 
+                  });
+                  return { name: c.name, id: c.id, response: { result } };
                 }
 
                 if (c.name === 'add_to_cart') {

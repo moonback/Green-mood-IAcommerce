@@ -365,10 +365,20 @@ export const getVoicePrompt = (
     userName, loyaltyPoints, loyaltyTiers, currencyName,
     pastOrders, pastProducts, recentlyViewed, savedPrefs, cartItems, activeProduct
   );
+  const now = new Date();
+  const timeStr = now.toLocaleString('fr-FR', { 
+    weekday: 'long', 
+    year: 'numeric', 
+    month: 'long', 
+    day: 'numeric', 
+    hour: '2-digit', 
+    minute: '2-digit' 
+  });
 
   return [
     _buildIdentity(budtenderName, storeName),
     VOICE_FORMAT_RULES,
+    `## RÉFÉRENCE TEMPORELLE (TEMPS RÉEL)\nNous sommes le : ${timeStr}`,
     _buildAnalysisProtocol(userName),
     _buildSkillsContext(),
     `## CONTEXTE CLIENT\n${clientContext}`,
