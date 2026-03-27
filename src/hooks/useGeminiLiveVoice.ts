@@ -20,27 +20,28 @@ const INPUT_SAMPLE_RATE = 16000;
 const OUTPUT_SAMPLE_RATE = 24000;
 
 // ── Timeouts & retry policy ──────────────────────────────────────────────────
-const CONNECTION_TIMEOUT_MS = 18000;   // 18s — generous for slow mobile connections
+const CONNECTION_TIMEOUT_MS = 10000;   // 18s — generous for slow mobile connections
 const AUDIO_SCHEDULE_AHEAD_SEC = 0.05; // 50ms — prevents audio gaps on CPU spikes
 const MAX_AUTO_RETRIES = 2;           // Retry up to 2 times on non-intentional closes
-const RETRY_DELAY_MS = 1000;          // Wait 1s between retries (faster recovery)
+const RETRY_DELAY_MS = 500;          // Wait 1s between retries (faster recovery)
 
 
 const TOKEN_MAX_RETRIES = 2;
 const TOKEN_RETRY_DELAY_MS = 1200;
-const TOOL_DEDUP_WINDOW_MS = 2500;
+const TOOL_DEDUP_WINDOW_MS = 800;
 const TOKEN_PREFETCH_MAX_AGE_MS = 50 * 1000; // keep a small safety margin before expiry
-const INITIAL_GREETING_DELAY_MS = 1500;
+const INITIAL_GREETING_DELAY_MS = 200;
 const BARGE_IN_RMS_THRESHOLD_FALLBACK = 0.22; // used if noise calibration hasn't run yet
-const BARGE_IN_MIN_DURATION_MS = 180;
-const BARGE_IN_STABILITY_FRAMES = 3;
-const BARGE_IN_COOLDOWN_MS = 1200;
+const BARGE_IN_MIN_DURATION_MS = 80;
+const BARGE_IN_STABILITY_FRAMES = 1;
+const BARGE_IN_COOLDOWN_MS = 500;
 // Adaptive noise floor calibration (Am4)
 const BARGE_IN_NOISE_SAMPLE_MS = 2000;       // 2s of ambient noise sampling on session start
 const BARGE_IN_NOISE_MULTIPLIER = 3.5;       // threshold = noiseFloor * 3.5
 const BARGE_IN_NOISE_MIN = 0.02;             // clamp: never below 0.02
 const BARGE_IN_NOISE_MAX = 0.12;             // clamp: never above 0.12 (loud environments)
 const BARGE_IN_RECALIBRATE_INTERVAL_MS = 60_000; // recalibrate every 60s
+const MAX_PRODUCT_CACHE_SIZE = 100;
 
 function fallbackKeywordSearch(query: string, products: Product[]): Product[] {
   const keywords = query
@@ -70,6 +71,21 @@ function fallbackKeywordSearch(query: string, products: Product[]): Product[] {
     .sort((a, b) => b.score - a.score)
     .slice(0, 10)
     .map((x) => x.p);
+}
+
+function levenshteinDistance(a: string, b: string): number {
+  if (a.length === 0) return b.length;
+  if (b.length === 0) return a.length;
+  const matrix = Array.from({ length: a.length + 1 }, () => new Array(b.length + 1).fill(0));
+  for (let i = 0; i <= a.length; i++) matrix[i][0] = i;
+  for (let j = 0; j <= b.length; j++) matrix[0][j] = j;
+  for (let i = 1; i <= a.length; i++) {
+    for (let j = 1; j <= b.length; j++) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      matrix[i][j] = Math.min(matrix[i - 1][j] + 1, matrix[i][j - 1] + 1, matrix[i - 1][j - 1] + cost);
+    }
+  }
+  return matrix[a.length][b.length];
 }
 
 function isVectorDimensionRpcError(error: unknown): boolean {
@@ -118,13 +134,17 @@ const NON_RETRYABLE_CODES = new Set([1000, 1001, 4000, 4001, 4003, 4008]);
 
 export type VoiceState = 'idle' | 'connecting' | 'listening' | 'speaking' | 'error';
 
+// Helper for robust string normalization
+const normalizeStr = (s: string) =>
+  s.toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
 interface Options {
   products: Product[];
   pastProducts?: PastProduct[];
   pastOrders?: PastOrderSummary[];
   savedPrefs?: SavedPrefs | null;
   userName?: string | null;
-  cartItems?: any[];
+  cartItems?: { product: Product; quantity: number }[];
   onAddItem?: (product: Product, quantity: number) => void;
   deliveryFee?: number;
   deliveryFreeThreshold?: number;
@@ -145,44 +165,18 @@ interface Options {
   proactiveGreeting?: string;            // Am6: used when voice is triggered proactively
 }
 
-function downsampleBuffer(buf: Float32Array, fromRate: number, toRate: number): Float32Array {
-  if (fromRate === toRate) return buf;
-  const ratio = fromRate / toRate;
-  const outLen = Math.floor(buf.length / ratio);
-  const out = new Float32Array(outLen);
-  for (let i = 0; i < outLen; i++) {
-    const start = Math.floor(i * ratio);
-    const end = Math.min(Math.floor((i + 1) * ratio), buf.length);
-    let sum = 0;
-    for (let j = start; j < end; j++) sum += buf[j];
-    out[i] = sum / (end - start);
+let audioWorkerSingleton: Worker | null = null;
+function getAudioWorker(): Worker {
+  if (!audioWorkerSingleton && typeof window !== 'undefined') {
+    audioWorkerSingleton = new Worker('/downsample-worker.js');
   }
-  return out;
-}
-
-function float32ToInt16(buf: Float32Array): Int16Array {
-  const out = new Int16Array(buf.length);
-  for (let i = 0; i < buf.length; i++) {
-    const s = Math.max(-1, Math.min(1, buf[i]));
-    out[i] = s < 0 ? s * 0x8000 : s * 0x7fff;
-  }
-  return out;
+  return audioWorkerSingleton!;
 }
 
 function toBase64(bytes: Uint8Array): string {
   let binary = '';
   for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
   return btoa(binary);
-}
-
-function getRms(samples: Float32Array): number {
-  if (!samples || samples.length === 0) return 0;
-  let sumSq = 0;
-  for (let i = 0; i < samples.length; i++) {
-    const s = samples[i];
-    sumSq += s * s;
-  }
-  return Math.sqrt(sumSq / samples.length);
 }
 
 /**
@@ -285,6 +279,7 @@ export function useGeminiLiveVoice({
   const wishlistItemsRef = useRef(wishlistItems);
   wishlistItemsRef.current = wishlistItems;
 
+  const lastStartSessionCallRef = useRef<number>(0);
   const sessionRef = useRef<Session | null>(null);
   const startTimeRef = useRef<number | null>(null);
   const interactionIdRef = useRef<string | null>(null);
@@ -328,9 +323,31 @@ export function useGeminiLiveVoice({
   const outputTranscriptTimerRef = useRef<number | null>(null);
   const greetingTriggerSentRef = useRef(false);
 
+  const messageQueueRef = useRef<string[]>([]);
+  const silenceTimerRef = useRef<number | null>(null);
+
+  const resetSilenceTimer = useCallback(() => {
+    if (silenceTimerRef.current) window.clearTimeout(silenceTimerRef.current);
+    const delay = cartItems.length > 0 ? 8000 : 15000;
+    silenceTimerRef.current = window.setTimeout(() => {
+      // Check if session is still alive and listening
+      if (voiceStateRef.current === 'listening' && !isManualCloseRef.current && sessionRef.current) {
+        console.info(`[Voice] Silence prolongé détecté (${delay / 1000}s), envoi d\'une relance proactive.`);
+        try {
+          sessionRef.current.sendClientContent({
+            turns: [{ role: 'user', parts: [{ text: `[SILENCE] Le client n'a rien dit depuis plus de ${delay / 1000} secondes. Relance-le très doucement et brièvement (ex: 'Vous êtes toujours là ?', 'Une question sur nos produits ?') pour savoir s'il a encore besoin d'aide. L'utilisateur a ${cartItems.length} article(s) dans son panier.` }] }],
+            turnComplete: true
+          });
+        } catch (e) { }
+      }
+    }, delay);
+  }, [cartItems.length]);
+
   useEffect(() => {
     voiceStateRef.current = voiceState;
   }, [voiceState]);
+
+  const productCacheRef = useRef<Map<string, Product>>(new Map());
 
   // ── Unified product lookup with 4 fallback levels ────────────────────────
   // Level 1: exact name match
@@ -339,49 +356,70 @@ export function useGeminiLiveVoice({
   // Level 4: Supabase ilike fallback (catches typos, accent differences, etc.)
   // This runs in both add_to_cart and view_product so neither fails on first call.
   const findProduct = useCallback(async (prodName: string): Promise<Product | undefined> => {
-    const q = prodName.toLowerCase().trim();
-    if (!q) return undefined;  // Guard: empty product name must never match anything
+    const q = normalizeStr(prodName);
+    if (!q) return undefined;
+
+    if (productCacheRef.current.has(q)) {
+      return productCacheRef.current.get(q);
+    }
+
+    const addToCache = (key: string, val: Product) => {
+      if (productCacheRef.current.size >= MAX_PRODUCT_CACHE_SIZE) {
+        const firstKey = productCacheRef.current.keys().next().value;
+        if (firstKey !== undefined) productCacheRef.current.delete(firstKey);
+      }
+      productCacheRef.current.set(key, val);
+    };
+
     const allKnown = [...productsRef.current, ...searchResultsRef.current];
 
     // L1 – exact
-    let found = allKnown.find(i => i.name.toLowerCase() === q);
-    if (found) return found;
+    let found = allKnown.find(i => normalizeStr(i.name) === q);
+    if (found) { addToCache(q, found); return found; }
 
-    // L2 – substring (either direction), requires at least 4 chars to avoid broad category matches
+    // L2 – substring
     if (q.length >= 4) {
-      found = allKnown.find(i => i.name.toLowerCase().includes(q) || q.includes(i.name.toLowerCase()));
-      if (found) return found;
+      found = allKnown.find(i => normalizeStr(i.name).includes(q) || q.includes(normalizeStr(i.name)));
+      if (found) { addToCache(q, found); return found; }
     }
 
-    // L3 – ALL words present (min length 1 to catch short words like "OG", "CB")
+    // L3 – ALL words present
     const words = q.split(/\s+/).filter(w => w.length > 1);
     if (words.length > 0) {
-      found = allKnown.find(i => words.every(w => i.name.toLowerCase().includes(w)));
-      if (found) return found;
+      found = allKnown.find(i => words.every(w => normalizeStr(i.name).includes(w)));
+      if (found) { addToCache(q, found); return found; }
 
-      // L3b – ANY word present (looser)
-      found = allKnown.find(i => words.some(w => i.name.toLowerCase().includes(w)));
-      if (found) return found;
+      // L3b – ANY word present
+      found = allKnown.find(i => words.some(w => normalizeStr(i.name).includes(w)));
+      if (found) { addToCache(q, found); return found; }
     }
 
-    // L4 – Supabase ilike (last resort, handles accent differences & typos)
+    // L3.5 – Fuzzy Match local (Levenshtein) sur les produits connus (max 300)
+    if (q.length > 4 && allKnown.length <= 300) {
+      for (const i of allKnown) {
+        const normName = normalizeStr(i.name);
+        if (Math.abs(normName.length - q.length) <= 3 && levenshteinDistance(normName, q) <= 2) {
+          addToCache(q, i);
+          return i;
+        }
+      }
+    }
+
+    // L4 – Supabase Fuzzy Search RPC (pg_trgm)
     try {
-      // Try exact name first, then a broader search
-      const { data } = await supabase
-        .from('products')
-        .select('*, category:categories(slug, name)')
-        .ilike('name', `%${prodName}%`)
-        .eq('is_active', true)
-        .limit(3);
+      const { data, error } = await supabase.rpc('search_products_fuzzy', {
+        search_text: prodName,
+        match_threshold: 0.3,
+        match_count: 3
+      });
+      if (error) throw error;
       if (data && data.length > 0) {
-        // Pick the closest match by name length proximity
-        const sorted = [...data].sort((a, b) =>
-          Math.abs(a.name.length - prodName.length) - Math.abs(b.name.length - prodName.length)
-        );
-        return sorted[0] as Product;
+        const best = data[0] as Product;
+        addToCache(q, best);
+        return best;
       }
     } catch (e) {
-      console.error('[Voice] Supabase product lookup failed:', e);
+      console.error('[Voice] Supabase fuzzy search RPC failed:', e);
     }
 
     return undefined;
@@ -561,6 +599,8 @@ export function useGeminiLiveVoice({
     noiseSamplesRef.current = [];
     if (inputTranscriptTimerRef.current) clearTimeout(inputTranscriptTimerRef.current);
     if (outputTranscriptTimerRef.current) clearTimeout(outputTranscriptTimerRef.current);
+    if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+    productCacheRef.current.clear();
 
     (sessionRef.current as any)?._ws?.close?.();
     sessionRef.current?.close();
@@ -596,69 +636,82 @@ export function useGeminiLiveVoice({
     return () => cleanup();
   }, [cleanup]);
 
-  // Sync cart state if it changes mid-session
-  // OPTIMIZATION: Debounce and guarding against state transitions to avoid 1011 race conditions
+  // File d'attente globale pour différer les messages texte quand le WS n'est pas prêt
+  const queueClientMessage = useCallback((text: string) => {
+    const ws = wsRef.current ?? (sessionRef.current as any)?._ws;
+    if (sessionRef.current && voiceStateRef.current === 'listening' && !isManualCloseRef.current && ws && ws.readyState === 1) {
+      try {
+        sessionRef.current.sendClientContent({ turns: [{ role: 'user', parts: [{ text }] }], turnComplete: false });
+      } catch (err) {
+        messageQueueRef.current.push(text);
+      }
+    } else {
+      messageQueueRef.current.push(text);
+    }
+  }, []);
+
+  // Flush de la Message Queue lorsque l'IA "écoute" à nouveau
+  useEffect(() => {
+    if (voiceState === 'listening' && messageQueueRef.current.length > 0 && sessionRef.current && !isManualCloseRef.current) {
+      const ws = wsRef.current ?? (sessionRef.current as any)?._ws;
+      if (ws && ws.readyState === 1) {
+        try {
+          // On envoie chaque message empilé
+          for (const text of messageQueueRef.current) {
+            sessionRef.current.sendClientContent({ turns: [{ role: 'user', parts: [{ text }] }], turnComplete: false });
+          }
+          messageQueueRef.current = [];
+        } catch (err) {
+          console.warn('[Voice] Failed to flush message queue:', err);
+        }
+      }
+    }
+  }, [voiceState]);
+
+  // Sync cart state mid-session (utilise désormais la message queue)
   const prevCartItemsRef = useRef(cartItems);
   const lastSyncTextRef = useRef('');
   useEffect(() => {
-    if (sessionRef.current && voiceState === 'listening' && !isManualCloseRef.current) {
-      const isDifferent = JSON.stringify(cartItems) !== JSON.stringify(prevCartItemsRef.current);
-      if (isDifferent) {
-        const cartStr = cartItems.length > 0
-          ? cartItems.map(i => `${i.quantity}x ${i.product.name}`).join(', ')
-          : 'panier vide';
+    if (!sessionRef.current || isManualCloseRef.current) return;
+    const isDifferent = JSON.stringify(cartItems) !== JSON.stringify(prevCartItemsRef.current);
+    if (isDifferent) {
+      const cartStr = cartItems.length > 0
+        ? cartItems.map(i => `${i.quantity}x ${i.product.name}`).join(', ')
+        : 'panier vide';
 
-        const syncText = `[VÉRITÉ PANIER] Le panier actuel contient : ${cartStr}. Ceci est l'unique source de vérité.`;
+      const syncText = `[VÉRITÉ PANIER] Le panier actuel contient : ${cartStr}. Ceci est l'unique source de vérité.`;
 
-        if (syncText !== lastSyncTextRef.current) {
-          const timer = setTimeout(() => {
-            if (!sessionRef.current || voiceState !== 'listening' || isManualCloseRef.current) return;
-            try {
-              sessionRef.current.sendClientContent({
-                turns: [{ role: 'user', parts: [{ text: syncText }] }],
-                turnComplete: false
-              });
-              lastSyncTextRef.current = syncText;
-            } catch (err) {
-              console.warn('[Voice] Failed to sync cart state:', err);
-            }
-          }, 1200);
-          return () => clearTimeout(timer);
-        }
-        prevCartItemsRef.current = cartItems;
-      }
-    }
-  }, [cartItems, voiceState]);
-
-  // Sync active product state if it changes mid-session (navigation)
-  const prevActiveProductRef = useRef(activeProduct);
-  useEffect(() => {
-    if (sessionRef.current && voiceState === 'listening' && activeProduct && !isManualCloseRef.current) {
-      if (activeProduct.id !== prevActiveProductRef.current?.id) {
-        const specs = (activeProduct as any).attributes?.productSpecs?.map((s: any) => `• ${s.name}: ${s.description}`).join('\n') || 'Non spécifiées';
-        const metrics = (activeProduct as any).attributes?.botanicalProfile ? Object.entries((activeProduct as any).attributes.botanicalProfile).map(([k, v]) => `${k}: ${v}/10`).join(', ') : 'Non disponibles';
-
-        const syncText = `[NAVIGATION] Le client regarde maintenant : ${activeProduct.name}.\n` +
-          `Détails botaniques :\n${specs}\n` +
-          `Profil sensoriel : ${metrics}\n` +
-          `Utilise ces informations pour tes futures réponses tant que le client est sur cette page.`;
-
+      if (syncText !== lastSyncTextRef.current) {
         const timer = setTimeout(() => {
-          if (!sessionRef.current || voiceState !== 'listening' || isManualCloseRef.current) return;
-          try {
-            sessionRef.current.sendClientContent({
-              turns: [{ role: 'user', parts: [{ text: syncText }] }],
-              turnComplete: false
-            });
-            prevActiveProductRef.current = activeProduct;
-          } catch (err) {
-            console.warn('[Voice] Failed to sync active product state:', err);
-          }
-        }, 1500);
+          queueClientMessage(syncText);
+          lastSyncTextRef.current = syncText;
+        }, 1200);
         return () => clearTimeout(timer);
       }
+      prevCartItemsRef.current = cartItems;
     }
-  }, [activeProduct, voiceState]);
+  }, [cartItems, queueClientMessage]);
+
+  // Sync active product state mid-session (utilise désormais la message queue)
+  const prevActiveProductRef = useRef(activeProduct);
+  useEffect(() => {
+    if (!sessionRef.current || isManualCloseRef.current || !activeProduct) return;
+    if (activeProduct.id !== prevActiveProductRef.current?.id) {
+      const specs = (activeProduct as any).attributes?.productSpecs?.map((s: any) => `• ${s.name}: ${s.description}`).join('\n') || 'Non spécifiées';
+      const metrics = (activeProduct as any).attributes?.botanicalProfile ? Object.entries((activeProduct as any).attributes.botanicalProfile).map(([k, v]) => `${k}: ${v}/10`).join(', ') : 'Non disponibles';
+
+      const syncText = `[NAVIGATION] Le client regarde maintenant : ${activeProduct.name}.\n` +
+        `Détails botaniques :\n${specs}\n` +
+        `Profil sensoriel : ${metrics}\n` +
+        `Utilise ces informations pour tes futures réponses tant que le client est sur cette page.`;
+
+      const timer = setTimeout(() => {
+        queueClientMessage(syncText);
+        prevActiveProductRef.current = activeProduct;
+      }, 1500);
+      return () => clearTimeout(timer);
+    }
+  }, [activeProduct, queueClientMessage]);
 
   // Global unhandledrejection suppressor for SDK's internal uncatchable fire-and-forget WS throws.
   // When the WS enters CLOSING state (readyState 2) before onclose fires, the SDK synchronously throws 
@@ -745,21 +798,20 @@ export function useGeminiLiveVoice({
     const source = ctx.createMediaStreamSource(stream);
     const worklet = new AudioWorkletNode(ctx, 'mic-processor');
     processorRef.current = worklet;
-    worklet.port.onmessage = (e) => {
+    const worker = getAudioWorker();
+
+    worker.onmessage = (msg) => {
       if (isMutedRef.current || !canSendRealtimeInput()) return;
 
       // Synchronous race-condition guard: check WS state right before send to catch
       // CLOSING transitions that slip through between canSendRealtimeInput() and here.
-      // The SDK swallows the resulting DOMException internally and logs it as a
-      // console.warn — our try/catch can't intercept it, so we must prevent the call.
       try {
         const ws = wsRef.current ?? (sessionRef.current as any)?._ws;
         if (ws && ws.readyState !== WebSocket.OPEN) return;
       } catch { /* ignore if _ws is not accessible */ }
 
       try {
-        const chunk = e.data as Float32Array;
-        const rms = getRms(chunk);
+        const { rms, pcm } = msg.data;
         const now = Date.now();
 
         // Am4: noise calibration — collect RMS samples silently during calibration window
@@ -801,12 +853,9 @@ export function useGeminiLiveVoice({
           }
         }
 
-        const down = downsampleBuffer(chunk, ctx.sampleRate, INPUT_SAMPLE_RATE);
-        const pcm = float32ToInt16(down);
-
         // Final guard: re-check right before the SDK call to minimize the race window
         if (isClosingRef.current || !sessionRef.current) return;
-        
+
         const ws = (sessionRef.current as any)?._ws;
         if (ws && ws.readyState !== 1) return; // 1 = OPEN
 
@@ -822,12 +871,23 @@ export function useGeminiLiveVoice({
         }
       } catch (err: any) {
         // Silently discard any socket teardown errors (CLOSED, CLOSING, InvalidStateError)
-        const msg = String(err?.message ?? err).toLowerCase();
-        if (msg.includes('closed') || msg.includes('closing') || msg.includes('invalid state') || msg.includes('websocket')) {
+        const msgStr = String(err?.message ?? err).toLowerCase();
+        if (msgStr.includes('closed') || msgStr.includes('closing') || msgStr.includes('invalid state') || msgStr.includes('websocket')) {
           return;
         }
         console.warn('[Voice] Mic capture error:', err);
       }
+    };
+
+    worklet.port.onmessage = (e) => {
+      if (isMutedRef.current || !canSendRealtimeInput()) return;
+      const chunk = e.data as Float32Array;
+      worker.postMessage({
+        chunk,
+        fromRate: captureCtxRef.current?.sampleRate ?? 48000,
+        toRate: INPUT_SAMPLE_RATE,
+        bargeInThreshold: adaptiveBargeInThresholdRef.current
+      }, [chunk.buffer]);
     };
 
     const silent = ctx.createGain();
@@ -841,6 +901,13 @@ export function useGeminiLiveVoice({
   const startSessionRef = useRef<((forceFresh?: boolean) => Promise<void>) | undefined>(undefined);
 
   const startSession = useCallback(async (forceFreshToken: boolean = false) => {
+    const now = Date.now();
+    if (now - lastStartSessionCallRef.current < 1000) {
+      console.warn('[Voice] startSession ignoré (debounce).');
+      return;
+    }
+    lastStartSessionCallRef.current = now;
+
     if (startInFlightRef.current) return;
     cleanup();
     isManualCloseRef.current = false;
@@ -909,7 +976,7 @@ export function useGeminiLiveVoice({
               // the bot hasn't already initiated ANY activity (speaking, tool calls, etc.)
               if (!greetingTriggerSentRef.current && voiceStateRef.current === 'listening') {
                 greetingTriggerSentRef.current = true;
-                
+
                 // Double check WS readyState before sending content
                 const ws = wsRef.current ?? (sessionRef.current as any)?._ws;
                 if (ws && ws.readyState !== WebSocket.OPEN) return;
@@ -1217,7 +1284,7 @@ export function useGeminiLiveVoice({
                   if (lowerRawPage.startsWith('category:')) {
                     const catName = lowerRawPage.replace('category:', '').trim();
                     let catSlug = catName;
-                    
+
                     // Normalize the searched category name for robust matching
                     const normalizedCatSeek = catName.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
                     let matchFound = false;
@@ -1230,7 +1297,7 @@ export function useGeminiLiveVoice({
                         break;
                       }
                     }
-                    
+
                     if (onNavigateRef.current) {
                       const navFn = onNavigateRef.current;
                       setTimeout(() => navFn(`/catalogue?category=${encodeURIComponent(catSlug)}`), 100);
@@ -1303,14 +1370,14 @@ export function useGeminiLiveVoice({
                     setTimeout(() => navFn(path as string), 100);
                     return { name: c.name, id: c.id, response: { result: `Navigation vers "${rawPage}" effectuée avec succès (${path}).` } };
                   }
-                  
+
                   // If all else fails, just tell the model it worked but silently fail or fall back to home
                   // to prevent the AI from getting confused when it already promised the user to take them there.
                   if (onNavigateRef.current) {
-                     setTimeout(() => onNavigateRef.current!('/'), 100);
-                     return { name: c.name, id: c.id, response: { result: `Navigation fallback to Home executed because route "${rawPage}" was not fully understood.` } };
+                    setTimeout(() => onNavigateRef.current!('/'), 100);
+                    return { name: c.name, id: c.id, response: { result: `Navigation fallback to Home executed because route "${rawPage}" was not fully understood.` } };
                   }
-                  
+
                   return { name: c.name, id: c.id, response: { error: `Nav impossible` } };
                 }
 

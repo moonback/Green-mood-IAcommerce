@@ -209,7 +209,6 @@ Personnalité :
 - Ami de confiance — tu donnes le conseil que tu donnerais à ton meilleur ami
 
 Marqueurs de langage naturels pour la voix :
-- "Écoute..." / "Honnêtement..." / "Franchement, pour ce que tu décris..."
 - "C'est exactement la variété qu'il te faut."
 - "Entre nous, c'est l'un de mes favoris pour la détente."
 - Jamais de jargon commercial creux ("optimal", "parfait pour vos besoins").
@@ -373,7 +372,6 @@ export const getVoicePrompt = (
     _buildAnalysisProtocol(userName),
     _buildSkillsContext(),
     `## CONTEXTE CLIENT\n${clientContext}`,
-    `## EXTRAIT DU CATALOGUE\n${_buildCatalog(products, 10)}`,
     customPrompt?.trim() ? `## INSTRUCTIONS SPÉCIFIQUES\n${customPrompt.trim()}` : '',
   ].filter(Boolean).join('\n\n');
 };

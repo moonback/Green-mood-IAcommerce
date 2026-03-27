@@ -17,8 +17,8 @@ class MicProcessor extends AudioWorkletProcessor {
             this._buffer[this._bufferIndex++] = channel[i];
 
             if (this._bufferIndex >= this._chunkSize) {
-                // Envoyer le chunk complet au thread principal
-                this.port.postMessage(this._buffer);
+                // Envoyer le chunk complet au thread principal sans copie mémoire (Transferable Object)
+                this.port.postMessage(this._buffer, [this._buffer.buffer]);
                 // On réinitialise avec un nouveau buffer pour éviter les problèmes de référence
                 this._buffer = new Float32Array(this._chunkSize);
                 this._bufferIndex = 0;
