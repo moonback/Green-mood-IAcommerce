@@ -69,10 +69,12 @@ La majorité des solutions e-commerce existantes (Shopify, WooCommerce) sont des
   - Parrainage automatisé avec dashboard de suivi
   - Abonnements récurrents (hebdo / bimensuel / mensuel)
 
-### 🤖 Intelligence Artificielle de Pointe
-- **Conseiller BudTender IA 24/7** :
-  - **Chat Multimodal** : Recommandations contextuelles basées sur catalogue + préférences
-  - **Interaction Vocale Native** : Gemini Live API, conversation temps réel < 500ms latence
+- **Interaction Vocale Native (Gemini Live)** :
+  - **Performance Temps Réel** : Latence < 500ms via **AudioWorklet** et **Web Worker** dédié (downsampling Int16).
+  - **Infrastructure Zero-Copy** : Utilisation des *Transferable Objects* pour un transfert de données audio sans surcharge CPU.
+  - **Recherche Floue Assistée (pg_trgm)** : Tolérance aux fautes de frappe vocales via recherche trigramme côté serveur (PostgreSQL).
+  - **Robustesse du Flux** : **Message Queue** intégrée pour synchroniser le panier et la navigation sans perte en cas de reconnexion WebSocket.
+  - **UX Adaptative** : Détection de silence dynamique (8s/15s) pour une assistance proactive intelligente.
 - **Mémoire & Personnalisation** : Préférences persistées en base, historique de conversation
   - **Moteur Vectoriel (RAG)** : `pgvector` + OpenRouter pour des réponses métier précises
 - **Génération de Contenu Admin** : Titres Hero, accroches, FAQ en un clic
@@ -470,9 +472,11 @@ useGeminiLiveVoice → buildPrompt avec contexte:
     ↓
 Connexion WebSocket API Google Gemini Live Mode
     ↓
-Interaction fluide bidirectionnelle (< 500ms)
+Interaction via **Message Queue** (évite les pertes de paquets)
     ↓
-Utilisation des tools (navigation, recherche)
+Traitement audio déporté (**Web Worker** Int16 + **AudioWorklet**)
+    ↓
+Utilisation des tools (navigation, recherche floue **pg_trgm**)
     ↓
 ```
 
@@ -523,11 +527,13 @@ Accessible depuis le Dashboard, l'overlay wizard guide en **8 étapes** :
 
 ### BudTender Voix (Gemini Live)
 - **Localisation** : `src/hooks/useGeminiLiveVoice.ts`
-- API : Google Gemini Live (bidirectionnel, < 500ms)
-- Token fetching via Edge Function `gemini-token`
-- **Outils Intégrés** : Recherche catalogue (fleurs, huiles, accessoires), affichage produit, ajout au panier, navigation, gestion des favoris, base de connaissances experte CBD.
-- **Moteur de Skills** : Injection dynamique de fichiers `.md` (minifiés pour le TTS) permettant d'ajouter des comportements métier sans modifier le code source.
-- **Contexte injecté** : Catalogue (variétés, taux de CBD/THC), préférences, historique, panier.
+- **Architecture de Performance** :
+  - **Thread-Separation** : Traitement de l'audio dans un `AudioWorklet` (micro) + `Web Worker` (downsampling), communiquant via **Transferable Objects** (zero-copy).
+  - **Search Intelligence** : Système à 4 niveaux : Cache FIFO (100 entrées) → Exact Match → Substring → **Fuzzy Search Serveur (RPC pg_trgm)**.
+  - **Sync Robustness** : File d'attente de messages pour garantir l'envoi des états (panier, activeProduct) même pendant les gaps de connexion.
+- **Optimisation de Latence (TTFT)** : Passage en **Function Calling exclusif** pour le catalogue, réduisant drastiquement le prompt système initial.
+- **Outils Intégrés** : Recherche catalogue complexe, affichage produit, ajout au panier, navigation, gestion des favoris, base de connaissances experte.
+- **Moteur de Skills** : Injection dynamique de fichiers `.md` minifiés pour le TTS.
 
 ### Admin Voice Commands
 - **Localisation** : `src/hooks/useGeminiAdminVoice.ts`

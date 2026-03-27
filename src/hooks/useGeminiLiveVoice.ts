@@ -30,7 +30,7 @@ const TOKEN_MAX_RETRIES = 2;
 const TOKEN_RETRY_DELAY_MS = 1200;
 const TOOL_DEDUP_WINDOW_MS = 2500;
 const TOKEN_PREFETCH_MAX_AGE_MS = 50 * 1000; // keep a small safety margin before expiry
-const INITIAL_GREETING_DELAY_MS = 1500;
+const INITIAL_GREETING_DELAY_MS = 500;
 const BARGE_IN_RMS_THRESHOLD_FALLBACK = 0.22; // used if noise calibration hasn't run yet
 const BARGE_IN_MIN_DURATION_MS = 180;
 const BARGE_IN_STABILITY_FRAMES = 3;
@@ -135,7 +135,7 @@ const NON_RETRYABLE_CODES = new Set([1000, 1001, 4000, 4001, 4003, 4008]);
 export type VoiceState = 'idle' | 'connecting' | 'listening' | 'speaking' | 'error';
 
 // Helper for robust string normalization
-const normalizeStr = (s: string) => 
+const normalizeStr = (s: string) =>
   s.toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
 interface Options {
@@ -332,13 +332,13 @@ export function useGeminiLiveVoice({
     silenceTimerRef.current = window.setTimeout(() => {
       // Check if session is still alive and listening
       if (voiceStateRef.current === 'listening' && !isManualCloseRef.current && sessionRef.current) {
-         console.info(`[Voice] Silence prolongé détecté (${delay/1000}s), envoi d\'une relance proactive.`);
-         try {
-           sessionRef.current.sendClientContent({
-             turns: [{ role: 'user', parts: [{ text: `[SILENCE] Le client n'a rien dit depuis plus de ${delay/1000} secondes. Relance-le très doucement et brièvement (ex: 'Vous êtes toujours là ?', 'Une question sur nos produits ?') pour savoir s'il a encore besoin d'aide. L'utilisateur a ${cartItems.length} article(s) dans son panier.` }] }],
-             turnComplete: true
-           });
-         } catch(e) {}
+        console.info(`[Voice] Silence prolongé détecté (${delay / 1000}s), envoi d\'une relance proactive.`);
+        try {
+          sessionRef.current.sendClientContent({
+            turns: [{ role: 'user', parts: [{ text: `[SILENCE] Le client n'a rien dit depuis plus de ${delay / 1000} secondes. Relance-le très doucement et brièvement (ex: 'Vous êtes toujours là ?', 'Une question sur nos produits ?') pour savoir s'il a encore besoin d'aide. L'utilisateur a ${cartItems.length} article(s) dans son panier.` }] }],
+            turnComplete: true
+          });
+        } catch (e) { }
       }
     }, delay);
   }, [cartItems.length]);
@@ -358,7 +358,7 @@ export function useGeminiLiveVoice({
   const findProduct = useCallback(async (prodName: string): Promise<Product | undefined> => {
     const q = normalizeStr(prodName);
     if (!q) return undefined;
-    
+
     if (productCacheRef.current.has(q)) {
       return productCacheRef.current.get(q);
     }
@@ -855,7 +855,7 @@ export function useGeminiLiveVoice({
 
         // Final guard: re-check right before the SDK call to minimize the race window
         if (isClosingRef.current || !sessionRef.current) return;
-        
+
         const ws = (sessionRef.current as any)?._ws;
         if (ws && ws.readyState !== 1) return; // 1 = OPEN
 
@@ -976,7 +976,7 @@ export function useGeminiLiveVoice({
               // the bot hasn't already initiated ANY activity (speaking, tool calls, etc.)
               if (!greetingTriggerSentRef.current && voiceStateRef.current === 'listening') {
                 greetingTriggerSentRef.current = true;
-                
+
                 // Double check WS readyState before sending content
                 const ws = wsRef.current ?? (sessionRef.current as any)?._ws;
                 if (ws && ws.readyState !== WebSocket.OPEN) return;
@@ -1284,7 +1284,7 @@ export function useGeminiLiveVoice({
                   if (lowerRawPage.startsWith('category:')) {
                     const catName = lowerRawPage.replace('category:', '').trim();
                     let catSlug = catName;
-                    
+
                     // Normalize the searched category name for robust matching
                     const normalizedCatSeek = catName.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
                     let matchFound = false;
@@ -1297,7 +1297,7 @@ export function useGeminiLiveVoice({
                         break;
                       }
                     }
-                    
+
                     if (onNavigateRef.current) {
                       const navFn = onNavigateRef.current;
                       setTimeout(() => navFn(`/catalogue?category=${encodeURIComponent(catSlug)}`), 100);
@@ -1370,14 +1370,14 @@ export function useGeminiLiveVoice({
                     setTimeout(() => navFn(path as string), 100);
                     return { name: c.name, id: c.id, response: { result: `Navigation vers "${rawPage}" effectuée avec succès (${path}).` } };
                   }
-                  
+
                   // If all else fails, just tell the model it worked but silently fail or fall back to home
                   // to prevent the AI from getting confused when it already promised the user to take them there.
                   if (onNavigateRef.current) {
-                     setTimeout(() => onNavigateRef.current!('/'), 100);
-                     return { name: c.name, id: c.id, response: { result: `Navigation fallback to Home executed because route "${rawPage}" was not fully understood.` } };
+                    setTimeout(() => onNavigateRef.current!('/'), 100);
+                    return { name: c.name, id: c.id, response: { result: `Navigation fallback to Home executed because route "${rawPage}" was not fully understood.` } };
                   }
-                  
+
                   return { name: c.name, id: c.id, response: { error: `Nav impossible` } };
                 }
 
