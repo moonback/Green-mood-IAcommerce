@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { ArrowLeft, RefreshCw, Pause, Play, X, ChevronDown, ShoppingBag, Shield, Calendar, Package } from 'lucide-react';
+import { RefreshCw, Pause, Play, X, ChevronDown, ShoppingBag, Calendar, Package } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuthStore } from '../store/authStore';
 import { useSettingsStore } from '../store/settingsStore';
 import type { Subscription, SubscriptionFrequency } from '../lib/types';
-import SEO from '../components/SEO';
 import { useNavigate } from 'react-router-dom';
+import AccountPageLayout from '../components/AccountPageLayout';
 
 const FREQUENCY_LABELS: Record<SubscriptionFrequency, string> = {
   weekly: 'Chaque semaine',
@@ -86,38 +86,17 @@ export default function Subscriptions() {
   const activeCount = subscriptions.filter(s => s.status === 'active').length;
 
   return (
-    <div className="min-h-screen bg-[color:var(--color-bg)] text-[color:var(--color-text)] pt-1 pb-1">
-      <SEO title={`Mes Abonnements — ${settings.store_name}`} description="Gérez vos livraisons automatiques." />
-
-      <div className="max-w-12xl mx-auto px-4 sm:px-6 lg:px-8">
-
-        {/* Header */}
-        <div className="mb-8">
-          <Link to="/compte" className="inline-flex items-center gap-2 text-[color:var(--color-text-subtle)] hover:text-[color:var(--color-primary)] text-xs font-bold uppercase tracking-wider transition-colors mb-4">
-            <ArrowLeft className="w-3.5 h-3.5" />
-            Mon Espace
-          </Link>
-
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-                        <div>
-                            <div className="flex items-center gap-3 mb-2">
-                                <div className="w-10 h-10 rounded-xl bg-[color:var(--color-primary)]/10 text-[color:var(--color-primary)] flex items-center justify-center border border-[color:var(--color-primary)]/20 shadow-sm">
-                                    <RefreshCw className="w-5 h-5" />
-                                </div>
-                                <h1 className="text-2xl md:text-3xl font-black tracking-tight text-[color:var(--color-text)]">
-                                    Mes Abonnements
-                                </h1>
-                            </div>
-                            <p className="text-sm text-[color:var(--color-text-subtle)] font-medium">Livraisons automatiques · Modifiables à tout moment.</p>
-                        </div>
-                        {activeCount > 0 && (
-                            <span className="text-xs font-black text-[color:var(--color-primary)] bg-[color:var(--color-primary)]/10 border border-[color:var(--color-primary)]/20 px-4 py-2 rounded-xl flex items-center gap-2 shadow-sm">
-                                <span className="w-2 h-2 rounded-full bg-[color:var(--color-primary)] animate-pulse" />
-                                {activeCount} actif{activeCount > 1 ? 's' : ''}
-                            </span>
-                        )}
-          </div>
-        </div>
+    <AccountPageLayout
+      seoTitle={`Mes Abonnements — ${settings.store_name}`}
+      seoDescription="Gérez vos livraisons automatiques."
+      icon={RefreshCw}
+      iconColor="#10b981"
+      title="Abonnements"
+      subtitle="Livraisons automatiques · Modifiables à tout moment"
+      stat={activeCount > 0 ? activeCount : undefined}
+      statLabel={activeCount > 0 ? 'Actifs' : undefined}
+      footerText="Abonnements résiliables à tout moment sans frais"
+    >
 
         {isLoading ? (
           <div className="space-y-4">
@@ -269,12 +248,6 @@ export default function Subscriptions() {
           </div>
         )}
 
-        {/* Footer */}
-                 <div className="mt-12 flex items-center justify-center gap-2 text-[10px] font-mono text-[color:var(--color-text-muted)] uppercase tracking-widest">
-                    <Shield className="w-3 h-3" />
-                    <span>Abonnements résiliables à tout moment sans frais</span>
-                </div>
-      </div>
-    </div>
+    </AccountPageLayout>
   );
 }

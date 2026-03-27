@@ -2,7 +2,6 @@ import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import {
-  User,
   Users,
   Package,
   MapPin,
@@ -11,31 +10,26 @@ import {
   RefreshCw,
   Star,
   Shield,
-  Sparkles,
   ArrowRight,
   Heart,
   Settings,
   Award,
   Crown,
-  Zap,
-  TrendingUp,
   Gift,
-  Calendar,
-  ShoppingBag,
   Eye,
   Copy,
   Check,
+  Sparkles,
 } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import { useSettingsStore } from '../store/settingsStore';
 import { supabase } from '../lib/supabase';
 import SEO from '../components/SEO';
 import AccountSidebar from '../components/AccountSidebar';
-import { useTheme } from '../components/ThemeProvider';
 
-/* ── Tier helpers ──────────────────────────────────────────────────── */
+/* ── Tier metadata ─────────────────────────────────────────────────── */
 
-interface Tier {
+interface TierVisual {
   name: string;
   minPoints: number;
   maxPoints: number | null;
@@ -43,46 +37,103 @@ interface Tier {
   color: string;
   gradient: string;
   glow: string;
+  ringColor: string;
+  ringGlow: string;
 }
 
-const TIERS: Tier[] = [
-  { name: 'Bronze', minPoints: 0, maxPoints: 499, icon: Award, color: 'text-amber-600', gradient: 'from-amber-900/30 to-amber-800/10', glow: 'bg-amber-500/15' },
-  { name: 'Silver', minPoints: 500, maxPoints: 1499, icon: Star, color: 'text-zinc-500 dark:text-zinc-400', gradient: 'from-zinc-600/30 to-zinc-500/10', glow: 'bg-zinc-500/10' },
-  { name: 'Gold', minPoints: 1500, maxPoints: null, icon: Crown, color: 'text-yellow-600 dark:text-yellow-400', gradient: 'from-yellow-500/30 to-yellow-400/10', glow: 'bg-yellow-400/15' },
+const TIERS: TierVisual[] = [
+  {
+    name: 'Bronze',
+    minPoints: 0,
+    maxPoints: 499,
+    icon: Award,
+    color: 'text-amber-500',
+    gradient: 'from-amber-900/30 to-amber-800/10',
+    glow: 'bg-amber-500/15',
+    ringColor: '#d97706',
+    ringGlow: 'rgba(217,119,6,0.35)',
+  },
+  {
+    name: 'Silver',
+    minPoints: 500,
+    maxPoints: 1499,
+    icon: Star,
+    color: 'text-slate-400',
+    gradient: 'from-slate-600/30 to-slate-500/10',
+    glow: 'bg-slate-500/10',
+    ringColor: '#94a3b8',
+    ringGlow: 'rgba(148,163,184,0.35)',
+  },
+  {
+    name: 'Gold',
+    minPoints: 1500,
+    maxPoints: null,
+    icon: Crown,
+    color: 'text-yellow-400',
+    gradient: 'from-yellow-500/30 to-yellow-400/10',
+    glow: 'bg-yellow-400/15',
+    ringColor: '#eab308',
+    ringGlow: 'rgba(234,179,8,0.4)',
+  },
 ];
 
+/* ── SVG ring constants ─────────────────────────────────────────────── */
+const RING_R = 54;
+const RING_C = 2 * Math.PI * RING_R; // ≈339.3
 
+/* ── Service tile type ─────────────────────────────────────────────── */
+interface ServiceTile {
+  icon: typeof Award;
+  label: string;
+  description: string;
+  to: string;
+  stat?: string;
+  accentHex: string;
+  size: 'large' | 'small';
+  enabled?: boolean;
+}
 
 export default function Account() {
   const { profile, user, signOut } = useAuthStore();
   const { settings } = useSettingsStore();
-  const { resolvedTheme } = useTheme();
   const [orderCount, setOrderCount] = useState(0);
   const [copied, setCopied] = useState(false);
-  const [activeTab, setActiveTab] = useState<'services' | 'activity'>('services');
   const [greeting, setGreeting] = useState('');
+
+  /* ── Font injection ── */
+  useEffect(() => {
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href =
+      'https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500;700&display=swap';
+    document.head.appendChild(link);
+    return () => {
+      document.head.removeChild(link);
+    };
+  }, []);
 
   const points = profile?.loyalty_points ?? 0;
 
-  // Merge Visual Metadata with Settings Tiers
+  /* ── Tier logic ── */
   const tiers = useMemo(() => {
     const settingsTiers = settings.loyalty_tiers || [];
-    return settingsTiers.map(st => {
-      const visual = TIERS.find(t => t.name.toLowerCase() === st.name.toLowerCase()) || TIERS[0];
-      return {
-        ...visual,
-        ...st,
-        minPoints: st.min_points,
-      };
-    }).sort((a, b) => a.minPoints - b.minPoints);
+    return settingsTiers
+      .map((st) => {
+        const visual =
+          TIERS.find((t) => t.name.toLowerCase() === st.name.toLowerCase()) ||
+          TIERS[0];
+        return { ...visual, ...st, minPoints: st.min_points };
+      })
+      .sort((a, b) => a.minPoints - b.minPoints);
   }, [settings.loyalty_tiers]);
 
-  const currentTier = useMemo(() => {
-    return [...tiers].reverse().find(t => points >= t.minPoints) || tiers[0];
-  }, [points, tiers]);
+  const currentTier = useMemo(
+    () => [...tiers].reverse().find((t) => points >= t.minPoints) || tiers[0],
+    [points, tiers],
+  );
 
   const nextTier = useMemo(() => {
-    const idx = tiers.findIndex(t => t.id === currentTier?.id);
+    const idx = tiers.findIndex((t) => t.id === currentTier?.id);
     return idx < tiers.length - 1 ? tiers[idx + 1] : null;
   }, [currentTier, tiers]);
 
@@ -95,24 +146,31 @@ export default function Account() {
     return Math.min(Math.round((progress / range) * 100), 100);
   }, [points, currentTier, nextTier]);
 
+  const ringColor = currentTier?.ringColor || '#d97706';
+  const ringGlow = currentTier?.ringGlow || 'rgba(217,119,6,0.3)';
+  const ringOffset = RING_C * (1 - progressPercent / 100);
+
   const initials = profile?.full_name
     ? profile.full_name
-      .split(' ')
-      .map((n: string) => n[0])
-      .join('')
-      .slice(0, 2)
-      .toUpperCase()
+        .split(' ')
+        .map((n: string) => n[0])
+        .join('')
+        .slice(0, 2)
+        .toUpperCase()
     : '?';
 
   const memberSince = profile?.created_at
-    ? new Date(profile.created_at).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })
+    ? new Date(profile.created_at).toLocaleDateString('fr-FR', {
+        month: 'long',
+        year: 'numeric',
+      })
     : '';
 
+  const eurValue = (points * ((settings.loyalty_redeem_rate || 5) / 100)).toFixed(2);
+
   useEffect(() => {
-    const hour = new Date().getHours();
-    if (hour < 12) setGreeting('Bonjour');
-    else if (hour < 18) setGreeting('Bon après-midi');
-    else setGreeting('Bonsoir');
+    const h = new Date().getHours();
+    setGreeting(h < 12 ? 'Bonjour' : h < 18 ? 'Bon après-midi' : 'Bonsoir');
   }, []);
 
   useEffect(() => {
@@ -132,16 +190,15 @@ export default function Account() {
     }
   };
 
-  /* ── Service tiles ───────────────────────────────────────────────── */
-  const services = [
+  /* ── Service tiles ── */
+  const services: ServiceTile[] = [
     {
       icon: Package,
       label: 'Mes Commandes',
       description: 'Suivre & gérer vos achats',
       to: '/compte/commandes',
       stat: `${orderCount} commande${orderCount > 1 ? 's' : ''}`,
-      color: 'group-hover:bg-blue-500 group-hover:text-[color:var(--color-text)]',
-      accent: 'blue',
+      accentHex: '#3b82f6',
       size: 'large',
     },
     {
@@ -150,17 +207,15 @@ export default function Account() {
       description: 'Vos points & récompenses',
       to: '/compte/fidelite',
       stat: `${points} ${settings.loyalty_currency_name}`,
-      color: 'group-hover:bg-yellow-500 group-hover:text-[color:var(--color-text)]',
-      accent: 'yellow',
+      accentHex: '#eab308',
       size: 'large',
     },
     {
       icon: Gift,
       label: 'Cadeau Anniversaire',
-      description: 'L\'IA choisit pour vous !',
+      description: "L'IA choisit pour vous !",
       to: '/compte/cadeau-anniversaire',
-      color: 'group-hover:bg-[color:var(--color-primary)] group-hover:text-[color:var(--color-text)]',
-      accent: 'green-neon',
+      accentHex: '#10b981',
       size: 'large',
     },
     {
@@ -168,8 +223,7 @@ export default function Account() {
       label: 'Adresses',
       description: 'Lieux de livraison',
       to: '/compte/adresses',
-      color: 'group-hover:bg-[color:var(--color-primary)] group-hover:text-[color:var(--color-text)]',
-      accent: 'emerald',
+      accentHex: '#06b6d4',
       size: 'small',
     },
     {
@@ -177,8 +231,7 @@ export default function Account() {
       label: 'Favoris',
       description: 'Produits sauvegardés',
       to: '/compte/favoris',
-      color: 'group-hover:bg-rose-500 group-hover:text-[color:var(--color-text)]',
-      accent: 'rose',
+      accentHex: '#f43f5e',
       size: 'small',
     },
     {
@@ -186,8 +239,7 @@ export default function Account() {
       label: 'Mes Avis',
       description: 'Témoignages & notes',
       to: '/compte/avis',
-      color: 'group-hover:bg-orange-500 group-hover:text-[color:var(--color-text)]',
-      accent: 'orange',
+      accentHex: '#f97316',
       size: 'small',
     },
     {
@@ -195,8 +247,7 @@ export default function Account() {
       label: 'Abonnements',
       description: 'Livraisons automatiques',
       to: '/compte/abonnements',
-      color: 'group-hover:bg-[color:var(--color-primary)] group-hover:text-[color:var(--color-text)]',
-      accent: 'green',
+      accentHex: '#22c55e',
       size: 'small',
       enabled: settings.subscriptions_enabled,
     },
@@ -205,8 +256,7 @@ export default function Account() {
       label: 'Parrainage',
       description: `Invitez & gagnez des ${settings.loyalty_currency_name}`,
       to: '/compte/parrainage',
-      color: 'group-hover:bg-purple-500 group-hover:text-[color:var(--color-text)]',
-      accent: 'purple',
+      accentHex: '#a855f7',
       size: 'small',
     },
     {
@@ -214,395 +264,678 @@ export default function Account() {
       label: 'Paramètres',
       description: 'Infos & sécurité',
       to: '/compte/profil',
-      color: 'group-hover:bg-zinc-600 group-hover:text-[color:var(--color-text)]',
-      accent: 'zinc',
+      accentHex: '#64748b',
       size: 'small',
     },
-  ].filter((t) => t.enabled !== false);
+  ].filter((t) => t.enabled !== false) as ServiceTile[];
 
+  /* ═══════════════════════════════════════════════════════════════════
+     RENDER
+     ═══════════════════════════════════════════════════════════════════ */
   return (
-    <div className="min-h-screen bg-[color:var(--color-bg)] text-[color:var(--color-text)] pt-1 pb-1">
+    <div className="min-h-screen bg-[color:var(--color-bg)] text-[color:var(--color-text)] pb-20">
       <SEO
-        title={`Mon Espace — L'Excellence ${settings.store_name}`}
+        title={`Mon Espace — ${settings.store_name}`}
         description={`Votre espace personnel ${settings.store_name}.`}
       />
 
-      <div className="max-w-12xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* ════════════════════════════════════════════════════════════
-            HERO — Welcome Banner
-            ════════════════════════════════════════════════════════════ */}
+      <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 pt-4">
+
+        {/* ═══════════════════════════════════════════════════════════
+            HERO
+            ═══════════════════════════════════════════════════════════ */}
         <motion.div
-          initial={{ opacity: 0, y: 30 }}
+          initial={{ opacity: 0, y: 28 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, ease: 'easeOut' }}
-          className="relative rounded-[3rem] overflow-hidden mb-8 shadow-sm border border-[color:var(--color-border)]"
+          transition={{ duration: 0.75, ease: [0.16, 1, 0.3, 1] }}
+          className="relative rounded-[2.75rem] overflow-hidden mb-8"
+          style={{ boxShadow: '0 32px 96px rgba(0,0,0,0.28)' }}
         >
-          {/* Background Image with Overlay */}
+          {/* Botanical bg */}
           <div className="absolute inset-0">
             <img
               src="/account_hero_bg.png"
-              className="w-full h-full object-cover opacity-100 scale-105"
-              alt="Botanical background"
+              className="w-full h-full object-cover scale-105"
+              alt=""
             />
-            <div className="absolute inset-0 bg-gradient-to-br from-black/80 via-black/40 to-black/80" />
-            <div className="absolute inset-0 bg-[color:var(--color-primary)]/10 mix-blend-overlay" />
+            <div className="absolute inset-0 bg-gradient-to-br from-black/88 via-black/55 to-black/80" />
+            {/* tier-tinted atmospheric bloom */}
+            <motion.div
+              animate={{ opacity: [0.18, 0.32, 0.18], scale: [1, 1.12, 1] }}
+              transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut' }}
+              className="absolute inset-0 pointer-events-none"
+              style={{
+                background: `radial-gradient(ellipse 80% 70% at 65% 50%, ${ringColor}22, transparent 70%)`,
+              }}
+            />
           </div>
 
-          <motion.div
-            animate={{
-              opacity: [0.3, 0.5, 0.3],
-              scale: [1, 1.1, 1],
-            }}
-            transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
-            className="absolute top-0 right-0 w-[600px] h-[600px] bg-[color:var(--color-primary)]/10 blur-[150px] pointer-events-none"
-          />
-          <motion.div
-            animate={{
-              opacity: [0.2, 0.4, 0.2],
-              scale: [1, 1.2, 1],
-            }}
-            transition={{ duration: 12, repeat: Infinity, ease: "easeInOut", delay: 2 }}
-            className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-[color:var(--color-primary)]/[0.05] blur-[120px] pointer-events-none"
-          />
-          <div className="absolute inset-y-0 right-0 w-px bg-gradient-to-b from-transparent via-emerald-500/20 to-transparent" />
+          <div className="relative p-8 sm:p-10 md:p-12 lg:p-14 text-white">
+            <div className="flex flex-col xl:flex-row items-center xl:items-start gap-10 xl:gap-16 w-full">
 
-          <div className="relative p-6 sm:p-8 md:p-12 lg:p-16 text-white">
-            <div className="flex flex-col xl:flex-row items-start xl:items-center gap-8 lg:gap-12 xl:gap-16 w-full">
-              {/* Left: Avatar + Name */}
-              <div className="flex items-center gap-6">
+              {/* ─── Avatar + ring ─── */}
+              <div className="flex flex-col items-center gap-3 shrink-0">
                 <motion.div
-                  initial={{ scale: 0.8, opacity: 0 }}
+                  initial={{ scale: 0.6, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
-                  transition={{ delay: 0.2, type: 'spring', bounce: 0.3 }}
-                  className="relative group"
+                  transition={{ delay: 0.15, type: 'spring', bounce: 0.28, duration: 0.9 }}
+                  className="relative"
+                  style={{ width: 148, height: 148 }}
                 >
-                  <div className="absolute inset-0 bg-[color:var(--color-primary)]/10 blur-3xl group-hover:bg-[color:var(--color-primary)]/20 transition-all duration-1000 rounded-full" />
-                  <div className="w-20 h-20 md:w-28 md:h-28 rounded-2xl bg-[color:var(--color-card)]/80 border border-[color:var(--color-border)] flex items-center justify-center relative shadow-sm group-hover:border-[color:var(--color-primary)]/40/50 transition-all duration-700">
-                    <div className="absolute inset-0 bg-gradient-to-br from-[color:var(--color-surface)] to-transparent opacity-50" />
-                    <span className="text-3xl md:text-4xl font-['Inter',sans-serif] font-black text-[color:var(--color-primary)] tracking-widest relative z-10">
+                  {/* Inner avatar circle */}
+                  <div
+                    className="absolute inset-[16px] rounded-full flex items-center justify-center"
+                    style={{
+                      background: 'rgba(255,255,255,0.05)',
+                      backdropFilter: 'blur(16px)',
+                      border: '1px solid rgba(255,255,255,0.1)',
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontFamily: "'DM Serif Display', Georgia, serif",
+                        fontSize: '2.4rem',
+                        color: ringColor,
+                        letterSpacing: '0.04em',
+                        lineHeight: 1,
+                        textShadow: `0 0 24px ${ringGlow}`,
+                      }}
+                    >
                       {initials}
                     </span>
                   </div>
+
+                  {/* SVG progress ring */}
+                  <svg
+                    className="absolute inset-0 w-full h-full"
+                    viewBox="0 0 148 148"
+                    style={{ transform: 'rotate(-90deg)' }}
+                  >
+                    {/* Track */}
+                    <circle
+                      cx="74" cy="74" r={RING_R}
+                      fill="none"
+                      stroke="rgba(255,255,255,0.08)"
+                      strokeWidth="5"
+                    />
+                    {/* Glow under ring */}
+                    <circle
+                      cx="74" cy="74" r={RING_R}
+                      fill="none"
+                      stroke={ringColor}
+                      strokeWidth="9"
+                      strokeLinecap="round"
+                      strokeDasharray={RING_C}
+                      strokeDashoffset={RING_C * (1 - progressPercent / 100)}
+                      style={{ filter: `blur(6px) opacity(0.4)` }}
+                    />
+                    {/* Main ring */}
+                    <motion.circle
+                      cx="74" cy="74" r={RING_R}
+                      fill="none"
+                      stroke={ringColor}
+                      strokeWidth="5"
+                      strokeLinecap="round"
+                      strokeDasharray={RING_C}
+                      initial={{ strokeDashoffset: RING_C }}
+                      animate={{ strokeDashoffset: ringOffset }}
+                      transition={{ duration: 1.9, ease: [0.16, 1, 0.3, 1], delay: 0.55 }}
+                      style={{ filter: `drop-shadow(0 0 6px ${ringColor})` }}
+                    />
+                  </svg>
+
                   {/* Tier badge */}
                   <motion.div
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
-                    transition={{ delay: 0.5, type: 'spring', bounce: 0.5 }}
-                    className={`absolute -bottom-1 -right-1 p-1.5 rounded-xl shadow-lg border border-zinc-800 ${currentTier.glow}`}
+                    transition={{ delay: 0.65, type: 'spring', bounce: 0.5 }}
+                    className="absolute -bottom-0.5 -right-0.5 p-2 rounded-xl"
+                    style={{
+                      background: 'rgba(10,10,10,0.92)',
+                      backdropFilter: 'blur(10px)',
+                      border: `1px solid ${ringColor}45`,
+                      boxShadow: `0 0 18px ${ringGlow}`,
+                    }}
                   >
-                    <TierIcon className={`w-4 h-4 ${currentTier.color}`} />
+                    <TierIcon className={`w-4 h-4 ${currentTier?.color}`} />
                   </motion.div>
                 </motion.div>
 
-                <div>
-                  <motion.p
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.3 }}
-                    className="text-xs text-[color:var(--color-text-muted)] font-mono uppercase tracking-wider mb-1"
-                  >
-                    {greeting} 👋
-                  </motion.p>
-                  <motion.h1
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.35 }}
-                    className="text-2xl md:text-3xl font-['Inter',sans-serif] font-black tracking-tight text-white"
-                  >
-                    {profile?.full_name ?? 'Membre'}
-                  </motion.h1>
-                  <motion.p
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.4 }}
-                    className="text-xs text-[color:var(--color-text-muted)] mt-1 flex items-center gap-1.5"
-                  >
-                    <Shield className="w-3 h-3 text-[color:var(--color-primary)]" />
-                    Membre depuis {memberSince}
-                  </motion.p>
-                </div>
-              </div>
-
-              {/* Right: Quick Stats */}
-              <div className="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4 lg:gap-6 w-full">
-                {/* Tier Card */}
+                {/* Progression hint */}
                 <motion.div
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: 0.4 }}
-                  className="relative group/stat overflow-hidden"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.95 }}
+                  className="text-center"
                 >
-                  <div className={`absolute inset-0 ${resolvedTheme === 'light' ? 'bg-white/80' : 'bg-[color:var(--color-bg)]/50'} backdrop-blur-3xl rounded-3xl border border-[color:var(--color-border)] transition-colors group-hover/stat:border-green-neon/50`} />
-                  <div className="relative p-5 md:p-6">
-                    <div className={`w-10 h-10 rounded-2xl flex items-center justify-center mb-4 ${currentTier.glow} shadow-sm group-hover/stat:scale-110 transition-transform`}>
-                      <TierIcon className={`w-5 h-5 ${currentTier.color}`} />
-                    </div>
-                    <p className={`text-xl md:text-2xl font-black tracking-tight ${currentTier.color}`}>{currentTier.name}</p>
-                    <p className="text-[9px] text-[color:var(--color-text-muted)] font-black uppercase tracking-[0.2em] mt-1">Niveau Privilège</p>
-                  </div>
-                </motion.div>
-
-                {/* Points Card */}
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: 0.5 }}
-                  className="relative group/stat overflow-hidden"
-                >
-                  <div className={`absolute inset-0 ${resolvedTheme === 'light' ? 'bg-white/80' : 'bg-[color:var(--color-bg)]/50'} backdrop-blur-3xl rounded-3xl border border-[color:var(--color-border)] transition-colors group-hover/stat:border-yellow-200`} />
-                  <div className="relative p-5 md:p-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="w-10 h-10 rounded-2xl bg-yellow-50 flex items-center justify-center shadow-sm group-hover/stat:scale-110 transition-transform">
-                        <Coins className="w-5 h-5 text-yellow-600" />
-                      </div>
-                      <Link
-                        to="/compte/fidelite/achat"
-                        className="p-2 rounded-lg bg-[color:var(--color-primary)]/10 hover:bg-[color:var(--color-primary)] transition-all group/btn"
-                      >
-                        <Zap className="w-3 h-3 text-[color:var(--color-primary)] group-hover/btn:text-[color:var(--color-text)] group-hover/btn:fill-white" />
-                      </Link>
-                    </div>
-                    <p className="text-xl md:text-2xl font-black tracking-tight text-[color:var(--color-text)]">{points}</p>
-                    <div className="flex items-center justify-between">
-                      <p className="text-[9px] text-[color:var(--color-text-muted)] font-black uppercase tracking-[0.2em] mt-1">{settings.loyalty_currency_name} Disponibles</p>
-                      <span className="text-[9px] text-[color:var(--color-primary)] font-black font-mono">≈{(points * ((settings.loyalty_redeem_rate || 5) / 100)).toFixed(2)}€</span>
-                    </div>
-                  </div>
-                </motion.div>
-
-                {/* Orders Card */}
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: 0.6 }}
-                  className="relative group/stat overflow-hidden"
-                >
-                  <div className={`absolute inset-0 ${resolvedTheme === 'light' ? 'bg-white/80' : 'bg-[color:var(--color-bg)]/50'} backdrop-blur-3xl rounded-3xl border border-[color:var(--color-border)] transition-colors group-hover/stat:border-green-neon/50`} />
-                  <div className="relative p-5 md:p-6">
-                    <div className="w-10 h-10 rounded-2xl bg-blue-50 flex items-center justify-center mb-4 shadow-sm group-hover/stat:scale-110 transition-transform">
-                      <ShoppingBag className="w-5 h-5 text-blue-600" />
-                    </div>
-                    <p className="text-xl md:text-2xl font-black tracking-tight text-[color:var(--color-text)]">{orderCount}</p>
-                    <p className="text-[9px] text-[color:var(--color-text-muted)] font-black uppercase tracking-[0.2em] mt-1">Achats Réalisés</p>
-                  </div>
+                  {nextTier ? (
+                    <p
+                      className="text-[10px] uppercase tracking-widest"
+                      style={{
+                        fontFamily: "'DM Mono', monospace",
+                        color: 'rgba(255,255,255,0.38)',
+                      }}
+                    >
+                      {nextTier.minPoints - points} pts → {nextTier.name}
+                    </p>
+                  ) : (
+                    <p
+                      className="text-[10px] uppercase tracking-widest"
+                      style={{
+                        fontFamily: "'DM Mono', monospace",
+                        color: ringColor,
+                      }}
+                    >
+                      Niveau maximum ✦
+                    </p>
+                  )}
                 </motion.div>
               </div>
-            </div>
 
-            {/* Progress bar to next tier */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.7 }}
-              className="mt-8 pt-6 border-t border-[color:var(--color-border)]"
-            >
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-[10px] font-black uppercase tracking-widest text-[color:var(--color-text-muted)] flex items-center gap-2">
-                  <TrendingUp className="w-3 h-3 text-[color:var(--color-primary)]" />
-                  Progression vers {nextTier ? nextTier.name : 'le sommet'}
-                </span>
-                <span className="text-[10px] font-mono text-[color:var(--color-text-muted)]">
-                  {nextTier ? `${nextTier.minPoints - points} ${settings.loyalty_currency_name} restants` : 'Niveau maximum !'}
-                </span>
-              </div>
-              <div className="relative w-full h-2 bg-[color:var(--color-bg-elevated)] rounded-full overflow-hidden">
-                <motion.div
-                  initial={{ width: 0 }}
-                  animate={{ width: `${progressPercent}%` }}
-                  transition={{ duration: 1.5, ease: 'easeOut', delay: 0.8 }}
-                  className="h-full rounded-full relative"
+              {/* ─── Name + tier badge ─── */}
+              <div className="flex-1 flex flex-col justify-center text-center xl:text-left min-w-0">
+                <motion.p
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.28 }}
+                  className="text-[11px] uppercase tracking-[0.28em] mb-2.5"
                   style={{
-                    background: currentTier.name === 'Gold'
-                      ? 'linear-gradient(90deg, #facc15, #f59e0b)'
-                      : currentTier.name === 'Silver'
-                        ? 'linear-gradient(90deg, #a1a1aa, #d4d4d8)'
-                        : 'linear-gradient(90deg, #b45309, #d97706)',
-                    boxShadow: '0 0 15px rgba(255, 255, 255, 0.1)',
+                    fontFamily: "'DM Mono', monospace",
+                    color: 'rgba(255,255,255,0.42)',
                   }}
                 >
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/25 to-transparent animate-[shimmer_2s_ease-in-out_infinite]" />
+                  {greeting}
+                </motion.p>
+
+                <motion.h1
+                  initial={{ opacity: 0, y: 14 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.34 }}
+                  className="text-5xl md:text-6xl lg:text-7xl leading-none text-white mb-5 truncate"
+                  style={{ fontFamily: "'DM Serif Display', Georgia, serif" }}
+                >
+                  {profile?.full_name ?? 'Membre'}
+                </motion.h1>
+
+                <motion.div
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.44 }}
+                  className="flex flex-wrap items-center gap-2.5 justify-center xl:justify-start"
+                >
+                  {/* Tier chip */}
+                  <span
+                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest"
+                    style={{
+                      fontFamily: "'DM Mono', monospace",
+                      background: `${ringColor}1a`,
+                      border: `1px solid ${ringColor}40`,
+                      color: ringColor,
+                      boxShadow: `0 0 16px ${ringGlow}`,
+                    }}
+                  >
+                    <TierIcon className="w-3 h-3" />
+                    {currentTier?.name ?? 'Bronze'}
+                  </span>
+
+                  {/* Member since */}
+                  <span
+                    className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-wider"
+                    style={{
+                      fontFamily: "'DM Mono', monospace",
+                      color: 'rgba(255,255,255,0.35)',
+                    }}
+                  >
+                    <Shield className="w-3 h-3 opacity-60" />
+                    Depuis {memberSince}
+                  </span>
                 </motion.div>
               </div>
-            </motion.div>
+
+              {/* ─── Editorial stats ─── */}
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.42 }}
+                className="flex items-stretch divide-x divide-white/10 shrink-0"
+              >
+                {/* Points */}
+                <div className="px-7 text-center flex flex-col items-center justify-center gap-1">
+                  <p
+                    className="leading-none text-white"
+                    style={{
+                      fontFamily: "'DM Serif Display', Georgia, serif",
+                      fontSize: '3.2rem',
+                    }}
+                  >
+                    {points.toLocaleString('fr-FR')}
+                  </p>
+                  <p
+                    className="text-[9px] uppercase tracking-[0.22em]"
+                    style={{
+                      fontFamily: "'DM Mono', monospace",
+                      color: 'rgba(255,255,255,0.38)',
+                    }}
+                  >
+                    {settings.loyalty_currency_name}
+                  </p>
+                  <p
+                    style={{
+                      fontFamily: "'DM Mono', monospace",
+                      color: ringColor,
+                      fontSize: '10px',
+                      opacity: 0.8,
+                    }}
+                  >
+                    ≈ {eurValue}€
+                  </p>
+                </div>
+
+                {/* Orders */}
+                <div className="px-7 text-center flex flex-col items-center justify-center gap-1">
+                  <p
+                    className="leading-none text-white"
+                    style={{
+                      fontFamily: "'DM Serif Display', Georgia, serif",
+                      fontSize: '3.2rem',
+                    }}
+                  >
+                    {orderCount}
+                  </p>
+                  <p
+                    className="text-[9px] uppercase tracking-[0.22em]"
+                    style={{
+                      fontFamily: "'DM Mono', monospace",
+                      color: 'rgba(255,255,255,0.38)',
+                    }}
+                  >
+                    Commandes
+                  </p>
+                </div>
+
+                {/* Progression */}
+                <div className="px-7 text-center flex flex-col items-center justify-center gap-1">
+                  <p
+                    className="leading-none"
+                    style={{
+                      fontFamily: "'DM Serif Display', Georgia, serif",
+                      fontSize: '3.2rem',
+                      color: ringColor,
+                      textShadow: `0 0 30px ${ringGlow}`,
+                    }}
+                  >
+                    {progressPercent}%
+                  </p>
+                  <p
+                    className="text-[9px] uppercase tracking-[0.22em]"
+                    style={{
+                      fontFamily: "'DM Mono', monospace",
+                      color: 'rgba(255,255,255,0.38)',
+                    }}
+                  >
+                    Progression
+                  </p>
+                  <p
+                    style={{
+                      fontFamily: "'DM Mono', monospace",
+                      color: 'rgba(255,255,255,0.25)',
+                      fontSize: '10px',
+                    }}
+                  >
+                    → {nextTier?.name ?? 'Max'}
+                  </p>
+                </div>
+              </motion.div>
+
+            </div>
           </div>
         </motion.div>
 
-        {/* ════════════════════════════════════════════════════════════
-            ACCOUNT CONTENT AREA (Sidebar + Dashboard)
-            ════════════════════════════════════════════════════════════ */}
-        <div className="flex flex-col lg:flex-row gap-8 lg:gap-12 mt-12">
-          {/* Persistent Sidebar */}
+        {/* ═══════════════════════════════════════════════════════════
+            LAYOUT: Sidebar + Main
+            ═══════════════════════════════════════════════════════════ */}
+        <div className="flex flex-col lg:flex-row gap-8 lg:gap-10">
           <AccountSidebar />
 
-          {/* Main Content Dashboard */}
-          <div className="flex-1 space-y-12">
-            {/* Quick Actions Row */}
+          <div className="flex-1 space-y-8 min-w-0">
+
+            {/* ── Quick actions bar ── */}
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 14 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 }}
-              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-8"
+              transition={{ delay: 0.38 }}
+              className="flex flex-wrap gap-3"
             >
               {/* Referral code */}
-              <div className="bg-[color:var(--color-card)]/80 backdrop-blur-xl rounded-2xl p-4 border border-[color:var(--color-border)] shadow-sm flex items-center gap-3 col-span-1 sm:col-span-2">
-                <div className="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center shrink-0">
-                  <Gift className="w-5 h-5 text-purple-400" />
+              <div
+                className="flex items-center gap-3.5 px-5 py-3 rounded-2xl flex-1 min-w-[220px]"
+                style={{
+                  background: 'color-mix(in srgb, var(--color-card) 80%, transparent)',
+                  border: '1px solid color-mix(in srgb, var(--color-border) 100%, transparent)',
+                  backdropFilter: 'blur(16px)',
+                }}
+              >
+                <div className="w-8 h-8 rounded-xl bg-purple-500/12 flex items-center justify-center shrink-0 border border-purple-500/20">
+                  <Gift className="w-4 h-4 text-purple-400" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-[10px] font-mono text-[color:var(--color-text-muted)] uppercase tracking-wider">Code parrainage</p>
-                  <p className="text-sm font-mono font-bold text-[color:var(--color-text)] truncate">{profile?.referral_code || '---'}</p>
+                  <p
+                    className="text-[9px] uppercase tracking-wider text-[color:var(--color-text-muted)] leading-none mb-1"
+                    style={{ fontFamily: "'DM Mono', monospace" }}
+                  >
+                    Code parrainage
+                  </p>
+                  <p
+                    className="text-sm font-bold text-[color:var(--color-text)] truncate"
+                    style={{ fontFamily: "'DM Mono', monospace" }}
+                  >
+                    {profile?.referral_code || '———'}
+                  </p>
                 </div>
                 <button
                   onClick={handleCopyCode}
-                  className="w-10 h-10 rounded-xl bg-[color:var(--color-bg)] hover:bg-purple-100 border border-[color:var(--color-border)] flex items-center justify-center transition-all shrink-0"
+                  className="w-8 h-8 rounded-xl flex items-center justify-center transition-all duration-300 shrink-0"
+                  style={{
+                    background: copied
+                      ? 'color-mix(in srgb, var(--color-primary) 15%, transparent)'
+                      : 'color-mix(in srgb, var(--color-bg) 100%, transparent)',
+                    border: '1px solid color-mix(in srgb, var(--color-border) 100%, transparent)',
+                  }}
                 >
-                  {copied ? (
-                    <Check className="w-4 h-4 text-[color:var(--color-primary)]" />
-                  ) : (
-                    <Copy className="w-4 h-4 text-[color:var(--color-text-muted)]" />
-                  )}
+                  <AnimatePresence mode="wait">
+                    {copied ? (
+                      <motion.div
+                        key="check"
+                        initial={{ scale: 0, rotate: -10 }}
+                        animate={{ scale: 1, rotate: 0 }}
+                        exit={{ scale: 0 }}
+                        transition={{ type: 'spring', bounce: 0.5 }}
+                      >
+                        <Check className="w-3.5 h-3.5 text-[color:var(--color-primary)]" />
+                      </motion.div>
+                    ) : (
+                      <motion.div
+                        key="copy"
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        exit={{ scale: 0 }}
+                      >
+                        <Copy className="w-3.5 h-3.5 text-[color:var(--color-text-muted)]" />
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </button>
               </div>
 
-              {/* Quick link: Browse Shop */}
+              {/* Catalogue */}
               <Link
                 to="/catalogue"
-                className="bg-[color:var(--color-card)]/80 rounded-2xl p-4 border border-[color:var(--color-border)] shadow-sm flex items-center gap-3 hover:border-green-neon/35 hover:bg-[color:var(--color-primary)]/10/50 transition-all group"
+                className="flex items-center gap-2.5 px-5 py-3 rounded-2xl transition-all duration-300 group"
+                style={{
+                  background: 'color-mix(in srgb, var(--color-card) 80%, transparent)',
+                  border: '1px solid color-mix(in srgb, var(--color-border) 100%, transparent)',
+                }}
               >
-                <div className="w-10 h-10 rounded-xl bg-[color:var(--color-primary)]/10 flex items-center justify-center shrink-0 group-hover:bg-[color:var(--color-primary)] group-hover:text-[color:var(--color-text)] transition-all">
-                  <Eye className="w-5 h-5 text-[color:var(--color-primary)] group-hover:text-[color:var(--color-text)]" />
+                <div className="w-8 h-8 rounded-xl bg-[color:var(--color-primary)]/10 flex items-center justify-center group-hover:bg-[color:var(--color-primary)] transition-colors duration-300">
+                  <Eye className="w-4 h-4 text-[color:var(--color-primary)] group-hover:text-white transition-colors duration-300" />
                 </div>
-                <div>
-                  <p className="text-sm font-bold text-[color:var(--color-text)]">Catalogue</p>
-                  <p className="text-[10px] text-[color:var(--color-text-muted)]">Parcourir</p>
-                </div>
+                <span className="text-sm font-bold text-[color:var(--color-text)]">Catalogue</span>
               </Link>
 
-              {/* Sign Out */}
+              {/* Signout */}
               <button
                 onClick={signOut}
-                className="bg-[color:var(--color-card)]/80 rounded-2xl p-4 border border-[color:var(--color-border)] shadow-sm flex items-center gap-3 hover:border-red-300 hover:bg-red-50 transition-all group text-left"
+                className="flex items-center gap-2.5 px-5 py-3 rounded-2xl transition-all duration-300 group"
+                style={{
+                  background: 'color-mix(in srgb, var(--color-card) 80%, transparent)',
+                  border: '1px solid color-mix(in srgb, var(--color-border) 100%, transparent)',
+                }}
               >
-                <div className="w-10 h-10 rounded-xl bg-[color:var(--color-bg)] flex items-center justify-center shrink-0 group-hover:bg-red-500 transition-all font-black">
-                  <LogOut className="w-5 h-5 text-[color:var(--color-text-muted)] group-hover:text-[color:var(--color-text)] transition-colors" />
+                <div className="w-8 h-8 rounded-xl bg-red-500/10 flex items-center justify-center group-hover:bg-red-500 transition-colors duration-300">
+                  <LogOut className="w-4 h-4 text-red-400 group-hover:text-white transition-colors duration-300" />
                 </div>
-                <div>
-                  <p className="text-sm font-bold text-[color:var(--color-text)] group-hover:text-red-500 transition-colors">Déconnexion</p>
-                  <p className="text-[10px] text-[color:var(--color-text-muted)]">Session</p>
-                </div>
+                <span className="text-sm font-bold text-[color:var(--color-text)] group-hover:text-red-500 transition-colors duration-300">
+                  Déconnexion
+                </span>
               </button>
             </motion.div>
 
-            {/* ════════════════════════════════════════════════════════════
-            BENTO GRID — Services
-            ════════════════════════════════════════════════════════════ */}
+            {/* ── Section label ── */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.48 }}
+              className="flex items-center gap-3"
+            >
+              <div className="w-1 h-5 rounded-full bg-[color:var(--color-primary)]" />
+              <p
+                className="text-[10px] uppercase tracking-[0.3em] text-[color:var(--color-text-muted)]"
+                style={{ fontFamily: "'DM Mono', monospace" }}
+              >
+                Privilèges Client
+              </p>
+            </motion.div>
+
+            {/* ═══════════════════════════════════════════════════════
+                BENTO GRID
+                ═══════════════════════════════════════════════════════ */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.5 }}
-              className="mb-8"
+              className="grid grid-cols-2 sm:grid-cols-4 gap-4"
             >
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xs font-black uppercase tracking-[0.3em] text-[color:var(--color-text-muted)] flex items-center gap-2">
-                  <Sparkles className="w-3.5 h-3.5 text-[color:var(--color-primary)]" />
-                  Privilèges Client
-                </h2>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5">
-                {services.map((service, i) => {
-                  const isLarge = service.size === 'large';
-                  return (
-                    <motion.div
-                      key={service.label}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.5 + i * 0.05 }}
-                      className={isLarge ? 'col-span-1 sm:col-span-2' : 'col-span-1'}
-                    >
-                      <Link
-                        to={service.to}
-                        className="group relative flex flex-col justify-between h-full min-h-[180px] md:min-h-[220px] p-6 md:p-8 bg-[color:var(--color-card)]/80 border border-[color:var(--color-border)] shadow-sm rounded-[2.5rem] hover:bg-[color:var(--color-bg)] hover:border-[color:var(--color-primary)]/35 hover:shadow-md transition-all duration-500 overflow-hidden"
-                      >
-                        {/* Immersive glow effect */}
-                        <div className="absolute -top-10 -right-10 w-40 h-40 bg-[color:var(--color-primary)]/[0.03] blur-[60px] opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none" />
-                        <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
-
-                        <div className="relative z-10 flex items-start justify-between">
-                          <div className={`w-14 h-14 rounded-2xl bg-[color:var(--color-card)]/85 border border-[color:var(--color-border)] flex items-center justify-center transition-all duration-700 group-hover:scale-110 group-hover:rotate-6 group-hover:bg-[color:var(--color-primary)] group-hover:text-[color:var(--color-text)] group-hover:shadow-[0_0_20px_rgba(37,99,235,0.3)]`}>
-                            <service.icon className="w-6 h-6" />
-                          </div>
-                          <div className="w-10 h-10 rounded-xl bg-[color:var(--color-card)]/80 border border-[color:var(--color-border)] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-500 translate-x-4 group-hover:translate-x-0">
-                            <ArrowRight className="w-4 h-4 text-[color:var(--color-primary)]" />
-                          </div>
-                        </div>
-
-                        <div className="relative z-10">
-                          <h3 className="text-base md:text-lg font-black text-[color:var(--color-text)] tracking-tight group-hover:text-[color:var(--color-primary)] transition-colors duration-500">{service.label}</h3>
-                          <p className="text-xs text-[color:var(--color-text-muted)] mt-1 font-medium leading-relaxed">{service.description}</p>
-                          {service.stat && (
-                            <div className="mt-4 flex items-center gap-2">
-                              <div className="h-px flex-1 bg-[color:var(--color-border)]" />
-                              <span className="text-[10px] font-black font-mono text-[color:var(--color-primary)] uppercase tracking-widest">{service.stat}</span>
-                            </div>
-                          )}
-                        </div>
-                      </Link>
-                    </motion.div>
-                  );
-                })}
-              </div>
+              {services.map((service, i) => {
+                const isLarge = service.size === 'large';
+                return (
+                  <motion.div
+                    key={service.label}
+                    initial={{ opacity: 0, y: 18 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.52 + i * 0.055, ease: [0.16, 1, 0.3, 1] }}
+                    className={isLarge ? 'col-span-2' : 'col-span-1'}
+                  >
+                    <ServiceCard service={service} isLarge={isLarge} />
+                  </motion.div>
+                );
+              })}
             </motion.div>
 
-            {/* ════════════════════════════════════════════════════════════
-            ASSISTANCE FOOTER CARD
-            ════════════════════════════════════════════════════════════ */}
+            {/* ── Support card ── */}
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 14 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.8 }}
+              transition={{ delay: 0.9 }}
             >
               <Link
                 to="/contact"
-                className="group flex flex-col md:flex-row items-center gap-6 p-6 md:p-8 bg-[color:var(--color-card)]/80 border border-[color:var(--color-border)] shadow-sm rounded-[2rem] hover:border-green-neon/50 hover:shadow-md transition-all duration-500 relative overflow-hidden"
+                className="group flex flex-col md:flex-row items-center gap-6 rounded-[2rem] overflow-hidden transition-all duration-500 relative"
+                style={{
+                  background: 'color-mix(in srgb, var(--color-card) 80%, transparent)',
+                  border: '1px solid color-mix(in srgb, var(--color-border) 100%, transparent)',
+                  padding: '1.75rem 2rem',
+                }}
               >
-                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700">
-                  <div className="absolute -top-20 -right-20 w-64 h-64 bg-[color:var(--color-primary)]/[0.03] blur-[80px]" />
+                {/* Hover glow */}
+                <div
+                  className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none"
+                  style={{
+                    background:
+                      'radial-gradient(ellipse at 0% 50%, color-mix(in srgb, var(--color-primary) 8%, transparent), transparent 60%)',
+                  }}
+                />
+                {/* Top accent line on hover */}
+                <div className="absolute top-0 left-8 right-8 h-px bg-[color:var(--color-primary)] opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-b-full" />
+
+                <div
+                  className="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 transition-all duration-500 group-hover:scale-110 group-hover:bg-[color:var(--color-primary)]"
+                  style={{
+                    background: 'color-mix(in srgb, var(--color-primary) 10%, transparent)',
+                    border: '1px solid color-mix(in srgb, var(--color-primary) 20%, transparent)',
+                  }}
+                >
+                  <Sparkles className="w-6 h-6 text-[color:var(--color-primary)] group-hover:text-white transition-colors duration-500" />
                 </div>
 
-                <div className="w-14 h-14 rounded-2xl bg-[color:var(--color-primary)]/10 flex items-center justify-center shrink-0 group-hover:bg-[color:var(--color-primary)] group-hover:shadow-[0_0_30px_rgba(var(--theme-neon-rgb),0.15)] transition-all duration-500">
-                  <Zap className="w-6 h-6 text-[color:var(--color-primary)] group-hover:text-[color:var(--color-text)] transition-colors" />
-                </div>
-
-                <div className="flex-1 text-center md:text-left">
-                  <h3 className="text-base font-bold text-[color:var(--color-text)] mb-1">
+                <div className="flex-1 text-center md:text-left relative z-10">
+                  <h3
+                    className="text-xl font-bold text-[color:var(--color-text)] mb-1"
+                    style={{ fontFamily: "'DM Serif Display', Georgia, serif" }}
+                  >
                     Besoin d'aide ?
                   </h3>
                   <p className="text-sm text-[color:var(--color-text-muted)] max-w-md">
-                    Notre équipe d'experts est disponible 7j/7 pour vous accompagner dans votre expérience.
+                    Notre équipe d'experts est disponible 7j/7 pour vous accompagner.
                   </p>
                 </div>
 
-                <div className="flex items-center justify-center gap-2 px-6 py-3 bg-[color:var(--color-card)] border border-[color:var(--color-border)] rounded-xl group-hover:bg-[color:var(--color-primary)] group-hover:text-[color:var(--color-primary-contrast)] group-hover:border-[color:var(--color-primary)]/40 font-bold text-sm uppercase tracking-wider text-[color:var(--color-text)] transition-all duration-500 shrink-0 w-full md:w-auto">
+                <div
+                  className="flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-[11px] uppercase tracking-widest transition-all duration-500 shrink-0 w-full md:w-auto justify-center relative z-10 group-hover:bg-[color:var(--color-primary)] group-hover:text-white group-hover:border-[color:var(--color-primary)]"
+                  style={{
+                    fontFamily: "'DM Mono', monospace",
+                    background: 'color-mix(in srgb, var(--color-bg) 100%, transparent)',
+                    border: '1px solid color-mix(in srgb, var(--color-border) 100%, transparent)',
+                    color: 'var(--color-text)',
+                  }}
+                >
                   <span>Nous contacter</span>
                   <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </div>
               </Link>
             </motion.div>
 
-            {/* Security Footer */}
+            {/* Security footer */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              transition={{ delay: 1 }}
-              className="mt-12 flex items-center justify-center gap-2 text-[10px] font-mono text-[color:var(--color-text-muted)] uppercase tracking-[0.3em]"
+              transition={{ delay: 1.1 }}
+              className="flex items-center justify-center gap-2 pt-2"
+              style={{
+                fontFamily: "'DM Mono', monospace",
+                color: 'var(--color-text-muted)',
+                fontSize: '9px',
+                letterSpacing: '0.28em',
+                textTransform: 'uppercase',
+              }}
             >
               <Shield className="w-3 h-3 text-[color:var(--color-primary)]" />
-              <span>Données protégées & chiffrées · {settings.store_name} Elite</span>
+              <span>
+                Données protégées & chiffrées · {settings.store_name} Elite
+              </span>
             </motion.div>
           </div>
         </div>
       </div>
     </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   SERVICE CARD — extracted for clean hover state management
+   ═══════════════════════════════════════════════════════════════════════ */
+function ServiceCard({
+  service,
+  isLarge,
+}: {
+  service: ServiceTile;
+  isLarge: boolean;
+}) {
+  const [hovered, setHovered] = useState(false);
+  const { accentHex } = service;
+
+  return (
+    <Link
+      to={service.to}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      className="relative flex flex-col overflow-hidden rounded-[1.75rem] h-full transition-all duration-450"
+      style={{
+        background: 'color-mix(in srgb, var(--color-card) 85%, transparent)',
+        border: `1px solid ${hovered ? `${accentHex}45` : 'color-mix(in srgb, var(--color-border) 100%, transparent)'}`,
+        minHeight: isLarge ? 200 : 170,
+        padding: isLarge ? '1.75rem 2rem' : '1.4rem 1.5rem',
+        transform: hovered ? 'translateY(-3px)' : 'translateY(0)',
+        boxShadow: hovered ? `0 10px 40px ${accentHex}18, 0 4px 16px rgba(0,0,0,0.06)` : 'none',
+      }}
+    >
+      {/* Top accent line */}
+      <div
+        className="absolute top-0 left-6 right-6 h-[2px] rounded-b-full transition-opacity duration-500 pointer-events-none"
+        style={{
+          background: `linear-gradient(90deg, transparent, ${accentHex}, transparent)`,
+          opacity: hovered ? 1 : 0,
+        }}
+      />
+
+      {/* Corner radial glow */}
+      <div
+        className="absolute inset-0 pointer-events-none transition-opacity duration-600"
+        style={{
+          background: `radial-gradient(ellipse 60% 50% at 0% 0%, ${accentHex}0f, transparent 70%)`,
+          opacity: hovered ? 1 : 0,
+        }}
+      />
+
+      {/* Icon row */}
+      <div className="relative z-10 flex items-start justify-between mb-auto">
+        <div
+          className="flex items-center justify-center rounded-xl transition-all duration-400"
+          style={{
+            width: isLarge ? 52 : 44,
+            height: isLarge ? 52 : 44,
+            background: `${accentHex}18`,
+            border: `1px solid ${accentHex}28`,
+            transform: hovered ? 'scale(1.1) rotate(3deg)' : 'scale(1) rotate(0deg)',
+          }}
+        >
+          <service.icon
+            style={{
+              width: isLarge ? 22 : 18,
+              height: isLarge ? 22 : 18,
+              color: accentHex,
+            }}
+          />
+        </div>
+        <ArrowRight
+          className="w-4 h-4 text-[color:var(--color-text-muted)] transition-all duration-350"
+          style={{
+            opacity: hovered ? 1 : 0,
+            transform: hovered ? 'translateX(0)' : 'translateX(-8px)',
+          }}
+        />
+      </div>
+
+      {/* Text */}
+      <div className="relative z-10 mt-5">
+        <h3
+          className="font-black tracking-tight text-[color:var(--color-text)] transition-colors duration-400 leading-tight"
+          style={{
+            fontFamily: isLarge ? "'DM Serif Display', Georgia, serif" : 'inherit',
+            fontSize: isLarge ? '1.15rem' : '0.9rem',
+            color: hovered ? accentHex : undefined,
+          }}
+        >
+          {service.label}
+        </h3>
+        <p className="text-xs text-[color:var(--color-text-muted)] mt-1 leading-relaxed">
+          {service.description}
+        </p>
+
+        {service.stat && (
+          <div className="mt-3.5 flex items-center gap-2.5">
+            <div className="h-px flex-1 bg-[color:var(--color-border)]" />
+            <span
+              className="text-[9px] font-bold uppercase tracking-widest"
+              style={{
+                fontFamily: "'DM Mono', monospace",
+                color: accentHex,
+              }}
+            >
+              {service.stat}
+            </span>
+          </div>
+        )}
+      </div>
+    </Link>
   );
 }

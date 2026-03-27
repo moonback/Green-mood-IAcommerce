@@ -1,16 +1,14 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { Package, Truck, Clock, ChevronDown, ArrowLeft, ShoppingBag, RotateCcw, Star, FileText, Shield } from 'lucide-react';
+import { Package, Truck, Clock, ChevronDown, ShoppingBag, RotateCcw, Star, FileText } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { Order, OrderItem } from '../lib/types';
 import { useAuthStore } from '../store/authStore';
 import { useCartStore } from '../store/cartStore';
 import { useToastStore } from '../store/toastStore';
-import SEO from '../components/SEO';
 import ReviewModal from '../components/ReviewModal';
 import { downloadInvoice } from '../lib/invoiceGenerator';
-import AccountSidebar from '../components/AccountSidebar';
+import AccountPageLayout from '../components/AccountPageLayout';
 import { useSettingsStore } from '../store/settingsStore';
 
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
@@ -106,45 +104,18 @@ export default function Orders() {
   const settings = useSettingsStore((s) => s.settings);
 
   return (
-    <div className="min-h-screen bg-[color:var(--color-bg)] text-[color:var(--color-text)] pt-1 pb-1">
-      <SEO title={`Mes Commandes — L'Excellence ${settings.store_name}`} description="Historique de vos commandes." />
-
-      <div className="max-w-12xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex flex-col lg:flex-row gap-8 lg:gap-12">
-          <AccountSidebar />
-          <div className="flex-1 space-y-8">
-
-            {/* Header */}
-            <div>
-              <Link to="/compte" className="inline-flex items-center gap-2 text-[color:var(--color-text-muted)] hover:text-[color:var(--color-primary)] text-xs font-bold uppercase tracking-wider transition-colors mb-6 group">
-                <ArrowLeft className="w-3.5 h-3.5 transition-transform group-hover:-translate-x-1" />
-                Mon Espace
-              </Link>
-
-              <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-                <div>
-                  <div className="flex items-center gap-4 mb-3">
-                    <div className="w-12 h-12 rounded-2xl bg-[color:var(--color-primary)]/10 border border-[color:var(--color-primary)]/25 flex items-center justify-center shadow-[0_0_20px_rgba(37,99,235,0.05)]">
-                      <Package className="w-6 h-6 text-[color:var(--color-primary)]" />
-                    </div>
-                    <div>
-                      <h1 className="text-3xl md:text-4xl font-black tracking-tight text-[color:var(--color-text)] mb-1">
-                        Mes Commandes
-                      </h1>
-                      <p className="text-sm text-[color:var(--color-text-muted)]">Gérez vos achats et suivez vos livraisons.</p>
-                    </div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-4">
-                  <div className="flex flex-col items-end">
-                    <span className="text-[10px] uppercase tracking-[0.2em] text-[color:var(--color-text-muted)] font-bold mb-1">Total Commandes</span>
-                    <span className="text-2xl font-mono font-black text-[color:var(--color-text)]">
-                      {totalCount.toString().padStart(2, '0')}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
+    <AccountPageLayout
+      seoTitle={`Mes Commandes — ${settings.store_name}`}
+      seoDescription="Historique de vos commandes."
+      icon={Package}
+      iconColor="#3b82f6"
+      title="Mes Commandes"
+      subtitle="Gérez vos achats et suivez vos livraisons"
+      stat={totalCount}
+      statLabel="Total Commandes"
+      footerText="Paiement & Commandes Hautement Sécurisés"
+    >
+      <div className="space-y-8">
 
             {isLoading ? (
               <div className="space-y-4">
@@ -401,15 +372,6 @@ export default function Orders() {
               </div>
             )}
 
-            {/* Empty space/Footer info */}
-            <div className="mt-12 pt-8 border-t border-[color:var(--color-border)] flex items-center justify-center gap-4 text-[10px] font-black text-[color:var(--color-text-muted)] uppercase tracking-[0.3em]">
-              <Shield className="w-4 h-4 text-[color:var(--color-primary)]/30" />
-              <span>Paiement & Commandes Hautement Sécurisés</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
       {reviewOrder && (
         <ReviewModal
           order={reviewOrder}
@@ -418,5 +380,6 @@ export default function Orders() {
         />
       )}
     </div>
+    </AccountPageLayout>
   );
 }

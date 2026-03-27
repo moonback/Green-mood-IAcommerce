@@ -6,8 +6,7 @@ import { useSettingsStore } from '../store/settingsStore';
 import { useBudTenderMemory } from '../hooks/useBudTenderMemory';
 import { supabase } from '../lib/supabase';
 import { Product } from '../lib/types';
-import SEO from '../components/SEO';
-import AccountSidebar from '../components/AccountSidebar';
+import AccountPageLayout from '../components/AccountPageLayout';
 import { useCartStore } from '../store/cartStore';
 import { useToastStore } from '../store/toastStore';
 import { getBirthdayGiftPrompt } from '../lib/budtenderPrompts';
@@ -201,14 +200,16 @@ export default function BirthdayGift() {
   };
 
   return (
-    <div className="min-h-screen bg-[color:var(--color-bg)] text-[color:var(--color-text)] pt-1 pb-1">
-      <SEO title={`Cadeau d'Anniversaire — ${settings.store_name || 'NeuroCart'}`} description={`Récupérez votre cadeau d'anniversaire sélectionné par l'IA de ${settings.store_name || 'NeuroCart'}.`} />
-
-      <div className="max-w-12xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex flex-col lg:flex-row gap-8 lg:gap-12">
-          <AccountSidebar />
-
-          <main className="flex-1 space-y-8">
+    <AccountPageLayout
+      seoTitle={`Cadeau d'Anniversaire — ${settings.store_name || 'NeuroCart'}`}
+      seoDescription={`Récupérez votre cadeau d'anniversaire sélectionné par l'IA de ${settings.store_name || 'NeuroCart'}.`}
+      icon={Gift}
+      iconColor="#10b981"
+      title="Cadeau Anniversaire"
+      subtitle={`L'IA ${settings.store_name || 'NeuroCart'} choisit le meilleur pour vous`}
+      footerText={`Offre réservée aux membres ${settings.store_name || 'NeuroCart'} Élite`}
+    >
+      <div className="space-y-8">
             {/* Hero Header */}
             <div className="relative overflow-hidden rounded-[3rem] bg-[color:var(--color-card)]/80 border border-[color:var(--color-border)] p-8 md:p-12 shadow-sm">
               <div className="absolute top-0 right-0 w-1/2 h-full bg-[color:var(--color-primary)]/5 blur-[120px] -translate-y-1/2 translate-x-1/2" />
@@ -413,9 +414,7 @@ export default function BirthdayGift() {
                 </motion.div>
               ) : null}
             </AnimatePresence>
-          </main>
-        </div>
       </div>
-    </div>
+    </AccountPageLayout>
   );
 }

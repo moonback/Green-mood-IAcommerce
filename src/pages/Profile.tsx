@@ -1,11 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Link, useLocation, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   User,
   Mail,
-  Shield,
-  ArrowLeft,
   Save,
   Sparkles,
   Phone,
@@ -42,8 +40,7 @@ import { useAuthStore, getDeviceId } from '../store/authStore';
 import { useBudTenderMemory, SavedPrefs } from '../hooks/useBudTenderMemory';
 import { TECH_ADVISOR_DEFAULT_QUIZ, QuizStep, fetchBudTenderSettings } from '../lib/budtenderSettings';
 import { useSettingsStore } from '../store/settingsStore';
-import SEO from '../components/SEO';
-import AccountSidebar from '../components/AccountSidebar';
+import AccountPageLayout from '../components/AccountPageLayout';
 
 type TabType = 'identity' | 'security' | 'ai';
 
@@ -231,54 +228,35 @@ export default function Profile() {
     } catch (err) { console.error(err); }
   };
 
+  const saveButton = (
+    <button
+      onClick={handleSave}
+      disabled={isSaving}
+      className="flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-xs uppercase tracking-wider transition-all duration-300 disabled:opacity-50"
+      style={{
+        background: 'color-mix(in srgb, var(--color-card) 85%, transparent)',
+        border: '1px solid #3b82f628',
+        color: 'var(--color-text)',
+      }}
+    >
+      {isSaving ? <Cpu className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+      Sauvegarder
+    </button>
+  );
+
   return (
-    <div className="min-h-screen bg-[color:var(--color-bg)] text-[color:var(--color-text)] selection:bg-[color:var(--color-primary)]/30">
-      <SEO title={`Mon Profil Master — ${settings.store_name}`} description="Paramètres exclusifs et préférences IA." />
-
-      <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
-        <div className="flex flex-col lg:flex-row gap-10">
-          <AccountSidebar />
-
-          <main className="flex-1 min-w-0 space-y-8">
-            {/* ── Header Area ────────────────────────────── */}
-            <div className="relative group">
-              <div className="absolute -inset-1 bg-gradient-to-r from-green-neon/5 to-green-neon/5 rounded-[2.5rem] blur opacity-25 group-hover:opacity-40 transition duration-1000"></div>
-              <div className="relative bg-[color:var(--color-card)]/80 border border-[color:var(--color-border)] rounded-[2.5rem] p-8 md:p-10 flex flex-col md:flex-row items-center gap-8 shadow-sm">
-                <div className="relative">
-                  <div className="w-24 h-24 rounded-full bg-gradient-to-tr from-green-neon to-green-neon/80 p-1 flex items-center justify-center shadow-lg">
-                    <div className="w-full h-full rounded-full bg-[color:var(--color-card)]/80 flex items-center justify-center overflow-hidden">
-                      <User className="w-10 h-10 text-[color:var(--color-text)]" />
-                    </div>
-                  </div>
-                  <div className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-[color:var(--color-card)]/80 border border-[color:var(--color-border)] flex items-center justify-center text-[color:var(--color-primary)] shadow-md">
-                    <ShieldCheck className="w-4 h-4" />
-                  </div>
-                </div>
-
-                <div className="flex-1 text-center md:text-left space-y-1">
-                  <div className="flex flex-col md:flex-row md:items-center gap-3">
-                    <h1 className="text-3xl font-black uppercase tracking-tight text-[color:var(--color-text)]">{profile?.full_name || 'Membre Élite'}</h1>
-                    <span className="inline-flex px-3 py-1 rounded-full bg-[color:var(--color-primary)]/10 border border-[color:var(--color-primary)]/20 text-[10px] font-black uppercase tracking-widest text-[color:var(--color-primary)] w-fit mx-auto md:mx-0 shadow-sm">
-                      ID Master #{user?.id.slice(0, 8).toUpperCase()}
-                    </span>
-                  </div>
-                  <p className="text-[color:var(--color-text-muted)] font-medium">Gestion experte de vos paramètres et de votre profil BudTender.</p>
-                </div>
-
-                <div className="flex items-center gap-3">
-                  <button
-                    onClick={handleSave}
-                    disabled={isSaving}
-                    className="flex items-center gap-3 px-8 py-4 bg-[color:var(--color-card)] text-[color:var(--color-text)] rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-[color:var(--color-primary)] hover:text-[color:var(--color-primary-contrast)] transition-all active:scale-95 disabled:opacity-50 shadow-xl shadow-zinc-900/10"
-                  >
-                    {isSaving ? <Cpu className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                    Sauvegarder
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* ── Navigation Tabs ────────────────────────── */}
+    <AccountPageLayout
+      seoTitle={`Mon Profil — ${settings.store_name}`}
+      seoDescription="Paramètres exclusifs et préférences IA."
+      icon={Settings}
+      iconColor="#3b82f6"
+      title="Paramètres"
+      subtitle={`${profile?.full_name || 'Membre'} · ID #${user?.id.slice(0, 6).toUpperCase()}`}
+      headerActions={saveButton}
+      footerText={`${settings.store_name} Elite Protection — AES-256 Enabled`}
+    >
+      <div className="space-y-8">
+        {/* ── Navigation Tabs ────────────────────────── */}
             <div className="flex items-center gap-2 bg-[color:var(--color-card-muted)] backdrop-blur-sm p-1.5 rounded-[1.75rem] border border-[color:var(--color-border)] w-fit shadow-sm">
               {[
                 { id: 'identity', label: 'Identité', icon: Fingerprint },
@@ -594,14 +572,7 @@ export default function Profile() {
               )}
             </AnimatePresence>
 
-            <div className="pt-20 border-t border-[color:var(--color-border)] text-center">
-              <p className="text-[10px] font-mono text-[color:var(--color-text-muted)] uppercase tracking-[0.5em] flex items-center justify-center gap-3">
-                <Shield className="w-4 h-4" /> {settings.store_name} Elite Protection — AES-256 Enabled
-              </p>
-            </div>
-          </main>
-        </div>
       </div>
-    </div>
+    </AccountPageLayout>
   );
 }

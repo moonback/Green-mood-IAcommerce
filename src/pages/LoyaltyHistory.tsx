@@ -1,13 +1,12 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Link, Navigate } from 'react-router-dom';
 import { motion } from 'motion/react';
-import { Coins, ArrowLeft, TrendingUp, TrendingDown, Settings2, Sparkles, Star, Award, Crown, Gift, Zap, Shield, Plus, ChevronLeft, ChevronRight, RefreshCw, Package, Users, Cake } from 'lucide-react';
+import { Coins, TrendingUp, TrendingDown, Settings2, Sparkles, Star, Award, Crown, Gift, Zap, ChevronLeft, ChevronRight, RefreshCw, Package, Users, Cake } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuthStore } from '../store/authStore';
 import { useSettingsStore } from '../store/settingsStore';
 import type { LoyaltyTransaction } from '../lib/types';
-import SEO from '../components/SEO';
-import AccountSidebar from '../components/AccountSidebar';
+import AccountPageLayout from '../components/AccountPageLayout';
 
 /* ── Tier definitions ─────────────────────────────────────────────── */
 
@@ -160,44 +159,21 @@ export default function LoyaltyHistory() {
   const TierIcon = currentTier.icon;
 
   return (
-    <div className="min-h-screen bg-[color:var(--color-bg)] text-[color:var(--color-text)] pt-1 pb-1">
-      <SEO title={`Programme Privilège — L'Excellence ${settings.store_name}`} description="Consultez l'historique de vos points de fidélité." />
+    <AccountPageLayout
+      seoTitle={`Programme Privilège — ${settings.store_name}`}
+      seoDescription="Consultez l'historique de vos points de fidélité."
+      icon={Coins}
+      iconColor="#eab308"
+      title="Fidélité"
+      subtitle="L'excellence récompensée à chaque instant"
+      stat={points}
+      statLabel={`Solde ${settings.loyalty_currency_name}`}
+      footerText={`Programme fidélité ${settings.store_name} — Cultivons l'excellence`}
+    >
+      <div className="space-y-8">
 
-      <div className="max-w-12xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex flex-col lg:flex-row gap-8 lg:gap-12">
-          <AccountSidebar />
-          <div className="flex-1 space-y-8">
-
-            {/* Header */}
+            {/* Navigation Tabs */}
             <div className="mb-8">
-              <Link to="/compte" className="inline-flex items-center gap-2 text-[color:var(--color-text-muted)] hover:text-[color:var(--color-primary)] text-xs font-bold uppercase tracking-wider transition-colors mb-4">
-                <ArrowLeft className="w-3.5 h-3.5" />
-                Mon Espace
-              </Link>
-
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
-                <div>
-                  <div className="flex items-center gap-3 mb-2">
-                    <div className="w-12 h-12 rounded-2xl bg-yellow-400/10 flex items-center justify-center border border-yellow-400/20">
-                      <Coins className="w-6 h-6 text-yellow-400" />
-                    </div>
-                    <div>
-                      <h1 className="text-2xl md:text-4xl font-black tracking-tight uppercase">
-                        Votre Odyssée <span className="text-[color:var(--color-primary)]">Privilège</span>
-                      </h1>
-                      <p className="text-xs text-[color:var(--color-text-muted)] font-mono uppercase tracking-widest mt-1">L'excellence récompensée à chaque instant</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-[color:var(--color-card)]/80 px-6 py-4 rounded-2xl border border-[color:var(--color-border)] shadow-sm">
-                  <p className="text-[9px] font-black uppercase tracking-widest text-[color:var(--color-text-muted)] mb-0.5">Solde Actuel</p>
-                  <div className="flex items-baseline gap-1.5">
-                    <span className="text-2xl font-black text-[color:var(--color-text)]">{points}</span>
-                    <span className="text-[10px] font-black uppercase text-yellow-600 tracking-tighter">{settings.loyalty_currency_name}</span>
-                  </div>
-                </div>
-              </div>
 
               {/* Navigation Tabs */}
               <div className="flex items-center gap-1 p-1 bg-[color:var(--color-card)]/80 backdrop-blur-xl border border-[color:var(--color-border)] rounded-[1.5rem] mb-10 w-fit">
@@ -577,14 +553,7 @@ export default function LoyaltyHistory() {
               )}
             </div>
 
-            {/* Footer */}
-            <div className="mt-12 flex items-center justify-center gap-2 text-[10px] font-mono text-[color:var(--color-text-muted)] uppercase tracking-widest">
-              <Shield className="w-3 h-3" />
-              <span>Programme fidélité {settings.store_name} — Cultivons l'excellence</span>
-            </div>
-          </div>
-        </div>
       </div>
-    </div>
+    </AccountPageLayout>
   );
 }
