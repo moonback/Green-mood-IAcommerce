@@ -258,10 +258,10 @@ const _buildClientContext = (
     ctx += `- FIDÉLITÉ : ${loyaltyPoints} ${currencyName}`;
     if (currentTier) ctx += ` — palier ${currentTier.name} (×${currentTier.multiplier} sur chaque achat)`;
     if (nextTier) ctx += ` — encore ${nextTier.min_points - loyaltyPoints} ${currencyName} pour atteindre le palier ${nextTier.name}`;
-    ctx += `. Valeur : 100 ${currencyName} = 5€ de réduction.\n`;
+    ctx += `. Valeur : 100 ${currencyName} = 1€ de réduction.\n`;
   } else if (loyaltyTiers && loyaltyTiers.length > 0) {
     const tiersStr = loyaltyTiers.map(t => `${t.name} (≥${t.min_points} ${currencyName}, ×${t.multiplier})`).join(', ');
-    ctx += `- PROGRAMME FIDÉLITÉ : ${tiersStr}. Valeur : 100 ${currencyName} = 5€.\n`;
+    ctx += `- PROGRAMME FIDÉLITÉ : ${tiersStr}. Valeur : 100 ${currencyName} = 1€.\n`;
   }
 
   if (pastOrders && pastOrders.length > 0) {
@@ -366,13 +366,13 @@ export const getVoicePrompt = (
     pastOrders, pastProducts, recentlyViewed, savedPrefs, cartItems, activeProduct
   );
   const now = new Date();
-  const timeStr = now.toLocaleString('fr-FR', { 
-    weekday: 'long', 
-    year: 'numeric', 
-    month: 'long', 
-    day: 'numeric', 
-    hour: '2-digit', 
-    minute: '2-digit' 
+  const timeStr = now.toLocaleString('fr-FR', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
   });
 
   return [
