@@ -31,6 +31,7 @@ export interface BudTenderSettings {
     quiz_steps: QuizStep[];
     quiz_mode: 'static' | 'dynamic';
     custom_quiz_prompt: string;
+    custom_chat_prompt: string;
     voice_close_session_enabled: boolean;
 }
 
@@ -124,6 +125,7 @@ export const TECH_ADVISOR_DEFAULTS: BudTenderSettings = {
     quiz_steps: TECH_ADVISOR_DEFAULT_QUIZ,
     quiz_mode: 'dynamic',
     custom_quiz_prompt: "Oriente toujours le client vers des composants compatibles entre eux. Si le client mentionne le gaming, demande-lui sa résolution cible (1080p, 1440p, 4K). Termine par un conseil expert sur l'entretien du matériel.",
+    custom_chat_prompt: "",
     voice_close_session_enabled: true,
 };
 

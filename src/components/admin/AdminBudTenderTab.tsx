@@ -659,7 +659,26 @@ export default function AdminBudTenderTab() {
                                             rows={8}
                                             maxLength={600}
                                             placeholder="Ex: Privilégie les simulateurs immersifs..."
-                                            className={INPUT + ' resize-none font-mono text-[12px] !leading-7 !px-6 !py-5 bg-zinc-950/80'}
+                                            className={INPUT + ' resize-none font-mono text-[12px] !leading-7 !px-6 !py-5 bg-zinc-950/80 shadow-inner rounded-3xl'}
+                                        />
+                                    </div>
+
+                                    <div className="space-y-4">
+                                        <div className="flex items-center justify-between">
+                                            <label className="text-[10px] text-zinc-400 font-black uppercase tracking-[0.2em]">
+                                                Prompt Audio & Live (Gemini Live)
+                                            </label>
+                                            <span className={`text-[10px] font-mono ${(settings.custom_chat_prompt ?? '').length > 550 ? 'text-red-400' : 'text-zinc-600'}`}>
+                                                {(settings.custom_chat_prompt ?? '').length}/600
+                                            </span>
+                                        </div>
+                                        <textarea
+                                            value={settings.custom_chat_prompt ?? ''}
+                                            onChange={(e) => update({ custom_chat_prompt: e.target.value })}
+                                            rows={8}
+                                            maxLength={600}
+                                            placeholder="Ex: Sois encore plus direct, évite les salutations trop longues..."
+                                            className={INPUT + ' resize-none font-mono text-[12px] !leading-7 !px-6 !py-5 bg-zinc-950/80 shadow-inner rounded-3xl'}
                                         />
                                     </div>
                                 </div>
