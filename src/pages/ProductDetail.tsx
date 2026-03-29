@@ -20,6 +20,7 @@ import { useSettingsStore } from '../store/settingsStore';
 import { formatProductText } from '../lib/textFormatter';
 
 const ProductStory = lazy(() => import('../components/product-premium/ProductStory'));
+const TerpeneEffectsChart = lazy(() => import('../components/product-premium/TerpeneEffectsChart'));
 const EffectVisualization = lazy(() => import('../components/product-premium/EffectVisualization'));
 const ProductSpecs = lazy(() => import('../components/product-premium/BotanicalSpecs'));
 const QualityGuarantee = lazy(() => import('../components/product-premium/QualityGuarantee'));
@@ -389,6 +390,11 @@ export default function ProductDetail() {
           title="Expertise & Bien-être"
         >
           <div className="space-y-16">
+            <TerpeneEffectsChart
+              specs={product.productSpecs}
+              productMetrics={product.productMetrics}
+              cbdPercentage={(product as any).cbd_percentage}
+            />
             <EffectVisualization metrics={product.productMetrics} />
             <DosageGuide />
             <QualityGuarantee />
