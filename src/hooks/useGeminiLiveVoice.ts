@@ -668,7 +668,8 @@ export function useGeminiLiveVoice({
     } else {
       messageQueueRef.current.push(text);
     }
-  }, []);
+    resetSilenceTimer();
+  }, [resetSilenceTimer]);
 
   // Flush de la Message Queue lorsque l'IA "écoute" à nouveau
   useEffect(() => {
@@ -778,9 +779,10 @@ export function useGeminiLiveVoice({
       activeSourcesRef.current.delete(source);
       if (!interruptedRef.current && ctx.currentTime >= scheduledUntilRef.current - 0.05) {
         setVoiceState('listening');
+        resetSilenceTimer();
       }
     };
-  }, []);
+  }, [resetSilenceTimer]);
 
   // Am4: sample ambient noise then set an adaptive barge-in threshold
   const calibrateNoise = useCallback(() => {
@@ -840,9 +842,12 @@ export function useGeminiLiveVoice({
           return;
         }
 
-        // Am3: expose RMS for reactive waveform in UI (only while listening)
-        if (voiceStateRef.current === 'listening' && onVolumeLevelRef.current) {
-          onVolumeLevelRef.current(rms);
+        if (voiceStateRef.current === 'listening') {
+          if (onVolumeLevelRef.current) onVolumeLevelRef.current(rms);
+          // Postpone silence nudge if user is actively speaking
+          if (rms > adaptiveBargeInThresholdRef.current) {
+            resetSilenceTimer();
+          }
         }
 
         const canBargeIn = now - lastBargeInAtRef.current > BARGE_IN_COOLDOWN_MS;
@@ -915,7 +920,7 @@ export function useGeminiLiveVoice({
     source.connect(worklet);
     worklet.connect(silent);
     silent.connect(ctx.destination);
-  }, [canSendRealtimeInput, stopAllPlayback]);
+  }, [canSendRealtimeInput, stopAllPlayback, resetSilenceTimer]);
 
 
   const startSession = useCallback(async (forceFreshToken: boolean = false) => {
@@ -978,6 +983,7 @@ export function useGeminiLiveVoice({
             retryCountRef.current = 0; // Reset retry count on successful connection
             console.info('[Voice] Gemini Live: Setup Complete');
             setVoiceState('listening');
+            resetSilenceTimer();
             await startMicCapture(stream);
             startInFlightRef.current = false;
             playbackCtxRef.current = new AudioContext({ sampleRate: OUTPUT_SAMPLE_RATE });
@@ -1117,6 +1123,7 @@ export function useGeminiLiveVoice({
             const setupTurn = () => {
               scheduledUntilRef.current = playbackCtxRef.current?.currentTime ?? 0;
               setVoiceState('listening');
+              resetSilenceTimer();
             };
 
             if (msg.serverContent) {
@@ -1898,7 +1905,7 @@ export function useGeminiLiveVoice({
       setError(userMessage);
       setVoiceState('error');
     }
-  }, [cleanup, buildSystemPrompt, compatibilityError, globalSettings.budtender_voice_name, playPcmChunk, startMicCapture, stopAllPlayback, stopSession]);
+  }, [cleanup, buildSystemPrompt, compatibilityError, globalSettings.budtender_voice_name, playPcmChunk, startMicCapture, stopAllPlayback, stopSession, resetSilenceTimer]);
 
   // Keep startSession accessible inside the onclose retry callback via ref
   useEffect(() => {
