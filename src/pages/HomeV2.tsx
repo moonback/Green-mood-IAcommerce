@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import {
   BadgePercent, Mic, MessageSquare, PackageCheck, ShieldCheck,
   Sparkles, Truck, Zap, ChevronRight, Star, ArrowRight,
-  ShoppingBag, Layers, CreditCard, Headphones,
+  ShoppingBag, Layers, CreditCard, Headphones, Radio,
   Home as HomeIcon, Smartphone, CheckCircle2, TrendingUp, Users, Award, Quote,
   Leaf, FlaskConical, EyeOff, Scale
 } from 'lucide-react';
@@ -25,47 +25,47 @@ import Hero from '../components/home/Hero';
 const DEMO_CONVERSATIONS = [
   {
     mode: 'voice' as const,
-    userMessage: "Quels sont vos produits relaxants ?",
-    thinkingText: "Analyse des besoins : relaxation...",
-    aiResponse: "Pour une détente absolue, je te recommande notre sélection de fleurs Indoor ou nos huiles full spectrum. Nos clients adorent la Purple Punch pour son effet immédiat. Tu veux que je t'affiche les détails ?",
+    userMessage: "Je cherche quelque chose pour dormir sans être K.O. demain.",
+    thinkingText: "Analyse sommelier : Sommeil & Vigilance",
+    aiResponse: "Je comprends parfaitement. Pour un sommeil récupérateur sans somnolence au réveil, je te conseille notre Amnesia CBD. Elle détend l'esprit tout en restant légère. On part sur un format 3g ou 5g ?",
     actions: [
-      { label: "Voir la sélection", icon: 'eye' as const },
-      { label: "Comparer", icon: 'compare' as const },
+      { label: "Voir Amnesia", icon: 'eye' as const },
+      { label: "Acheter 3g", icon: 'cart' as const },
     ],
-    productPreview: { name: "Purple Punch", category: "Fleurs CBD", price: "9,50€/g", tag: "Puissant" },
+    productPreview: { name: "Amnesia CBD", category: "Fleurs Indoor", price: "8,90€/g", tag: "Sommeil Doux" },
   },
   {
     mode: 'voice' as const,
-    userMessage: "Montre-moi les huiles CBD s'il te plaît",
-    thinkingText: "Mise à jour du catalogue...",
-    aiResponse: "C'est parti ! Je mets à jour ton écran avec notre gamme d'huiles. Nos extractions au CO2 supercritique garantissent une pureté maximale. Dis-moi si une concentration précise t'intéresse.",
+    userMessage: "Quel est ton produit le plus puissant en ce moment ?",
+    thinkingText: "Filtrage : Concentration maximale",
+    aiResponse: "C'est sans hésiter la Moonrock, avec 70% de CBD. C'est notre produit le plus intense, réservé aux habitués. Tu veux que je t'explique comment bien la consommer ?",
     actions: [
-      { label: "Filtrer concentration", icon: 'compare' as const },
-      { label: "Guide utilisation", icon: 'eye' as const },
+      { label: "Détails Moonrock", icon: 'eye' as const },
+      { label: "Guide Puissance", icon: 'compare' as const },
     ],
-    productPreview: { name: "Gamme Huiles Bio", category: "Navigation active", price: "Dès 24,90€", tag: "Spectre Complet" },
+    productPreview: { name: "Moonrock Gold", category: "Spécialités", price: "12,50€/g", tag: "70% CBD" },
   },
   {
     mode: 'voice' as const,
-    userMessage: "C'est quoi l'effet d'entourage ?",
-    thinkingText: "Consultation de la base...",
-    aiResponse: "Excellente question ! C'est la synergie entre les cannabinoïdes et les terpènes qui rend le CBD plus efficace. C'est pour ça qu'on privilégie le spectre complet. Tu veux voir un produit qui utilise au mieux ce principe ?",
+    userMessage: "J'ai un budget de 30€, tu me conseilles quoi ?",
+    thinkingText: "Optimisation budget : < 30€",
+    aiResponse: "Avec 30€, le meilleur rapport qualité-prix est notre pack découverte 'Triple Chill' : 3 variétés pour 29€. C'est parfait pour trouver ta préférée. Je l'ajoute à ton panier ?",
     actions: [
-      { label: "Produits recommandés", icon: 'cart' as const },
-      { label: "En savoir plus", icon: 'eye' as const },
+      { label: "Voir le Pack", icon: 'eye' as const },
+      { label: "Ajouter au panier", icon: 'cart' as const },
     ],
-    productPreview: { name: "Full Spectrum 10%", category: "Huiles", price: "29,90€", tag: "Effet Entourage" },
+    productPreview: { name: "Pack Triple Chill", category: "Offres", price: "29,00€", tag: "Best Value" },
   },
   {
     mode: 'voice' as const,
-    userMessage: "Ok, ajoute une OG Kush au panier",
-    thinkingText: "Traitement de la commande...",
-    aiResponse: "Excellent choix, c'est fait ! L'OG Kush est dans ton panier. On est à 42,40€. Plus que 7,60€ pour avoir la livraison gratuite. On regarde une petite résine pour compléter ?",
+    userMessage: "Ajoute l'huile 10% sommeil au panier.",
+    thinkingText: "Commande vocale en cours...",
+    aiResponse: "C'est fait ! L'huile 10% Sommeil est ajoutée. Tu as maintenant la livraison offerte car on dépasse les 50€. Souhaites-tu finaliser ta commande maintenant ?",
     actions: [
-      { label: "Voir mon panier", icon: 'cart' as const },
-      { label: "Finaliser commande", icon: 'eye' as const },
+      { label: "Voir Panier", icon: 'cart' as const },
+      { label: "Paiement", icon: 'eye' as const },
     ],
-    productPreview: { name: "OG Kush", category: "Fleurs CBD", price: "7,50€/g", tag: "Ajouté ✓" },
+    productPreview: { name: "Huile 10% Sommeil", category: "Huiles Bio", price: "34,90€", tag: "Livraison Offerte" },
   },
 ];
 
@@ -299,7 +299,8 @@ export default function HomeV2() {
                   </div>
                 ) : (
                   <div className="relative overflow-hidden w-full group/marquee">
-                    <style dangerouslySetInnerHTML={{ __html: `
+                    <style dangerouslySetInnerHTML={{
+                      __html: `
                       @keyframes marquee-scroll {
                         from { transform: translateX(0); }
                         to { transform: translateX(-50%); }
@@ -401,171 +402,127 @@ export default function HomeV2() {
               </div>
 
               {/* ── conversation live ────────────────────────────── */}
-              {/* ── 100% VOICE INTERFACE ── */}
-              <div className="relative flex flex-col h-[520px]">
-                <div className="absolute -inset-8 bg-gradient-to-br from-emerald-500/20 via-transparent to-emerald-500/10 rounded-[3rem] blur-[60px] pointer-events-none opacity-50" />
+              {/* ── SIMPLE & RELEVANT VOICE INTERFACE ── */}
+              <div className="relative flex flex-col h-[540px]">
+                <div className="relative flex flex-col h-full rounded-[3.5rem] bg-zinc-950 border border-white/5 overflow-hidden shadow-2xl">
+                  {/* Subtle Background Glow */}
+                  <div className={`absolute -inset-20 bg-emerald-500/10 rounded-full blur-[120px] pointer-events-none transition-opacity duration-1000 ${demoStep === 'ai' ? 'opacity-100' : 'opacity-30'}`} />
 
-                <div className="relative flex flex-col h-full rounded-[3rem] border border-white/10 bg-zinc-950/90 backdrop-blur-3xl overflow-hidden shadow-2xl">
-                  {/* Top Bar */}
-                  <div className="px-8 pt-8 pb-4 flex items-center justify-between">
+                  {/* Header */}
+                  <div className="px-10 pt-10 pb-6 flex items-center justify-between relative z-10">
                     <div className="flex items-center gap-3">
-                      <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
-                      <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/50">Live Voice</span>
+                      <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                      <span className="text-[10px] font-black uppercase tracking-[0.3em] text-white">Mélina AI Live</span>
                     </div>
-                    <div className="flex gap-1.5">
-                      <div className="w-1 h-3 rounded-full bg-white/10" />
-                      <div className="w-1 h-3 rounded-full bg-white/10" />
-                      <div className="w-1 h-3 rounded-full bg-white/10" />
+                    <div className="flex items-center gap-2">
+                      <Radio className="w-3 h-3 text-emerald-500/50 animate-pulse" />
+                      <span className="text-[8px] font-black text-white/30 uppercase tracking-widest">Sommelier Vocal</span>
                     </div>
                   </div>
 
-                  {/* Main Voice Hub */}
-                  <div className="flex-1 flex flex-col items-center justify-center relative px-8">
-                    {/* Glowing Aura */}
-                    <motion.div
-                      animate={{
-                        scale: demoStep === 'ai' ? [1, 1.2, 1] : 1,
-                        opacity: demoStep === 'ai' || demoStep === 'user' ? [0.3, 0.6, 0.3] : 0.2
-                      }}
-                      transition={{ duration: 2, repeat: Infinity }}
-                      className="absolute w-64 h-64 bg-emerald-500/10 blur-[80px] rounded-full pointer-events-none"
-                    />
-
-                    {/* Central Orb */}
-                    <div className="relative z-10">
+                  {/* Dynamic Orb Area */}
+                  <div className="flex-1 flex flex-col items-center justify-center relative px-10">
+                    <div className="relative">
+                      {/* Interactive Breathing Orb */}
                       <motion.div
                         animate={{
-                          scale: demoStep === 'ai' || demoStep === 'user' ? [1, 1.05, 1] : 1,
-                          rotate: 360
+                          scale: demoStep === 'ai' ? [1, 1.15, 1] : demoStep === 'user' ? [1, 1.05, 1] : 1,
                         }}
-                        transition={{
-                          scale: { duration: 2, repeat: Infinity },
-                          rotate: { duration: 20, repeat: Infinity, ease: "linear" }
-                        }}
-                        className="w-40 h-40 rounded-full border border-white/5 bg-zinc-900/50 flex items-center justify-center relative overflow-hidden"
+                        transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+                        className="w-48 h-48 rounded-full bg-gradient-to-br from-emerald-400/20 to-emerald-950/40 border border-emerald-500/30 flex items-center justify-center relative shadow-[0_0_50px_rgba(16,185,129,0.1)]"
                       >
-                         {/* Spinning rings */}
-                        <div className="absolute inset-2 rounded-full border-t border-emerald-500/20 animate-spin" style={{ animationDuration: '3s' }} />
-                        <div className="absolute inset-4 rounded-full border-b border-emerald-500/10 animate-spin" style={{ animationDuration: '5s', animationDirection: 'reverse' }} />
+                        <Leaf className={`w-12 h-12 transition-all duration-700 ${demoStep === 'ai' ? 'text-emerald-400 opacity-100' : 'text-emerald-500/30 opacity-50'}`} />
 
-                        <div className="relative z-20 flex flex-col items-center">
-                          <Leaf className={`w-8 h-8 transition-colors duration-500 ${demoStep === 'ai' ? 'text-emerald-400' : 'text-zinc-600'}`} />
-                        </div>
+                        {/* Smooth ripples */}
+                        <AnimatePresence>
+                          {(demoStep === 'ai' || demoStep === 'user') && (
+                            <motion.div
+                              initial={{ scale: 1, opacity: 0.5 }}
+                              animate={{ scale: 1.6, opacity: 0 }}
+                              exit={{ opacity: 0 }}
+                              transition={{ duration: 2, repeat: Infinity }}
+                              className="absolute inset-0 rounded-full border border-emerald-500/40"
+                            />
+                          )}
+                        </AnimatePresence>
                       </motion.div>
+                    </div>
 
-                      {/* Ripple effect when speaking */}
-                      <AnimatePresence>
-                        {(demoStep === 'ai' || demoStep === 'user') && (
-                          <>
-                            <motion.div
-                              initial={{ scale: 0.8, opacity: 0 }}
-                              animate={{ scale: 1.5, opacity: 0 }}
-                              exit={{ opacity: 0 }}
-                              transition={{ duration: 1.5, repeat: Infinity, ease: "easeOut" }}
-                              className="absolute inset-0 rounded-full border border-emerald-500/30 pointer-events-none"
-                            />
-                            <motion.div
-                              initial={{ scale: 0.8, opacity: 0 }}
-                              animate={{ scale: 2, opacity: 0 }}
-                              exit={{ opacity: 0 }}
-                              transition={{ duration: 1.5, repeat: Infinity, ease: "easeOut", delay: 0.5 }}
-                              className="absolute inset-0 rounded-full border border-emerald-500/10 pointer-events-none"
-                            />
-                          </>
-                        )}
+                    <div className="mt-10 text-center relative z-10">
+                      <p className="text-[9px] font-black uppercase tracking-[0.4em] text-emerald-500/60 mb-2 h-4">
+                        {demoStep === 'thinking' ? 'Analyse en cours...' : demoStep === 'ai' ? 'Conseil d\'expert' : demoStep === 'user' ? 'Captation voix' : 'Prête à vous aider'}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Clean Transcription & Actions */}
+                  <div className="px-10 pb-10 space-y-6 relative z-10">
+                    <div className="min-h-[100px] flex items-center justify-center">
+                      <AnimatePresence mode="wait">
+                        <motion.div
+                          key={`${demoIndex}-${demoStep}`}
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -10 }}
+                          className="text-center"
+                        >
+                          <p className={`text-lg font-medium leading-snug tracking-tight ${demoStep === 'user' ? 'text-zinc-500 italic' : 'text-white'}`}>
+                            {demoStep === 'user' ? `"${currentDemo.userMessage}"` : currentDemo.aiResponse}
+                          </p>
+                        </motion.div>
                       </AnimatePresence>
                     </div>
 
-                    {/* Status Text */}
-                    <div className="mt-12 text-center space-y-2 relative z-10">
-                      <p className="text-xs font-black uppercase tracking-[0.3em] text-[color:var(--color-primary)]">
-                        {demoStep === 'user' ? 'Vous parlez...' : demoStep === 'thinking' ? 'Réflexion...' : demoStep === 'ai' ? 'Mélina répond' : 'En attente'}
-                      </p>
-                      <h4 className="text-xl font-black text-white px-4 h-8 flex items-center justify-center">
-                        {demoStep === 'thinking' && (
-                          <div className="flex gap-1.5">
-                            {[0, 1, 2].map(i => (
-                              <motion.div key={i} animate={{ y: [0, -4, 0] }} transition={{ repeat: Infinity, duration: 0.6, delay: i * 0.1 }} className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                            ))}
+                    {/* Integrated Product Result */}
+                    <AnimatePresence>
+                      {(demoStep === 'ai' || demoStep === 'actions') && (
+                        <motion.div
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: 10 }}
+                          className="p-5 rounded-3xl bg-white/[0.03] border border-white/10 backdrop-blur-md flex items-center gap-4 group cursor-default shadow-xl"
+                        >
+                          <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center text-emerald-500">
+                            <PackageCheck size={24} />
                           </div>
-                        )}
-                        {demoStep !== 'thinking' && (
-                          <span className="opacity-80">Mélina</span>
-                        )}
-                      </h4>
-                    </div>
-                  </div>
-
-                  {/* Transcription Overlay (Subtitles) */}
-                  <div className="px-8 pb-12 relative z-20">
-                    <AnimatePresence mode="wait">
-                      <motion.div
-                        key={`${demoIndex}-${demoStep}`}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
-                        className="min-h-[80px] flex flex-col justify-end"
-                      >
-                        {demoStep === 'user' && (
-                          <p className="text-lg font-medium text-zinc-300 italic leading-tight">
-                            "{currentDemo.userMessage}"
-                          </p>
-                        )}
-                        {(demoStep === 'ai' || demoStep === 'actions') && (
-                          <p className="text-sm font-bold text-white leading-relaxed">
-                            {currentDemo.aiResponse}
-                          </p>
-                        )}
-                      </motion.div>
+                          <div className="flex-1 min-w-0">
+                            <h5 className="text-xs font-black text-white uppercase tracking-wider truncate">{currentDemo.productPreview.name}</h5>
+                            <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">{currentDemo.productPreview.tag}</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-sm font-black text-emerald-400">{currentDemo.productPreview.price}</p>
+                          </div>
+                        </motion.div>
+                      )}
                     </AnimatePresence>
-
-                    {/* Mini Product Reveal */}
-                    {(demoStep === 'ai' || demoStep === 'actions') && (
-                      <motion.div
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        className="mt-6 flex items-center gap-4 p-4 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md"
-                      >
-                        <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center shrink-0">
-                          <PackageCheck className="w-5 h-5 text-emerald-400" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-[10px] font-black text-white truncate">{currentDemo.productPreview.name}</p>
-                          <p className="text-[9px] text-emerald-400/70 font-bold uppercase tracking-wider">{currentDemo.productPreview.price}</p>
-                        </div>
-                      </motion.div>
-                    )}
                   </div>
 
-                  {/* Visualizer Footer */}
-                  <div className="h-24 px-8 border-t border-white/5 bg-white/[0.02] flex items-center justify-between">
-                    <div className="flex items-end gap-[3px] h-8 flex-1">
-                      {Array.from({ length: 32 }, (_, i) => (
+                  {/* Minimal Waveform Footer */}
+                  <div className="h-24 px-10 flex flex-col justify-center border-t border-white/[0.03] bg-white/[0.01]">
+                    <div className="flex items-center justify-center gap-1.5 h-8">
+                      {Array.from({ length: 48 }).map((_, i) => (
                         <motion.div
                           key={i}
                           animate={{
                             height: (demoStep === 'ai' || demoStep === 'user')
-                              ? [`20%`, `${30 + (Math.sin(i * 0.5) * 50) + Math.random() * 20}%`, `20%`]
+                              ? [`20%`, `${20 + Math.random() * 80}%`, `20%`]
                               : '15%'
                           }}
                           transition={{ duration: 0.3 + (i % 5) * 0.1, repeat: Infinity }}
-                          className={`w-[4px] rounded-full ${demoStep === 'ai' ? 'bg-emerald-500' : 'bg-white/20'}`}
+                          className={`w-0.5 rounded-full transition-colors duration-500 ${demoStep === 'ai' ? 'bg-emerald-500 shadow-[0_0_5px_rgba(16,185,129,0.5)]' : 'bg-white/10'}`}
                         />
                       ))}
-                    </div>
-                    <div className="w-12 h-12 rounded-full bg-emerald-500/20 flex items-center justify-center shrink-0 ml-6">
-                      <Mic className={`w-5 h-5 ${demoStep === 'user' ? 'text-emerald-400 animate-pulse' : 'text-white/40'}`} />
                     </div>
                   </div>
                 </div>
 
-                {/* Scenario indicator dots */}
-                <div className="flex justify-center gap-2 mt-6">
+                {/* Scenario Navigation */}
+                <div className="flex justify-center gap-3 mt-10">
                   {DEMO_CONVERSATIONS.map((_, i) => (
                     <button
                       key={i}
                       onClick={() => { setDemoIndex(i); setDemoStep('user'); }}
-                      className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${i === demoIndex ? 'bg-emerald-400 w-6' : 'bg-white/10'}`}
+                      className={`h-2 rounded-full transition-all duration-500 ${i === demoIndex ? 'bg-emerald-400 w-12 shadow-[0_0_10px_rgba(16,185,129,0.3)]' : 'bg-white/10 w-2 hover:bg-white/20'}`}
                     />
                   ))}
                 </div>
