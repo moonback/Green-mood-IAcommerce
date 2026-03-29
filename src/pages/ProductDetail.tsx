@@ -247,7 +247,16 @@ export default function ProductDetail() {
 
       if (catsData) setAllCategories(catsData as Category[]);
 
-      const mappedReviews: import('../types/premiumProduct').Review[] = ((reviewData ?? []) as any[]).map((r) => ({ id: r.id, rating: r.rating, comment: r.comment, created_at: r.created_at, author: r.profile?.[0]?.full_name ?? 'Client vérifié' }));
+      const mappedReviews: import('../types/premiumProduct').Review[] = ((reviewData ?? []) as any[]).map((r) => {
+        const fullName = Array.isArray(r.profile) ? r.profile[0]?.full_name : r.profile?.full_name;
+        return { 
+          id: r.id, 
+          rating: r.rating, 
+          comment: r.comment, 
+          created_at: r.created_at, 
+          author: fullName ?? 'Client vérifié' 
+        };
+      });
 
       setReviews(mappedReviews);
       setRelated((relatedData as BaseProduct[] | null)?.map(enhanceProduct) ?? []);

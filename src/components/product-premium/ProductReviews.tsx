@@ -124,7 +124,7 @@ export default function ProductReviews({ reviews }: Props) {
                         {(review.author ?? 'C')[0].toUpperCase()}
                       </div>
                       <p className="text-xs font-black text-[color:var(--color-text)]">
-                        {review.author ?? 'Client vérifié'}
+                        {review.author?.split(' ')[0] ?? 'Client vérifié'}
                       </p>
                     </div>
                     <span className="text-[10px] text-[color:var(--color-text-subtle)] font-black uppercase tracking-widest">

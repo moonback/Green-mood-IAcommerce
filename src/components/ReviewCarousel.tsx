@@ -201,7 +201,7 @@ export default function ReviewCarousel() {
                                             </div>
                                             <div>
                                                 <p className="text-white font-black text-xs tracking-wide uppercase">
-                                                    {review.profile?.full_name || `Client ${settings.store_name}`}
+                                                    {(review.profile?.full_name ?? `Client ${settings.store_name}`).split(' ')[0]}
                                                 </p>
                                                 <p className="text-slate-500 text-[9px] uppercase tracking-widest">Achat vérifié</p>
                                             </div>
