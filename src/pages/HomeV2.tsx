@@ -24,9 +24,9 @@ import Hero from '../components/home/Hero';
 // Demo conversation scenarios for the BudTender showcase
 const DEMO_CONVERSATIONS = [
   {
-    mode: 'chat' as const,
+    mode: 'voice' as const,
     userMessage: "Quels sont vos produits relaxants ?",
-    thinkingText: "Filtrage catalogue : détente...",
+    thinkingText: "Analyse des besoins : relaxation...",
     aiResponse: "Pour une détente absolue, je te recommande notre sélection de fleurs Indoor ou nos huiles full spectrum. Nos clients adorent la Purple Punch pour son effet immédiat. Tu veux que je t'affiche les détails ?",
     actions: [
       { label: "Voir la sélection", icon: 'eye' as const },
@@ -37,7 +37,7 @@ const DEMO_CONVERSATIONS = [
   {
     mode: 'voice' as const,
     userMessage: "Montre-moi les huiles CBD s'il te plaît",
-    thinkingText: "Navigation : /catalogue?category=huiles",
+    thinkingText: "Mise à jour du catalogue...",
     aiResponse: "C'est parti ! Je mets à jour ton écran avec notre gamme d'huiles. Nos extractions au CO2 supercritique garantissent une pureté maximale. Dis-moi si une concentration précise t'intéresse.",
     actions: [
       { label: "Filtrer concentration", icon: 'compare' as const },
@@ -48,7 +48,7 @@ const DEMO_CONVERSATIONS = [
   {
     mode: 'voice' as const,
     userMessage: "C'est quoi l'effet d'entourage ?",
-    thinkingText: "Recherche base de connaissances...",
+    thinkingText: "Consultation de la base...",
     aiResponse: "Excellente question ! C'est la synergie entre les cannabinoïdes et les terpènes qui rend le CBD plus efficace. C'est pour ça qu'on privilégie le spectre complet. Tu veux voir un produit qui utilise au mieux ce principe ?",
     actions: [
       { label: "Produits recommandés", icon: 'cart' as const },
@@ -57,9 +57,9 @@ const DEMO_CONVERSATIONS = [
     productPreview: { name: "Full Spectrum 10%", category: "Huiles", price: "29,90€", tag: "Effet Entourage" },
   },
   {
-    mode: 'chat' as const,
+    mode: 'voice' as const,
     userMessage: "Ok, ajoute une OG Kush au panier",
-    thinkingText: "Action : add_to_cart('OG Kush')",
+    thinkingText: "Traitement de la commande...",
     aiResponse: "Excellent choix, c'est fait ! L'OG Kush est dans ton panier. On est à 42,40€. Plus que 7,60€ pour avoir la livraison gratuite. On regarde une petite résine pour compléter ?",
     actions: [
       { label: "Voir mon panier", icon: 'cart' as const },
@@ -359,23 +359,23 @@ export default function HomeV2() {
             <div className="grid lg:grid-cols-2 gap-24 items-center relative z-10">
               <div className="space-y-12">
                 <div className="space-y-6">
-                  <div className="inline-flex items-center gap-3 rounded-full border border-zinc-800 bg-white/5 px-6 py-2.5 text-[10px] font-black uppercase tracking-[0.3em] text-[color:var(--color-primary)]">
-                    Innovation Audio
+                  <div className="inline-flex items-center gap-3 rounded-full border border-zinc-800 bg-white/5 px-6 py-2.5 text-[10px] font-black uppercase tracking-[0.4em] text-[color:var(--color-primary)]">
+                    Conseil Vocal Premium
                   </div>
                   <h2 className="text-5xl lg:text-7xl font-black tracking-tighter uppercase italic leading-[0.85]">
-                    Votre <br />
-                    <span className="text-[color:var(--color-primary)] bg-clip-text bg-gradient-to-r from-emerald-400 to-emerald-700">Budtender.</span>
+                    Rencontrez <br />
+                    <span className="text-[color:var(--color-primary)] bg-clip-text bg-gradient-to-r from-emerald-400 to-emerald-700">Mélina.</span>
                   </h2>
                   <p className="text-xl text-[color:var(--color-text-muted)] leading-relaxed">
-                    Marre de chercher des heures ? Parlez naturellement à notre <span className="text-white font-bold">BudTender IA</span>. Il analyse vos envies de détente, vos préférences gustatives et votre budget pour vous proposer la fleur parfaite en un instant.
+                    Plus qu'une simple IA, <span className="text-white font-bold">Mélina</span> est votre sommelier CBD personnel. D'une voix naturelle et experte, elle déniche pour vous les pépites du catalogue selon vos envies de relaxation ou de saveurs.
                   </p>
                 </div>
 
                 <div className="grid gap-4">
                   {[
-                    "Conseil personnalisé basé sur vos besoins (sommeil, détente, focus)",
-                    "Expertise technique sur les terpènes et cannabinoïdes",
-                    "Navigation vocale ultra-fluide pour faire vos achats"
+                    "Une conversation fluide et naturelle, comme avec un vrai expert.",
+                    "Sélection ultra-précise selon votre humeur et votre budget.",
+                    "Gestion complète de votre panier à la voix, sans effort."
                   ].map((text, i) => (
                     <div key={i} className="flex items-start gap-4 animate-float" style={{ animationDelay: `${i * 0.5}s` }}>
                       <div className="h-6 w-6 rounded-full bg-[color:var(--color-primary)]/20 border border-[color:var(--color-primary)]/40 flex items-center justify-center shrink-0 mt-1">
@@ -394,249 +394,178 @@ export default function HomeV2() {
                 >
                   <span className="relative z-10 flex items-center gap-4">
                     <Mic className="w-5 h-5 animate-pulse" />
-                    Démarrer la consultation
+                    Parler avec Mélina
                   </span>
                   <div className="absolute inset-0 bg-emerald-500 translate-y-full group-hover:translate-y-0 transition-transform duration-500" />
                 </button>
               </div>
 
-              {/* ── CONVERSATION DEMO ────────────────────────────── */}
+              {/* ── conversation live ────────────────────────────── */}
+              {/* ── 100% VOICE INTERFACE ── */}
               <div className="relative flex flex-col h-[520px]">
-                {/* Glow behind the phone frame */}
-                <div className="absolute -inset-8 bg-gradient-to-br from-emerald-500/10 via-transparent to-cyan-500/5 rounded-[3rem] blur-2xl pointer-events-none" />
+                <div className="absolute -inset-8 bg-gradient-to-br from-emerald-500/20 via-transparent to-emerald-500/10 rounded-[3rem] blur-[60px] pointer-events-none opacity-50" />
 
-                {/* Simulated chat window */}
-                <div className="relative flex flex-col h-full rounded-[2rem] border border-white/10 bg-zinc-950/80 backdrop-blur-2xl overflow-hidden shadow-[0_0_60px_rgba(16,185,129,0.08)]">
-                  {/* Header */}
-                  <div className="flex items-center gap-3 px-6 py-4 border-b border-white/5 bg-white/[0.02]">
-                    <div className="relative">
-                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500/20 to-emerald-800/20 border border-emerald-500/30 flex items-center justify-center">
-                        <Leaf className="w-5 h-5 text-emerald-400" />
-                      </div>
-                      <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-400 border-2 border-zinc-950 shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
+                <div className="relative flex flex-col h-full rounded-[3rem] border border-white/10 bg-zinc-950/90 backdrop-blur-3xl overflow-hidden shadow-2xl">
+                  {/* Top Bar */}
+                  <div className="px-8 pt-8 pb-4 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
+                      <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/50">Live Voice</span>
                     </div>
-                    <div>
-                      <p className="text-xs font-black text-white uppercase tracking-wider">{settings.budtender_name || 'BudTender'}</p>
-                      <p className="text-[10px] text-emerald-400 font-semibold flex items-center gap-1">
-                        <Sparkles className="w-2.5 h-2.5" /> En ligne — Mode {currentDemo.mode === 'voice' ? 'vocal' : 'chat'}
-                      </p>
-                    </div>
-                    <div className="ml-auto flex items-center gap-2">
-                      <motion.div
-                        animate={{ scale: [1, 1.3, 1], opacity: [0.5, 1, 0.5] }}
-                        transition={{ duration: 1.5, repeat: Infinity }}
-                        className="w-2 h-2 rounded-full bg-emerald-400"
-                      />
-                      <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">Live</span>
+                    <div className="flex gap-1.5">
+                      <div className="w-1 h-3 rounded-full bg-white/10" />
+                      <div className="w-1 h-3 rounded-full bg-white/10" />
+                      <div className="w-1 h-3 rounded-full bg-white/10" />
                     </div>
                   </div>
 
-                  {/* Messages area */}
-                  <div className="flex-1 px-5 py-6 space-y-4 overflow-hidden">
+                  {/* Main Voice Hub */}
+                  <div className="flex-1 flex flex-col items-center justify-center relative px-8">
+                    {/* Glowing Aura */}
+                    <motion.div
+                      animate={{
+                        scale: demoStep === 'ai' ? [1, 1.2, 1] : 1,
+                        opacity: demoStep === 'ai' || demoStep === 'user' ? [0.3, 0.6, 0.3] : 0.2
+                      }}
+                      transition={{ duration: 2, repeat: Infinity }}
+                      className="absolute w-64 h-64 bg-emerald-500/10 blur-[80px] rounded-full pointer-events-none"
+                    />
+
+                    {/* Central Orb */}
+                    <div className="relative z-10">
+                      <motion.div
+                        animate={{
+                          scale: demoStep === 'ai' || demoStep === 'user' ? [1, 1.05, 1] : 1,
+                          rotate: 360
+                        }}
+                        transition={{
+                          scale: { duration: 2, repeat: Infinity },
+                          rotate: { duration: 20, repeat: Infinity, ease: "linear" }
+                        }}
+                        className="w-40 h-40 rounded-full border border-white/5 bg-zinc-900/50 flex items-center justify-center relative overflow-hidden"
+                      >
+                         {/* Spinning rings */}
+                        <div className="absolute inset-2 rounded-full border-t border-emerald-500/20 animate-spin" style={{ animationDuration: '3s' }} />
+                        <div className="absolute inset-4 rounded-full border-b border-emerald-500/10 animate-spin" style={{ animationDuration: '5s', animationDirection: 'reverse' }} />
+
+                        <div className="relative z-20 flex flex-col items-center">
+                          <Leaf className={`w-8 h-8 transition-colors duration-500 ${demoStep === 'ai' ? 'text-emerald-400' : 'text-zinc-600'}`} />
+                        </div>
+                      </motion.div>
+
+                      {/* Ripple effect when speaking */}
+                      <AnimatePresence>
+                        {(demoStep === 'ai' || demoStep === 'user') && (
+                          <>
+                            <motion.div
+                              initial={{ scale: 0.8, opacity: 0 }}
+                              animate={{ scale: 1.5, opacity: 0 }}
+                              exit={{ opacity: 0 }}
+                              transition={{ duration: 1.5, repeat: Infinity, ease: "easeOut" }}
+                              className="absolute inset-0 rounded-full border border-emerald-500/30 pointer-events-none"
+                            />
+                            <motion.div
+                              initial={{ scale: 0.8, opacity: 0 }}
+                              animate={{ scale: 2, opacity: 0 }}
+                              exit={{ opacity: 0 }}
+                              transition={{ duration: 1.5, repeat: Infinity, ease: "easeOut", delay: 0.5 }}
+                              className="absolute inset-0 rounded-full border border-emerald-500/10 pointer-events-none"
+                            />
+                          </>
+                        )}
+                      </AnimatePresence>
+                    </div>
+
+                    {/* Status Text */}
+                    <div className="mt-12 text-center space-y-2 relative z-10">
+                      <p className="text-xs font-black uppercase tracking-[0.3em] text-[color:var(--color-primary)]">
+                        {demoStep === 'user' ? 'Vous parlez...' : demoStep === 'thinking' ? 'Réflexion...' : demoStep === 'ai' ? 'Mélina répond' : 'En attente'}
+                      </p>
+                      <h4 className="text-xl font-black text-white px-4 h-8 flex items-center justify-center">
+                        {demoStep === 'thinking' && (
+                          <div className="flex gap-1.5">
+                            {[0, 1, 2].map(i => (
+                              <motion.div key={i} animate={{ y: [0, -4, 0] }} transition={{ repeat: Infinity, duration: 0.6, delay: i * 0.1 }} className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                            ))}
+                          </div>
+                        )}
+                        {demoStep !== 'thinking' && (
+                          <span className="opacity-80">Mélina</span>
+                        )}
+                      </h4>
+                    </div>
+                  </div>
+
+                  {/* Transcription Overlay (Subtitles) */}
+                  <div className="px-8 pb-12 relative z-20">
                     <AnimatePresence mode="wait">
                       <motion.div
-                        key={`demo-${demoIndex}`}
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        transition={{ duration: 0.3 }}
-                        className="space-y-4"
+                        key={`${demoIndex}-${demoStep}`}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        className="min-h-[80px] flex flex-col justify-end"
                       >
-                        {/* User message (chat or voice) */}
-                        <motion.div
-                          initial={{ opacity: 0, x: 20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ duration: 0.4 }}
-                          className="flex justify-end"
-                        >
-                          <div className="max-w-[85%] flex items-start gap-2">
-                            <div className={`${currentDemo.mode === 'voice' ? 'bg-emerald-500/15 border-emerald-500/20' : 'bg-blue-500/15 border-blue-500/20'} border rounded-2xl rounded-tr-md px-4 py-3 shadow-lg`}>
-                              <div className="flex items-center gap-2 mb-1">
-                                {currentDemo.mode === 'voice' ? (
-                                  <>
-                                    <Mic className="w-3 h-3 text-emerald-400" />
-                                    <span className="text-[9px] font-bold text-emerald-400 uppercase tracking-wider">Vocal</span>
-                                  </>
-                                ) : (
-                                  <>
-                                    <MessageSquare className="w-3 h-3 text-blue-400" />
-                                    <span className="text-[9px] font-bold text-blue-400 uppercase tracking-wider">Message</span>
-                                  </>
-                                )}
-                              </div>
-                              <p className="text-sm text-white/90 leading-relaxed">{currentDemo.userMessage}</p>
-                            </div>
-                          </div>
-                        </motion.div>
-
-                        {/* Thinking indicator */}
-                        {(demoStep === 'thinking') && (
-                          <motion.div
-                            initial={{ opacity: 0, y: 8 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            className="flex items-start gap-3"
-                          >
-                            <div className="w-7 h-7 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shrink-0">
-                              <Leaf className="w-3.5 h-3.5 text-emerald-400" />
-                            </div>
-                            <div className="bg-white/[0.03] border border-white/5 rounded-2xl rounded-tl-md px-4 py-3">
-                              <div className="flex items-center gap-2">
-                                <motion.div
-                                  animate={{ opacity: [0.3, 1, 0.3] }}
-                                  transition={{ duration: 0.8, repeat: Infinity }}
-                                  className="flex items-center gap-1"
-                                >
-                                  <Zap className="w-3 h-3 text-amber-400" />
-                                  <span className="text-[10px] font-bold text-amber-400/80">{currentDemo.thinkingText}</span>
-                                </motion.div>
-                                <div className="flex gap-1 ml-2">
-                                  {[0, 1, 2].map(j => (
-                                    <motion.div
-                                      key={j}
-                                      animate={{ scale: [1, 1.4, 1], opacity: [0.3, 0.8, 0.3] }}
-                                      transition={{ duration: 0.6, repeat: Infinity, delay: j * 0.15 }}
-                                      className="w-1.5 h-1.5 rounded-full bg-emerald-400"
-                                    />
-                                  ))}
-                                </div>
-                              </div>
-                            </div>
-                          </motion.div>
+                        {demoStep === 'user' && (
+                          <p className="text-lg font-medium text-zinc-300 italic leading-tight">
+                            "{currentDemo.userMessage}"
+                          </p>
                         )}
-
-                        {/* AI Response */}
                         {(demoStep === 'ai' || demoStep === 'actions') && (
-                          <motion.div
-                            initial={{ opacity: 0, y: 12 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.5 }}
-                            className="flex items-start gap-3"
-                          >
-                            <div className="w-7 h-7 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shrink-0">
-                              <Leaf className="w-3.5 h-3.5 text-emerald-400" />
-                            </div>
-                            <div className="max-w-[88%] space-y-3">
-                              <div className="bg-white/[0.03] border border-white/5 rounded-2xl rounded-tl-md px-4 py-3 relative overflow-hidden group">
-                                <AnimatePresence>
-                                  {currentDemo.thinkingText.toLowerCase().includes('navigation') && demoStep === 'ai' && (
-                                    <motion.div
-                                      initial={{ x: -100 }}
-                                      animate={{ x: 0 }}
-                                      className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-cyan-400 to-transparent"
-                                    />
-                                  )}
-                                </AnimatePresence>
-
-                                <div className="flex items-center gap-2 mb-2">
-                                  {currentDemo.thinkingText.toLowerCase().includes('navigation') ? (
-                                    <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-[8px] font-black text-cyan-400 uppercase tracking-widest">
-                                      <Smartphone className="w-2.5 h-2.5" /> Navigation Active
-                                    </div>
-                                  ) : currentDemo.thinkingText.toLowerCase().includes('action') ? (
-                                    <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-[8px] font-black text-amber-400 uppercase tracking-widest">
-                                      <Zap className="w-2.5 h-2.5" /> Action Catalogue
-                                    </div>
-                                  ) : (
-                                    <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[8px] font-black text-emerald-400 uppercase tracking-widest">
-                                      <Sparkles className="w-2.5 h-2.5" /> Conseil IA
-                                    </div>
-                                  )}
-                                </div>
-                                <p className="text-sm text-zinc-200 leading-relaxed">{currentDemo.aiResponse}</p>
-                              </div>
-
-                              {/* Product preview card */}
-                              <motion.div
-                                initial={{ opacity: 0, scale: 0.95 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                transition={{ delay: 0.3 }}
-                                className="bg-white/[0.04] border border-white/10 rounded-xl p-3 flex items-center gap-3 shadow-inner"
-                              >
-                                <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-emerald-900/40 to-zinc-900 border border-white/5 flex items-center justify-center shrink-0">
-                                  <Leaf className="w-5 h-5 text-emerald-500/60" />
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-[11px] font-black text-white truncate">{currentDemo.productPreview.name}</p>
-                                  <p className="text-[9px] text-zinc-500 uppercase tracking-wider">{currentDemo.productPreview.category}</p>
-                                </div>
-                                <div className="text-right shrink-0">
-                                  <p className="text-xs font-black text-emerald-400">{currentDemo.productPreview.price}</p>
-                                  <span className="inline-block mt-0.5 px-1.5 py-0.5 rounded bg-emerald-500/15 text-[8px] font-bold text-emerald-300 border border-emerald-500/20">{currentDemo.productPreview.tag}</span>
-                                </div>
-                              </motion.div>
-                            </div>
-                          </motion.div>
-                        )}
-
-                        {/* Action buttons */}
-                        {demoStep === 'actions' && (
-                          <motion.div
-                            initial={{ opacity: 0, y: 8 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.3 }}
-                            className="flex items-center gap-2 pl-10"
-                          >
-                            {currentDemo.actions.map((action, i) => (
-                              <div
-                                key={i}
-                                className="px-3 py-1.5 rounded-full border border-white/10 bg-white/[0.03] text-[10px] font-bold text-zinc-300 flex items-center gap-1.5 hover:bg-white/[0.06] transition-colors cursor-default"
-                              >
-                                {action.icon === 'eye' && <ChevronRight className="w-2.5 h-2.5 text-emerald-400" />}
-                                {action.icon === 'cart' && <ShoppingBag className="w-2.5 h-2.5 text-emerald-400" />}
-                                {action.icon === 'heart' && <Star className="w-2.5 h-2.5 text-amber-400" />}
-                                {action.icon === 'compare' && <Layers className="w-2.5 h-2.5 text-cyan-400" />}
-                                {action.label}
-                              </div>
-                            ))}
-                          </motion.div>
+                          <p className="text-sm font-bold text-white leading-relaxed">
+                            {currentDemo.aiResponse}
+                          </p>
                         )}
                       </motion.div>
                     </AnimatePresence>
+
+                    {/* Mini Product Reveal */}
+                    {(demoStep === 'ai' || demoStep === 'actions') && (
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="mt-6 flex items-center gap-4 p-4 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md"
+                      >
+                        <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center shrink-0">
+                          <PackageCheck className="w-5 h-5 text-emerald-400" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[10px] font-black text-white truncate">{currentDemo.productPreview.name}</p>
+                          <p className="text-[9px] text-emerald-400/70 font-bold uppercase tracking-wider">{currentDemo.productPreview.price}</p>
+                        </div>
+                      </motion.div>
+                    )}
                   </div>
 
-                  {/* Footer — simulated voice input */}
-                  <div className="px-5 py-4 border-t border-white/5 bg-white/[0.01]">
-                    <div className="flex items-center gap-3">
-                      <motion.div
-                        animate={{
-                          boxShadow: [
-                            '0 0 0 0 rgba(16, 185, 129, 0)',
-                            '0 0 0 8px rgba(16, 185, 129, 0.15)',
-                            '0 0 0 0 rgba(16, 185, 129, 0)',
-                          ],
-                        }}
-                        transition={{ duration: 2, repeat: Infinity }}
-                        className="w-10 h-10 rounded-full bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center shrink-0"
-                      >
-                        <Mic className="w-4 h-4 text-emerald-400" />
-                      </motion.div>
-                      <div className="flex-1">
-                        <div className="flex items-end gap-[2px] h-5">
-                          {Array.from({ length: 24 }, (_, i) => (
-                            <motion.div
-                              key={i}
-                              animate={{
-                                height: ['15%', `${20 + ((i * 13 + 7) % 60)}%`, '15%'],
-                                opacity: [0.2, 0.6, 0.2],
-                              }}
-                              transition={{ duration: 0.4 + (i * 0.02) % 0.3, repeat: Infinity }}
-                              className="w-[3px] rounded-full bg-emerald-400/60"
-                            />
-                          ))}
-                        </div>
-                        <p className="text-[9px] text-zinc-600 mt-1 font-medium">Appuyez pour parler ou tapez votre question...</p>
-                      </div>
+                  {/* Visualizer Footer */}
+                  <div className="h-24 px-8 border-t border-white/5 bg-white/[0.02] flex items-center justify-between">
+                    <div className="flex items-end gap-[3px] h-8 flex-1">
+                      {Array.from({ length: 32 }, (_, i) => (
+                        <motion.div
+                          key={i}
+                          animate={{
+                            height: (demoStep === 'ai' || demoStep === 'user')
+                              ? [`20%`, `${30 + (Math.sin(i * 0.5) * 50) + Math.random() * 20}%`, `20%`]
+                              : '15%'
+                          }}
+                          transition={{ duration: 0.3 + (i % 5) * 0.1, repeat: Infinity }}
+                          className={`w-[4px] rounded-full ${demoStep === 'ai' ? 'bg-emerald-500' : 'bg-white/20'}`}
+                        />
+                      ))}
+                    </div>
+                    <div className="w-12 h-12 rounded-full bg-emerald-500/20 flex items-center justify-center shrink-0 ml-6">
+                      <Mic className={`w-5 h-5 ${demoStep === 'user' ? 'text-emerald-400 animate-pulse' : 'text-white/40'}`} />
                     </div>
                   </div>
                 </div>
 
                 {/* Scenario indicator dots */}
-                <div className="flex justify-center gap-2 mt-4">
+                <div className="flex justify-center gap-2 mt-6">
                   {DEMO_CONVERSATIONS.map((_, i) => (
                     <button
                       key={i}
                       onClick={() => { setDemoIndex(i); setDemoStep('user'); }}
-                      className={`w-2 h-2 rounded-full transition-all duration-300 ${i === demoIndex ? 'bg-emerald-400 w-6' : 'bg-white/20 hover:bg-white/40'}`}
+                      className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${i === demoIndex ? 'bg-emerald-400 w-6' : 'bg-white/10'}`}
                     />
                   ))}
                 </div>

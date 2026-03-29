@@ -163,7 +163,7 @@ export const DEFAULT_SETTINGS: StoreSettings = {
     store_logo_dark_url: '/logo.png',
     store_email: 'contact@mystore.com',
     store_url: 'https://mystore.com',
-    budtender_name: 'PlayAdvisor',
+    budtender_name: 'Mélina',
     loyalty_packs: [
         {
             id: 'pack-small',
