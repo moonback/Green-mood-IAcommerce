@@ -7,7 +7,7 @@ import ScrollToTop from "./components/ScrollToTop";
 import { useAuthStore } from "./store/authStore";
 import { useSettingsStore } from "./store/settingsStore";
 import SplashScreen from "./components/SplashScreen";
-import OnboardingOverlay from "./components/OnboardingOverlay";
+
 import { usePageTracker } from "./hooks/usePageTracker";
 
 function PageTracker() {
@@ -89,7 +89,7 @@ export default function App() {
       <PageTracker />
       <ScrollToTop />
       <SplashScreen />
-      <OnboardingOverlay />
+
       <Suspense fallback={<PageLoader />}>
         <Routes>
           {/* Routes admin - Outside of Layout to not have frontend header/footer */}
