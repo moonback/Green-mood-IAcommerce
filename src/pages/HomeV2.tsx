@@ -352,7 +352,7 @@ export default function HomeV2() {
           </div>
         </section>
 
-        {/* 4. BUDTENDER INTERACTIVE HIGHLIGHT */}
+        {/* 4. MÉLINA INTERACTIVE HIGHLIGHT */}
         <section className="relative z-20 px-4 py-24 lg:px-8">
           <div className="mx-auto max-w-screen-2xl relative overflow-hidden rounded-[4rem] border border-white/5 bg-zinc-950/40 p-12 backdrop-blur-3xl lg:p-24 group shadow-2xl">
             <div className="absolute inset-0 bg-gradient-to-br from-[color:var(--color-primary)]/5 via-transparent to-transparent pointer-events-none" />

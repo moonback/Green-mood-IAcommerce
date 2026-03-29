@@ -22,13 +22,10 @@ describe('MobileTabBar', () => {
       '/connexion?redirect=%2Fcompte'
     );
 
-    expect(screen.getByRole('link', { name: /ouvrir ia/i })).toHaveAttribute(
-      'href',
-      '/connexion?redirect=%2Fassistant'
-    );
+    expect(screen.getByRole('button', { name: /assistant vocal/i })).toBeInTheDocument();
   });
 
-  it('keeps direct account and assistant routes for authenticated users', () => {
+  it('remains a button for authenticated users', () => {
     useAuthStore.setState({ user: { id: 'u-1' } as any });
 
     render(
@@ -38,7 +35,7 @@ describe('MobileTabBar', () => {
     );
 
     expect(screen.getByRole('link', { name: /ouvrir compte/i })).toHaveAttribute('href', '/compte');
-    expect(screen.getByRole('link', { name: /ouvrir ia/i })).toHaveAttribute('href', '/assistant');
+    expect(screen.getByRole('button', { name: /assistant vocal/i })).toBeInTheDocument();
   });
 
   it('exposes explicit accessibility labels for each tab', () => {
