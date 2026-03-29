@@ -34,11 +34,11 @@
     --color-text-subtle: #64748b;
     --color-border: rgba(255, 255, 255, 0.1);
     --color-border-strong: rgba(255, 255, 255, 0.16);
-    --color-primary: var(--theme-neon, #a36cbe);
+    --color-primary: var(--theme-neon, #6edf11);
     --color-primary-strong: var(--theme-primary, #10B981);
     --color-primary-contrast: #02140a;
     --color-secondary: #38bdf8;
-    --color-accent: #a855f7;
+    --color-accent: #6edf11;
     --color-overlay: rgba(2, 6, 23, 0.72);
     --shadow-glow: 0 0 24px rgba(var(--theme-neon-rgb, 57, 255, 20), 0.25);
     --shadow-card: 0 24px 80px rgba(2, 6, 23, 0.5);
@@ -213,7 +213,10 @@
   }
 
   /* .glow-green is an alias for .glow-neon — use .glow-neon instead */
-  .glow-green { color: var(--theme-neon, #a36cbe); text-shadow: 0 0 20px color-mix(in srgb, var(--theme-neon, #a36cbe) 60%, transparent), 0 0 60px color-mix(in srgb, var(--theme-neon, #a36cbe) 30%, transparent); }
+  .glow-green {
+    color: var(--theme-neon, #a36cbe);
+    text-shadow: 0 0 20px color-mix(in srgb, var(--theme-neon, #a36cbe) 60%, transparent), 0 0 60px color-mix(in srgb, var(--theme-neon, #a36cbe) 30%, transparent);
+  }
 
   .glow-white {
     text-shadow:
@@ -223,21 +226,24 @@
 
   /* ── Glow Box — green/violet are theme-aware aliases, consolidated ── */
   /* .glow-box-green* are aliases for .glow-box-violet* — identical values, consolidated */
-  .glow-box-green, .glow-box-violet {
+  .glow-box-green,
+  .glow-box-violet {
     box-shadow:
       0 2px 8px rgba(0, 0, 0, 0.5),
       0 0 0 1px color-mix(in srgb, var(--theme-neon, #a36cbe) 15%, transparent),
       0 0 30px color-mix(in srgb, var(--theme-neon, #a36cbe) 10%, transparent);
   }
 
-  .glow-box-green-sm, .glow-box-violet-sm {
+  .glow-box-green-sm,
+  .glow-box-violet-sm {
     box-shadow:
       0 1px 4px rgba(0, 0, 0, 0.4),
       0 0 0 1px color-mix(in srgb, var(--theme-neon, #a36cbe) 8%, transparent),
       0 0 16px color-mix(in srgb, var(--theme-neon, #a36cbe) 6%, transparent);
   }
 
-  .glow-box-green-lg, .glow-box-violet-lg {
+  .glow-box-green-lg,
+  .glow-box-violet-lg {
     box-shadow:
       0 4px 20px rgba(0, 0, 0, 0.6),
       0 0 0 1px color-mix(in srgb, var(--theme-neon, #a36cbe) 20%, transparent),
@@ -276,7 +282,9 @@
   }
 
   /* .glow-pulse-green is an alias for .glow-pulse-violet */
-  .glow-pulse-green { animation: glow-pulse-v 2.5s ease-in-out infinite; }
+  .glow-pulse-green {
+    animation: glow-pulse-v 2.5s ease-in-out infinite;
+  }
 
   @keyframes glow-pulse {
 
