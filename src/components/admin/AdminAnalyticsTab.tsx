@@ -22,11 +22,11 @@ const RANGE_LABELS: Record<AnalyticsRange, string> = {
 };
 
 const STATUS_COLORS: Record<string, string> = {
-  pending: '#f59e0b', paid: '#3b82f6', processing: '#a855f7',
+  pending: '#f59e0b', paid: '#3b82f6', processing: '#6edf11',
   ready: '#22c55e', shipped: '#06b6d4', delivered: '#a36cbe', cancelled: '#ef4444',
 };
 
-const PIE_COLORS = ['#22c55e', '#3b82f6', '#a855f7', '#f59e0b', '#06b6d4', '#a36cbe', '#ef4444', '#f97316', '#ec4899'];
+const PIE_COLORS = ['#22c55e', '#3b82f6', '#6edf11', '#f59e0b', '#06b6d4', '#a36cbe', '#ef4444', '#f97316', '#ec4899'];
 
 const STATUS_LABELS: Record<string, string> = {
   pending: 'En attente', paid: 'Payé', processing: 'En préparation',
@@ -80,11 +80,11 @@ function cohortColor(value: number, max: number): string {
 }
 
 // ─── KPI Item with delta indicator ───────────────────────────────────────────
-function KPIItem({ label, value, delta, icon: Icon, color, subtitle }: { 
-  label: string; 
-  value: string; 
-  delta: number; 
-  icon: any; 
+function KPIItem({ label, value, delta, icon: Icon, color, subtitle }: {
+  label: string;
+  value: string;
+  delta: number;
+  icon: any;
   color: 'emerald' | 'blue' | 'purple' | 'amber';
   subtitle?: string;
 }) {
@@ -103,7 +103,7 @@ function KPIItem({ label, value, delta, icon: Icon, color, subtitle }: {
   };
 
   return (
-    <motion.div 
+    <motion.div
       whileHover={{ y: -4 }}
       className={`bg-zinc-900 border ${colorMap[color]} p-6 rounded-[2rem] transition-all relative overflow-hidden group`}
     >
@@ -113,7 +113,7 @@ function KPIItem({ label, value, delta, icon: Icon, color, subtitle }: {
           <Icon className={`w-3 h-3 ${iconColor[color]}`} /> {label}
         </p>
         <span className={`text-[10px] font-black px-2 py-0.5 rounded-full flex items-center gap-0.5 ${delta >= 0 ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}`}>
-          {delta >= 0 ? '+' : ''}{delta.toFixed(1)}% 
+          {delta >= 0 ? '+' : ''}{delta.toFixed(1)}%
           {delta >= 0 ? <TrendingUp size={10} /> : <AlertTriangle size={10} className="rotate-180" />}
         </span>
       </div>
@@ -550,31 +550,31 @@ export default function AdminAnalyticsTab() {
               SECTION 1 — KPIs PRINCIPAUX
           ══════════════════════════════════════════════════════════════════════ */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <KPIItem 
-              label="Revenus" 
-              value={`${kpis.totalRevenue.toLocaleString('fr-FR', { minimumFractionDigits: 0 })} €`} 
-              delta={deltas.revenue} 
-              icon={TrendingUp} 
-              color="emerald" 
+            <KPIItem
+              label="Revenus"
+              value={`${kpis.totalRevenue.toLocaleString('fr-FR', { minimumFractionDigits: 0 })} €`}
+              delta={deltas.revenue}
+              icon={TrendingUp}
+              color="emerald"
               subtitle={`CA ${range === '7d' ? 'hebdo' : range === '30d' ? 'mensuel' : 'trimestriel'}`}
             />
-            <KPIItem 
-              label="Panier Moyen" 
-              value={`${kpis.aov.toLocaleString('fr-FR', { minimumFractionDigits: 1 })} €`} 
-              delta={deltas.aov} 
-              icon={ShoppingBag} 
-              color="blue" 
+            <KPIItem
+              label="Panier Moyen"
+              value={`${kpis.aov.toLocaleString('fr-FR', { minimumFractionDigits: 1 })} €`}
+              delta={deltas.aov}
+              icon={ShoppingBag}
+              color="blue"
               subtitle={`Sur ${kpis.totalOrders} commandes`}
             />
-            <KPIItem 
-              label="Conversion Quiz" 
-              value={`${kpis.conversionRate.toFixed(1)}%`} 
-              delta={deltas.conversion} 
-              icon={Target} 
-              color="purple" 
+            <KPIItem
+              label="Conversion Quiz"
+              value={`${kpis.conversionRate.toFixed(1)}%`}
+              delta={deltas.conversion}
+              icon={Target}
+              color="purple"
               subtitle="Ventes après conseil IA"
             />
-             <div className="bg-zinc-900 border border-zinc-800 p-6 rounded-[2rem] hover:border-amber-500/30 transition-all group overflow-hidden relative">
+            <div className="bg-zinc-900 border border-zinc-800 p-6 rounded-[2rem] hover:border-amber-500/30 transition-all group overflow-hidden relative">
               <div className="absolute top-0 right-0 w-24 h-24 bg-amber-500/5 blur-[40px] rounded-full -mr-8 -mt-8" />
               <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500 mb-2 flex items-center gap-2">
                 <MessageSquare className="w-3 h-3 group-hover:rotate-12 transition-transform" /> Interactions IA
@@ -728,14 +728,14 @@ export default function AdminAnalyticsTab() {
             <div className="lg:col-span-2">
               <ChartCard title="Progression des revenus">
                 <div className="mb-4 flex items-center gap-4">
-                   <div className="flex items-center gap-2">
-                     <div className="w-2 h-2 rounded-full bg-emerald-500" />
-                     <span className="text-[10px] font-black uppercase text-zinc-400">Revenu Réel</span>
-                   </div>
-                   <div className="flex items-center gap-2 opacity-50">
-                     <div className="w-2 h-2 rounded-full bg-zinc-600 border border-zinc-500 dashed" />
-                     <span className="text-[10px] font-black uppercase text-zinc-500">Tendance Estimée</span>
-                   </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                    <span className="text-[10px] font-black uppercase text-zinc-400">Revenu Réel</span>
+                  </div>
+                  <div className="flex items-center gap-2 opacity-50">
+                    <div className="w-2 h-2 rounded-full bg-zinc-600 border border-zinc-500 dashed" />
+                    <span className="text-[10px] font-black uppercase text-zinc-500">Tendance Estimée</span>
+                  </div>
                 </div>
                 <ResponsiveContainer width="100%" height={320}>
                   <AreaChart data={revenueData}>
@@ -760,23 +760,23 @@ export default function AdminAnalyticsTab() {
                     <XAxis dataKey="date" stroke="#71717a" tick={{ fontSize: 10, fontWeight: 700 }} tickFormatter={formatDate} interval={range === '7d' ? 0 : range === '30d' ? 4 : 10} axisLine={false} />
                     <YAxis stroke="#71717a" tick={{ fontSize: 10, fontWeight: 700 }} tickFormatter={(v: number) => `${v}€`} axisLine={false} />
                     <Tooltip {...tooltipStyle} labelFormatter={formatDate} formatter={(v: number) => [`${v.toFixed(2)} €`, 'Revenus']} />
-                    <Area 
-                      type="monotone" 
-                      dataKey="revenue" 
-                      stroke="#10b981" 
-                      strokeWidth={4} 
-                      fill="url(#revenueGradient)" 
+                    <Area
+                      type="monotone"
+                      dataKey="revenue"
+                      stroke="#10b981"
+                      strokeWidth={4}
+                      fill="url(#revenueGradient)"
                       fillOpacity={1}
                       filter="url(#shadow)"
                     />
                   </AreaChart>
                 </ResponsiveContainer>
                 <div className="mt-4 p-4 rounded-2xl bg-emerald-500/5 border border-emerald-500/10 flex items-center justify-between">
-                   <div className="flex items-center gap-2">
-                     <Zap className="w-4 h-4 text-emerald-400" />
-                     <p className="text-xs font-bold text-zinc-400">CA prévisionnel fin de mois :</p>
-                   </div>
-                   <p className="text-lg font-black text-white italic">{predictedRevenue.toLocaleString('fr-FR', { maximumFractionDigits: 0 })} €</p>
+                  <div className="flex items-center gap-2">
+                    <Zap className="w-4 h-4 text-emerald-400" />
+                    <p className="text-xs font-bold text-zinc-400">CA prévisionnel fin de mois :</p>
+                  </div>
+                  <p className="text-lg font-black text-white italic">{predictedRevenue.toLocaleString('fr-FR', { maximumFractionDigits: 0 })} €</p>
                 </div>
               </ChartCard>
             </div>

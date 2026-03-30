@@ -152,18 +152,18 @@ export default function Account() {
 
   const initials = profile?.full_name
     ? profile.full_name
-        .split(' ')
-        .map((n: string) => n[0])
-        .join('')
-        .slice(0, 2)
-        .toUpperCase()
+      .split(' ')
+      .map((n: string) => n[0])
+      .join('')
+      .slice(0, 2)
+      .toUpperCase()
     : '?';
 
   const memberSince = profile?.created_at
     ? new Date(profile.created_at).toLocaleDateString('fr-FR', {
-        month: 'long',
-        year: 'numeric',
-      })
+      month: 'long',
+      year: 'numeric',
+    })
     : '';
 
   const eurValue = (points * ((settings.loyalty_redeem_rate || 5) / 100)).toFixed(2);
@@ -256,7 +256,7 @@ export default function Account() {
       label: 'Parrainage',
       description: `Invitez & gagnez des ${settings.loyalty_currency_name}`,
       to: '/compte/parrainage',
-      accentHex: '#a855f7',
+      accentHex: '#6edf11',
       size: 'small',
     },
     {

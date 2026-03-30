@@ -51,14 +51,14 @@ export default function Referrals() {
         seoTitle={`Parrainage — ${settings.store_name}`}
         seoDescription="Le programme de parrainage est temporairement désactivé."
         icon={Users}
-        iconColor="#a855f7"
+        iconColor="#6edf11"
         title="Parrainage"
         footerText={null}
       >
         <div className="flex flex-col items-center justify-center py-24 text-center space-y-6">
           <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto"
-            style={{ background: '#a855f715', border: '1px solid #a855f725' }}>
-            <Gift className="w-7 h-7 text-[#a855f7]" />
+            style={{ background: '#6edf1115', border: '1px solid #6edf1125' }}>
+            <Gift className="w-7 h-7 text-[#6edf11]" />
           </div>
           <div className="space-y-2">
             <h2 className="text-2xl font-bold text-[color:var(--color-text)]"
@@ -81,7 +81,7 @@ export default function Referrals() {
       seoTitle={`Parrainage — ${settings.store_name} Privilège`}
       seoDescription={`Parrainez vos amis et gagnez des ${settings.loyalty_currency_name}.`}
       icon={Users}
-      iconColor="#a855f7"
+      iconColor="#6edf11"
       title="Parrainage"
       subtitle={`Invitez vos amis · ${settings.referral_reward_points} ${settings.loyalty_currency_name} par parrainage réussi`}
       stat={referrals.length}
@@ -97,15 +97,15 @@ export default function Referrals() {
           className="relative rounded-[2rem] p-6 md:p-8 overflow-hidden"
           style={{
             background: 'color-mix(in srgb, var(--color-card) 85%, transparent)',
-            border: '1px solid #a855f725',
+            border: '1px solid #6edf1125',
           }}
         >
           <div className="absolute top-0 right-0 w-48 h-48 rounded-full pointer-events-none"
-            style={{ background: 'radial-gradient(circle, #a855f708, transparent 70%)', transform: 'translate(30%, -30%)' }} />
+            style={{ background: 'radial-gradient(circle, #6edf1108, transparent 70%)', transform: 'translate(30%, -30%)' }} />
 
           <div className="relative space-y-5">
             <div className="flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-[#a855f7]" />
+              <Sparkles className="w-4 h-4 text-[#6edf11]" />
               <p className="text-[10px] uppercase tracking-widest text-[color:var(--color-text-muted)]"
                 style={{ fontFamily: "'DM Mono', monospace" }}>
                 Votre lien unique
@@ -120,8 +120,8 @@ export default function Referrals() {
                 onClick={copyToClipboard}
                 className="shrink-0 inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-bold text-xs uppercase tracking-wider transition-all duration-300"
                 style={{
-                  background: copied ? '#a855f7' : 'color-mix(in srgb, var(--color-card) 85%, transparent)',
-                  border: `1px solid ${copied ? '#a855f7' : '#a855f728'}`,
+                  background: copied ? '#6edf11' : 'color-mix(in srgb, var(--color-card) 85%, transparent)',
+                  border: `1px solid ${copied ? '#6edf11' : '#6edf1128'}`,
                   color: copied ? 'white' : 'var(--color-text)',
                 }}
               >
@@ -139,7 +139,7 @@ export default function Referrals() {
           className="grid grid-cols-3 gap-3 md:gap-4"
         >
           {[
-            { icon: Users, label: 'Invités', value: referrals.length, color: '#a855f7' },
+            { icon: Users, label: 'Invités', value: referrals.length, color: '#6edf11' },
             { icon: CheckCircle2, label: 'Réussis', value: completedCount, color: 'var(--color-primary)' },
             { icon: Coins, label: `${settings.loyalty_currency_name} gagnés`, value: totalRewards, color: '#eab308' },
           ].map((stat, i) => (
@@ -171,7 +171,7 @@ export default function Referrals() {
         {/* ── Activity list ── */}
         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-1 h-4 rounded-full bg-[#a855f7]" />
+            <div className="w-1 h-4 rounded-full bg-[#6edf11]" />
             <h3 className="text-[10px] uppercase tracking-[0.28em] text-[color:var(--color-text-muted)]"
               style={{ fontFamily: "'DM Mono', monospace" }}>
               Activité
@@ -212,11 +212,11 @@ export default function Referrals() {
                   transition={{ delay: 0.3 + i * 0.07 }}
                   className="group flex items-center justify-between p-4 md:p-5 rounded-[1.5rem] transition-all duration-300"
                   style={{ background: 'color-mix(in srgb, var(--color-card) 85%, transparent)', border: '1px solid color-mix(in srgb, var(--color-border) 100%, transparent)' }}
-                  onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.borderColor = '#a855f728'; }}
+                  onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.borderColor = '#6edf1128'; }}
                   onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.borderColor = ''; }}
                 >
                   <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 group-hover:bg-[#a855f715] group-hover:text-[#a855f7]"
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 group-hover:bg-[#6edf1115] group-hover:text-[#6edf11]"
                       style={{ background: 'color-mix(in srgb, var(--color-bg) 100%, transparent)', border: '1px solid color-mix(in srgb, var(--color-border) 100%, transparent)', color: 'var(--color-text-muted)' }}>
                       <Users className="w-4 h-4" />
                     </div>
@@ -271,7 +271,7 @@ export default function Referrals() {
               `Les ${settings.loyalty_currency_name} sont valables sur toute la boutique.`,
             ].filter(Boolean).map((rule, i) => (
               <li key={i} className="flex gap-3 text-xs text-[color:var(--color-text-muted)] leading-relaxed">
-                <ChevronRight className="w-3.5 h-3.5 text-[#a855f7] shrink-0 mt-0.5" />
+                <ChevronRight className="w-3.5 h-3.5 text-[#6edf11] shrink-0 mt-0.5" />
                 {rule}
               </li>
             ))}

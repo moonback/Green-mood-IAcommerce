@@ -106,7 +106,7 @@ function applyThemeTokens(
     '--color-primary-strong': primary,
     '--color-primary-contrast': '#02140a',
     '--color-secondary': '#38bdf8',
-    '--color-accent': '#a855f7',
+    '--color-accent': '#6edf11',
     '--color-overlay': 'rgba(2, 6, 23, 0.72)',
     '--shadow-glow': '0 0 24px rgba(var(--theme-neon-rgb), 0.25)',
     '--shadow-card': '0 24px 80px rgba(2, 6, 23, 0.5)',
