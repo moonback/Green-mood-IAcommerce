@@ -89,6 +89,11 @@ Recommander la variété ou le produit de soin parfaitement adapté au besoin (s
 - **Accompagnement** : Propose une mise en situation (ex: "Idéal pour décompresser après une longue journée").
 - **Validation** : Termine par une question ouverte pour s'assurer que l'effet recherché correspond.
 
+${contextBlock}
+
+📋 RÉPONSES DU CLIENT AU QUIZ :
+${profileLines || 'Aucune réponse fournie.'}
+
 📦 CATALOGUE DISPONIBLE (Suggère UNIQUEMENT ces noms EXACTS) :
 ${catalog}
 
@@ -216,7 +221,7 @@ Marqueurs de langage naturels pour la voix :
 
 Langue : français par défaut. Adapte-toi naturellement si le client parle une autre langue.`;
 
-const _buildAnalysisProtocol = (userName?: string | null) => {
+const _buildAnalysisProtocol = () => {
   return `## PROTOCOLE D'ANALYSE — RÉFLEXION SILENCIEUSE AVANT CHAQUE RÉPONSE
 
 Avant de prononcer le moindre mot, exécute ce protocole en silence :
@@ -244,7 +249,9 @@ const _buildClientContext = (
   recentlyViewed: any[],
   savedPrefs: any,
   cartItems: any[],
-  activeProduct: any
+  activeProduct: any,
+  deliveryFee: number = 0,
+  deliveryFreeThreshold: number = 0
 ) => {
   let ctx = '';
 
@@ -299,8 +306,27 @@ const _buildClientContext = (
     const cartStr = cartItems.map((item: any) => `${item.product.name} ×${item.quantity}`).join(', ');
     const total = cartItems.reduce((acc: number, item: any) => acc + (item.product.price * item.quantity), 0);
     ctx += `- [PANIER RÉEL] : ${cartStr} — total ${total.toFixed(2)}€. Considère cette liste comme l'état définitif du panier. Réponds aux questions sur le panier uniquement sur cette base.\n`;
+    
+    if (deliveryFee > 0) {
+      if (deliveryFreeThreshold > 0 && total >= deliveryFreeThreshold) {
+        ctx += `- LIVRAISON : Offerte ! (Seuil de ${deliveryFreeThreshold}€ atteint).\n`;
+      } else {
+        ctx += `- LIVRAISON : ${deliveryFee}€.`;
+        if (deliveryFreeThreshold > 0) {
+          ctx += ` Encore ${(deliveryFreeThreshold - total).toFixed(2)}€ pour la livraison gratuite.`;
+        }
+        ctx += '\n';
+      }
+    }
   } else {
     ctx += `- [PANIER RÉEL] : Vide.\n`;
+    if (deliveryFee > 0) {
+      ctx += `- LIVRAISON : ${deliveryFee}€ standard.`;
+      if (deliveryFreeThreshold > 0) {
+        ctx += ` Offerte dès ${deliveryFreeThreshold}€ d'achat.`;
+      }
+      ctx += '\n';
+    }
   }
 
   if (activeProduct) {
@@ -363,7 +389,8 @@ export const getVoicePrompt = (
 ) => {
   const clientContext = _buildClientContext(
     userName, loyaltyPoints, loyaltyTiers, currencyName,
-    pastOrders, pastProducts, recentlyViewed, savedPrefs, cartItems, activeProduct
+    pastOrders, pastProducts, recentlyViewed, savedPrefs, cartItems, activeProduct,
+    deliveryFee, deliveryFreeThreshold
   );
   const now = new Date();
   const timeStr = now.toLocaleString('fr-FR', {
@@ -379,9 +406,11 @@ export const getVoicePrompt = (
     _buildIdentity(budtenderName, storeName),
     VOICE_FORMAT_RULES,
     `## RÉFÉRENCE TEMPORELLE (TEMPS RÉEL)\nNous sommes le : ${timeStr}`,
-    _buildAnalysisProtocol(userName),
+    _buildAnalysisProtocol(),
     _buildSkillsContext(),
     `## CONTEXTE CLIENT\n${clientContext}`,
+    `## CATALOGUE DISPONIBLE (RÉSUMÉ)\n${_buildCatalog(products)}`,
+    allowCloseSession ? "## FIN DE SESSION\nSi le client exprime explicitement le souhait de partir ou s'il n'a plus besoin d'aide, tu peux clore la session chaleureusement." : "",
     customPrompt?.trim() ? `## INSTRUCTIONS SPÉCIFIQUES\n${customPrompt.trim()}` : '',
   ].filter(Boolean).join('\n\n');
 };
