@@ -345,8 +345,8 @@ export function useGeminiLiveVoice({
     if (silenceTimerRef.current) window.clearTimeout(silenceTimerRef.current);
     const delay = cartItems.length > 0 ? 8000 : 15000;
     silenceTimerRef.current = window.setTimeout(() => {
-      // Check if session is still alive and listening
-      if (voiceStateRef.current === 'listening' && !isManualCloseRef.current && sessionRef.current) {
+      // Check session is alive, listening, and WS is open before sending
+      if (voiceStateRef.current === 'listening' && !isManualCloseRef.current && sessionRef.current && canSendRealtimeInput()) {
         console.info(`[Voice] Silence prolongé détecté (${delay / 1000}s), envoi d\'une relance proactive.`);
         try {
           sessionRef.current.sendClientContent({
@@ -909,7 +909,7 @@ export function useGeminiLiveVoice({
         try {
           sessionRef.current.sendRealtimeInput({
             audio: {
-              mimeType: 'audio/pcm',
+              mimeType: 'audio/pcm;rate=16000',
               data: toBase64(new Uint8Array(pcm.buffer))
             }
           });
@@ -1496,7 +1496,7 @@ export function useGeminiLiveVoice({
 
                     searchResultsRef.current = fallbackResults;
                     const results = fallbackResults
-                      .map((p) => `• ${p.name} | ${p.price}€ | ${p.description || ''}`)
+                      .map((p) => `• ${p.name} | ${p.price}€ | ${(p.description || '').slice(0, 80)}`)
                       .join('\n');
                     return {
                       name: c.name,
@@ -1541,7 +1541,7 @@ export function useGeminiLiveVoice({
 
                     searchResultsRef.current = fallbackResults;
                     const results = fallbackResults
-                      .map((p) => `• ${p.name} | ${p.price}€ | ${p.description || ''}`)
+                      .map((p) => `• ${p.name} | ${p.price}€ | ${(p.description || '').slice(0, 80)}`)
                       .join('\n');
                     return {
                       name: c.name,
@@ -1562,8 +1562,8 @@ export function useGeminiLiveVoice({
                   try {
                     const knowledge = await getRelevantKnowledge(query);
                     if (knowledge.length > 0) {
-                      const results = knowledge.map(k => `[${k.title}] : ${k.content}`).join('\n\n');
-                      return { name: c.name, id: c.id, response: { results, note: 'Voici les extraits de la base de connaissances. Utilise-les pour répondre au client.' } };
+                      const results = knowledge.map(k => `[${k.title}] : ${(k.content || '').slice(0, 300)}`).join('\n');
+                      return { name: c.name, id: c.id, response: { result: results } };
                     }
                     return { name: c.name, id: c.id, response: { note: 'Aucune information trouvée dans la base de connaissances interne pour cette requête.' } };
                   } catch (e) {
@@ -1598,8 +1598,8 @@ export function useGeminiLiveVoice({
                     }
 
                     if (orders && orders.length > 0) {
-                      const results = orders.map(o => `Commande ${o.id.slice(0, 8)} du ${new Date(o.created_at).toLocaleDateString('fr-FR')} : Statut = ${o.status}, Total = ${o.total}€`).join('\n');
-                      return { name: c.name, id: c.id, response: { results, note: 'Voici les statuts des commandes. Utilise ces informations pour répondre au client en traduisant le statut (paid=payée, processing=en préparation, shipped=expédiée, delivered=livrée).' } };
+                      const results = orders.map(o => `${o.id.slice(0, 8)} | ${new Date(o.created_at).toLocaleDateString('fr-FR')} | ${o.status} | ${o.total}€`).join('\n');
+                      return { name: c.name, id: c.id, response: { result: results } };
                     }
                     return { name: c.name, id: c.id, response: { note: 'Aucune commande trouvée.' } };
                   } catch (e) {
@@ -1618,18 +1618,11 @@ export function useGeminiLiveVoice({
                     if (results.length === 0) {
                       return { name: c.name, id: c.id, response: { note: 'Aucune donnée scientifique trouvée pour cette condition dans la base vectorielle.' } };
                     }
-                    const formatted = results.map(r => {
-                      const alt = r.alternate_name ? ` (alias: ${r.alternate_name})` : '';
-                      return [
-                        `- ${r.condition}${alt}`,
-                        `  Evidence: ${r.evidence_score}/6 (${r.evidence_label})`,
-                        `  Résumé: ${r.summary ?? 'Non disponible'}`,
-                        r.scientific_notes ? `  Notes: ${r.scientific_notes}` : null,
-                        r.source ? `  Source: ${r.source}` : null,
-                        r.study_link ? `  Étude: ${r.study_link}` : null,
-                      ].filter(Boolean).join('\n');
-                    }).join('\n\n');
-                    return { name: c.name, id: c.id, response: { results: formatted, note: 'Données issues de la base vectorielle cannabis_conditions_vectors.' } };
+                    const formatted = results.slice(0, 3).map(r => {
+                      const summary = (r.summary ?? '').slice(0, 200);
+                      return `${r.condition} (${r.evidence_label}) : ${summary}`;
+                    }).join('\n');
+                    return { name: c.name, id: c.id, response: { result: formatted } };
                   } catch (e) {
                     console.error('[Voice] search_cannabis_conditions Error:', e);
                     return { name: c.name, id: c.id, response: { error: 'Erreur technique lors de la recherche de données scientifiques.' } };
@@ -1644,8 +1637,8 @@ export function useGeminiLiveVoice({
                   try {
                     const knowledge = await getRelevantKnowledge(query);
                     if (knowledge.length > 0) {
-                      const results = knowledge.map(k => `[${k.title}] : ${k.content}`).join('\n\n');
-                      return { name: c.name, id: c.id, response: { results, note: 'Voici les données techniques/expertes trouvées. Utilise-les pour répondre au client.' } };
+                      const results = knowledge.slice(0, 3).map(k => `[${k.title}] : ${(k.content || '').slice(0, 300)}`).join('\n');
+                      return { name: c.name, id: c.id, response: { result: results } };
                     }
                     return { name: c.name, id: c.id, response: { note: 'Aucune donnée experte trouvée pour cette requête dans la base de connaissances.' } };
                   } catch (e) {
@@ -1896,7 +1889,7 @@ export function useGeminiLiveVoice({
                   : payload.error || 'ok';
               console.info('[Voice][Tool] END', { name: r.name, id: r.id, status, durationMs, preview });
             });
-            if (filteredResponses.length > 0 && !isClosingRef.current && sessionRef.current) {
+            if (filteredResponses.length > 0 && !isClosingRef.current && sessionRef.current && canSendRealtimeInput()) {
               try {
                 sessionRef.current.sendToolResponse({ functionResponses: filteredResponses });
               } catch (toolSendErr: any) {

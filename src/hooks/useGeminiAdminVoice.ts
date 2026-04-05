@@ -234,7 +234,7 @@ export function useGeminiAdminVoice({ adminName, storeName, onNavigate, onCloseS
         const down = downsampleBuffer(e.data, ctx.sampleRate, INPUT_SAMPLE_RATE);
         const pcm = float32ToInt16(down);
         sessionRef.current?.sendRealtimeInput({
-          audio: { mimeType: 'audio/pcm', data: toBase64(new Uint8Array(pcm.buffer)) }
+          audio: { mimeType: 'audio/pcm;rate=16000', data: toBase64(new Uint8Array(pcm.buffer)) }
         });
       } catch (err: any) {
         const msg = String(err?.message ?? err).toLowerCase();
