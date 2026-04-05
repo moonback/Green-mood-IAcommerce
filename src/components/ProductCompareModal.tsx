@@ -91,13 +91,14 @@ export default function ProductCompareModal({ products, onClose }: ProductCompar
     {
       label: 'Effets',
       render: (p) => {
-        const benefits = p.attributes?.benefits ?? [];
+        const b = p.attributes?.benefits || p.attributes?.effects || p.attributes?.effets || [];
+        const benefits = Array.isArray(b) ? b : [];
         if (benefits.length === 0) return <span className="text-slate-300 text-sm">—</span>;
         return (
           <div className="flex flex-wrap gap-1.5">
-            {benefits.map((b) => (
-              <span key={b} className="text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full bg-[#2563eb]/10 text-cyan-300 border border-[#2563eb]/25">
-                {b}
+            {benefits.map((benefit: string) => (
+              <span key={benefit} className="text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full bg-[#2563eb]/10 text-cyan-300 border border-[#2563eb]/25">
+                {benefit}
               </span>
             ))}
           </div>
@@ -107,13 +108,14 @@ export default function ProductCompareModal({ products, onClose }: ProductCompar
     {
       label: 'Arômes',
       render: (p) => {
-        const aromas = p.attributes?.aromas ?? [];
+        const a = p.attributes?.aromas || p.attributes?.flavors || p.attributes?.aromes || [];
+        const aromas = Array.isArray(a) ? a : [];
         if (aromas.length === 0) return <span className="text-slate-300 text-sm">—</span>;
         return (
           <div className="flex flex-wrap gap-1.5">
-            {aromas.map((a) => (
-              <span key={a} className="text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full bg-white/5 text-slate-400 border border-white/10">
-                {a}
+            {aromas.map((aroma: string) => (
+              <span key={aroma} className="text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full bg-white/5 text-slate-400 border border-white/10">
+                {aroma}
               </span>
             ))}
           </div>

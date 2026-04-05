@@ -197,6 +197,7 @@ interface Options {
   onToggleFavorite?: (productId: string) => void;
   onApplyPromo?: (code: string) => Promise<{ success: boolean; discount?: number; message?: string }>;
   onVolumeLevel?: (rms: number) => void; // Am3: reactive waveform
+  onCompareProducts?: (products: any[]) => void; // Am8: visual comparison
   proactiveGreeting?: string;            // Am6: used when voice is triggered proactively
 }
 
@@ -275,6 +276,7 @@ export function useGeminiLiveVoice({
   onToggleFavorite,
   onApplyPromo,
   onVolumeLevel,
+  onCompareProducts,
   proactiveGreeting,
 }: Options) {
   const globalSettings = useSettingsStore(s => s.settings);
@@ -317,6 +319,8 @@ export function useGeminiLiveVoice({
   onToggleFavoriteRef.current = onToggleFavorite;
   const onApplyPromoRef = useRef(onApplyPromo);
   onApplyPromoRef.current = onApplyPromo;
+  const onCompareProductsRef = useRef(onCompareProducts);
+  onCompareProductsRef.current = onCompareProducts;
   const onVolumeLevelRef = useRef(onVolumeLevel);       // Am3
   onVolumeLevelRef.current = onVolumeLevel;
   const cartItemsRef = useRef(cartItems);
@@ -1831,19 +1835,33 @@ export function useGeminiLiveVoice({
                   const pB = await findProduct(nameB);
                   if (!pA) return { name: c.name, id: c.id, response: { error: `Produit "${nameA}" introuvable dans le catalogue.` } };
                   if (!pB) return { name: c.name, id: c.id, response: { error: `Produit "${nameB}" introuvable dans le catalogue.` } };
+                  
+                  if (onCompareProductsRef.current) {
+                    onCompareProductsRef.current([pA, pB]);
+                  }
+                  
                   const diff = pB.price - pA.price;
                   const priceLine = diff === 0
                     ? `Même prix (${pA.price}€).`
                     : diff > 0
                       ? `${pA.name} est ${Math.abs(diff).toFixed(2)}€ moins cher.`
                       : `${pB.name} est ${Math.abs(diff).toFixed(2)}€ moins cher.`;
+                  
                   const comparison = [
-                    `=== Comparaison : ${pA.name} vs ${pB.name} ===`,
-                    `${pA.name} : ${pA.price}€ | ${pA.description || 'Pas de description.'}`,
-                    `${pB.name} : ${pB.price}€ | ${pB.description || 'Pas de description.'}`,
-                    `Prix : ${priceLine}`,
+                    `📊 TABLEAU DE COMPARAISON AFFICHÉ : ${pA.name} vs ${pB.name}`,
+                    `${pA.name} : ${pA.price}€ | Description: ${pA.description || 'N/A'}`,
+                    `${pB.name} : ${pB.price}€ | Description: ${pB.description || 'N/A'}`,
+                    `Verdict prix : ${priceLine}`
                   ].join('\n');
-                  return { name: c.name, id: c.id, response: { result: comparison, note: 'Verbalise une synthèse orale courte de ces différences pour aider le client à choisir.' } };
+                  
+                  return { 
+                    name: c.name, 
+                    id: c.id, 
+                    response: { 
+                      result: comparison, 
+                      note: 'Le tableau comparatif est apparu à l\'écran du client. Invite-le à le regarder et commente les points clés (prix, effets, arômes) pour l\'aider à choisir.' 
+                    } 
+                  };
                 }
 
                 if (c.name === 'apply_promo') {

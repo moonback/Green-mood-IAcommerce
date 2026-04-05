@@ -28,12 +28,15 @@ interface Props {
     onApplyPromo?: (code: string) => Promise<{ success: boolean; discount?: number; message?: string }>;
     onRemoveItem?: (product: Product, quantity?: number) => void;
     onUpdateQuantity?: (product: Product, quantity: number) => void;
+    onToggleFavorite?: (productId: string) => void;
+    onCompareProducts?: (products: any[]) => void;
     activeProduct?: (PremiumProduct & { reviews: PremiumReview[]; relatedProducts?: Product[] }) | null;
     showUI?: boolean;
     cartItems?: any[];
     customPrompt?: string;
     loyaltyPoints?: number;
     allowCloseSession?: boolean;
+    wishlistItems?: string[];
 }
 
 // ─── Status labels ───────────────────────────────────────────────────────────
@@ -176,13 +179,14 @@ function MicOrb({ voiceState, isMuted }: { voiceState: VoiceState; isMuted: bool
 export default function VoiceAdvisor({
     products, pastProducts, pastOrders, savedPrefs, userName,
     isOpen, onClose, onHangup, onAddItem, onRemoveItem, onUpdateQuantity, onViewProduct, onNavigate, onOpenModal, onSavePrefs, onApplyPromo,
+    onToggleFavorite, onCompareProducts,
     activeProduct,
     showUI = true, cartItems = [], customPrompt, loyaltyPoints, allowCloseSession = true,
+    wishlistItems = [],
 }: Props) {
     const { settings } = useSettingsStore();
     const { resolvedTheme } = useTheme();
     const isLightTheme = resolvedTheme === 'light';
-    const { items: wishlistItems, toggleItem: onToggleFavorite } = useWishlistStore();
 
     const { voiceState, error, isMuted, isSupported, compatibilityError, startSession, stopSession, toggleMute } =
         useGeminiLiveVoice({
@@ -202,6 +206,7 @@ export default function VoiceAdvisor({
             onNavigate,
             onOpenModal,
             onSavePrefs,
+            onCompareProducts,
             onApplyPromo,
             cartItems,
             customPrompt,

@@ -47,11 +47,15 @@ export async function getCachedProducts(): Promise<Product[]> {
             console.log('[Cache MISS] products — fetching from Supabase');
             const { data } = await supabase
                 .from('products')
-                .select('*, category:categories(slug, name)')
+                .select('*, category:categories(slug, name), ratings:product_ratings(avg_rating, review_count)')
                 .eq('is_active', true)
                 .eq('is_available', true);
-
-            const products = (data ?? []) as Product[];
+            
+            const products = (data ?? []).map(p => ({
+                ...p,
+                avg_rating: (p as any).ratings?.[0]?.avg_rating ?? null,
+                review_count: (p as any).ratings?.[0]?.review_count ?? 0
+            })) as Product[];
             productsCache.set(products);
             return products;
         } finally {

@@ -8,6 +8,7 @@ import { getCachedProducts, getCachedSettings } from "../lib/budtenderCache";
 import { Product } from "../lib/types";
 import { BudTenderSettings } from "../lib/budtenderSettings";
 import { useBudtenderStore } from "../store/budtenderStore";
+import ProductCompareModal from "./ProductCompareModal";
 
 // UI Components
 import { BudTenderWidget } from "./budtender-ui";
@@ -17,6 +18,7 @@ export default function BudTender() {
   const navigate = useNavigate();
   const { addItem, items: cartItems, openSidebar, closeSidebar } = useCartStore();
   const autoCloseTimerRef = React.useRef<NodeJS.Timeout | null>(null);
+  const [comparisonProducts, setComparisonProducts] = useState<Product[] | null>(null);
 
   useEffect(() => {
     return () => {
@@ -108,14 +110,31 @@ export default function BudTender() {
           useCartStore.getState().updateQuantity(product.id, quantity);
           openSidebarWithAutoClose();
         }}
-        onViewProduct={(product) => navigate(`/catalogue/${product.slug}`)}
-        onNavigate={(path) => navigate(path)}
+        onViewProduct={(product) => {
+          setComparisonProducts(null);
+          navigate(`/catalogue/${product.slug}`);
+        }}
+        onNavigate={(path) => {
+          setComparisonProducts(null);
+          navigate(path);
+        }}
         onOpenModal={(modalName) => {
+          setComparisonProducts(null);
           window.dispatchEvent(new CustomEvent('cortex-open-modal', { detail: modalName }));
         }}
         onSavePrefs={memory.updatePrefs}
+        onCompareProducts={(prods) => setComparisonProducts(prods)}
         showUI={true}
       />
+
+      <AnimatePresence>
+        {comparisonProducts && (
+          <ProductCompareModal 
+            products={comparisonProducts} 
+            onClose={() => setComparisonProducts(null)} 
+          />
+        )}
+      </AnimatePresence>
     </>
   );
 }
