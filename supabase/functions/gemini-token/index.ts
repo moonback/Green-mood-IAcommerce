@@ -80,6 +80,34 @@ const BUDTENDER_TOOLS = [{
       },
     },
     {
+      name: 'load_voice_skill',
+      description:
+        "Charge des instructions vocales étendues non présentes dans le prompt initial. Appeler avant d'approfondir : botanique_expert (terpènes, cannabinoïdes, variétés, spectre complet) ; cross_selling (stratégie de compléments au-delà de suggest_bundle). Après réception, applique le texte retourné.",
+      parameters: {
+        type: 'OBJECT',
+        properties: {
+          skill_id: {
+            type: 'STRING',
+            description:
+              "Identifiant exact : botanique_expert ou cross_selling (aucune autre valeur).",
+          },
+        },
+        required: ['skill_id'],
+      },
+    },
+    {
+      name: 'search_cannabis_conditions',
+      description:
+        "Recherche scientifique sur le CBD et les conditions de bien-être (sommeil, anxiété, douleur, inflammation, etc.). Utiliser pour des questions médicalisées ou de données cannabis_conditions.",
+      parameters: {
+        type: 'OBJECT',
+        properties: {
+          query: { type: 'STRING', description: 'Condition ou concept recherché' },
+        },
+        required: ['query'],
+      },
+    },
+    {
       name: 'navigate_to',
       description: "Naviguer vers une page du site. Pages disponibles : accueil, catalogue, boutique, produits, qualite, contact, panier, compte, faq, livraison, a-propos, cgv, guides. Pour naviguer vers une catégorie de produits, utiliser le format 'category:NomCategorie'.",
       parameters: {

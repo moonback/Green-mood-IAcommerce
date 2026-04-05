@@ -8,6 +8,7 @@ import { isMatchProductsRpcAvailable, matchProductsRpc } from '../lib/matchProdu
 import { supabase, SUPABASE_URL, SUPABASE_ANON_KEY } from '../lib/supabase';
 import { getRelevantKnowledge } from '../lib/budtenderKnowledge';
 import { getVoicePrompt } from '../lib/budtenderPrompts';
+import { loadOptionalVoiceSkill } from '../lib/voiceSkills';
 import { searchCannabisKnowledge } from '../lib/cannabisKnowledgeService';
 import { useSettingsStore } from '../store/settingsStore';
 import { useRecentlyViewedStore } from '../store/recentlyViewedStore';
@@ -42,6 +43,38 @@ const BARGE_IN_NOISE_MIN = 0.02;             // clamp: never below 0.02
 const BARGE_IN_NOISE_MAX = 0.12;             // clamp: never above 0.12 (loud environments)
 const BARGE_IN_RECALIBRATE_INTERVAL_MS = 60_000; // recalibrate every 60s
 const MAX_PRODUCT_CACHE_SIZE = 100;
+/** Au-delà, l'API Live ferme souvent le WS avec 1007 (payload invalide / trop gros). */
+const MAX_LIVE_TOOL_RESPONSE_JSON = 14_000;
+const VOICE_CATALOG_TOOL_MAX_ITEMS = 6;
+const VOICE_CATALOG_DESC_MAX = 120;
+
+function shrinkLiveToolResponse(response: Record<string, unknown>): Record<string, unknown> {
+  const out: Record<string, unknown> = { ...response };
+  for (const key of ['results', 'note', 'result', 'error', 'content', 'directive', 'formatted']) {
+    const v = out[key];
+    if (typeof v === 'string' && v.length > 3500) {
+      out[key] = `${v.slice(0, 3480)}…`;
+    }
+  }
+  const serialized = JSON.stringify(out);
+  if (serialized.length > MAX_LIVE_TOOL_RESPONSE_JSON) {
+    return {
+      error:
+        'Réponse outil trop volumineuse pour le canal vocal. Reformule une requête plus courte ou demande moins de résultats.',
+    };
+  }
+  return out;
+}
+
+function formatVoiceCatalogToolLines(products: Product[]): string {
+  return products
+    .slice(0, VOICE_CATALOG_TOOL_MAX_ITEMS)
+    .map((p) => {
+      const d = (p.description || '').replace(/\s+/g, ' ').trim().slice(0, VOICE_CATALOG_DESC_MAX);
+      return `• ${p.name} | ${p.price}€${d ? ` | ${d}` : ''}`;
+    })
+    .join('\n');
+}
 
 function fallbackKeywordSearch(query: string, products: Product[]): Product[] {
   const keywords = query
@@ -332,6 +365,7 @@ export function useGeminiLiveVoice({
   const inputTranscriptTimerRef = useRef<number | null>(null);
   const outputTranscriptTimerRef = useRef<number | null>(null);
   const greetingTriggerSentRef = useRef(false);
+  const loadedVoiceSkillsRef = useRef<Set<string>>(new Set());
   const messageQueueRef = useRef<string[]>([]);
   const silenceTimerRef = useRef<number | null>(null);
   const productCacheRef = useRef<Map<string, Product>>(new Map());
@@ -345,10 +379,16 @@ export function useGeminiLiveVoice({
       if (voiceStateRef.current === 'listening' && !isManualCloseRef.current && sessionRef.current) {
         console.info(`[Voice] Silence prolongé détecté (${delay / 1000}s), envoi d\'une relance proactive.`);
         try {
-          sessionRef.current.sendClientContent({
-            turns: [{ role: 'user', parts: [{ text: `[SILENCE] Le client n'a rien dit depuis plus de ${delay / 1000} secondes. Relance-le très doucement et brièvement (ex: 'Vous êtes toujours là ?', 'Une question sur nos produits ?') pour savoir s'il a encore besoin d'aide. L'utilisateur a ${cartItems.length} article(s) dans son panier.` }] }],
-            turnComplete: true
-          });
+          const ws = wsRef.current ?? (sessionRef.current as any)?._ws;
+          if (!ws || ws.readyState !== WebSocket.OPEN) return;
+          // sendClientContent(turns) a provoqué des fermetures 1007 sur Gemini Live contraint :
+          // utiliser le flux texte temps réel, court et sans métacharactères lourds.
+          const n = cartItems.length;
+          const hint =
+            n > 0
+              ? `Silence prolongé. Une phrase courte pour relancer le client. Panier : ${n} article${n > 1 ? 's' : ''}.`
+              : 'Silence prolongé. Une phrase courte et amicale pour savoir si le client a encore besoin d aide.';
+          sessionRef.current.sendRealtimeInput({ text: hint });
         } catch (e) { }
       }
     }, delay);
@@ -615,6 +655,7 @@ export function useGeminiLiveVoice({
     if (outputTranscriptTimerRef.current) clearTimeout(outputTranscriptTimerRef.current);
     if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
     productCacheRef.current.clear();
+    loadedVoiceSkillsRef.current.clear();
 
     if (!preserveViewedProductsOnCleanupRef.current) {
       viewedProductIdsRef.current.clear();
@@ -1006,13 +1047,11 @@ export function useGeminiLiveVoice({
                 if (ws && ws.readyState !== WebSocket.OPEN) return;
 
                 const greetingTrigger = userName
-                  ? `[START SESSION] Accueille le client par son prénom (${userName}) et demande-lui comment tu peux l'aider aujourd'hui.`
-                  : "[START SESSION] Accueille chaleureusement le client et demande-lui comment tu peux l'aider aujourd'hui.";
+                  ? `Consigne ouverture : accueille le client par son prénom (${userName}) et demande comment tu peux l aider.`
+                  : "Consigne ouverture : accueille chaleureusement le client et demande comment tu peux l aider.";
 
-                sessionRef.current?.sendClientContent({
-                  turns: [{ role: 'user', parts: [{ text: greetingTrigger }] }],
-                  turnComplete: true
-                });
+                // Même cause que la relance silence : sendClientContent avec tours synthétiques peut provoquer 1007 en mode contraint.
+                sessionRef.current?.sendRealtimeInput({ text: greetingTrigger });
               }
 
               // Log voice session analytically
@@ -1158,7 +1197,7 @@ export function useGeminiLiveVoice({
             // to have run first so viewedProductIdsRef is populated).
             const PHASE_1_TOOLS = new Set([
               'think', 'search_catalog', 'navigate_to', 'search_knowledge',
-              'search_cannabis_knowledge', 'search_expert_data', 'track_order',
+              'search_cannabis_conditions', 'search_expert_data', 'load_voice_skill', 'track_order',
               'get_favorites', 'filter_catalog', 'get_referral_link',
               'compare_products', 'suggest_bundle', 'watch_stock',
               'submit_review', 'apply_promo', 'open_product_modal', 'save_preferences',
@@ -1177,6 +1216,35 @@ export function useGeminiLiveVoice({
               console.info('[Voice][Tool] START', { name: c.name, id: c.id, args: safeArgs });
 
               try {
+                if (c.name === 'load_voice_skill') {
+                  const skillId = String(args.skill_id || '').trim();
+                  if (loadedVoiceSkillsRef.current.has(skillId)) {
+                    return {
+                      name: c.name,
+                      id: c.id,
+                      response: {
+                        result:
+                          "Ce skill est déjà chargé pour cette session. Applique les instructions déjà reçues. Rappelle load_voice_skill si tu as besoin du texte complet.",
+                        skill_id: skillId,
+                        already_loaded: true,
+                      },
+                    };
+                  }
+                  const loaded = await loadOptionalVoiceSkill(skillId);
+                  if (loaded.ok === true) {
+                    loadedVoiceSkillsRef.current.add(skillId);
+                    return {
+                      name: c.name,
+                      id: c.id,
+                      response: {
+                        skill_id: loaded.skill_id,
+                        content: loaded.content,
+                      },
+                    };
+                  }
+                  return { name: c.name, id: c.id, response: { error: loaded.error } };
+                }
+
                 const now = Date.now();
                 const recentMap = recentToolExecutionsRef.current;
                 for (const [k, ts] of recentMap.entries()) {
@@ -1472,9 +1540,7 @@ export function useGeminiLiveVoice({
                     }
 
                     searchResultsRef.current = fallbackResults;
-                    const results = fallbackResults
-                      .map((p) => `• ${p.name} | ${p.price}€ | ${p.description || ''}`)
-                      .join('\n');
+                    const results = formatVoiceCatalogToolLines(fallbackResults);
                     return {
                       name: c.name,
                       id: c.id,
@@ -1496,7 +1562,7 @@ export function useGeminiLiveVoice({
                     });
                     if (rpcError) throw rpcError;
                     if (data && data.length > 0) searchResultsRef.current = data as Product[];
-                    const results = (data as any[]).map(p => `• ${p.name} | ${p.price}€ | ${p.description || ''}`).join('\n');
+                    const results = formatVoiceCatalogToolLines(data as Product[]);
                     return { name: c.name, id: c.id, response: { results, note: 'Ce sont les produits les plus pertinents du catalogue complet.' } };
                   } catch (e) {
                     if (shouldDisableSemanticSearch(e)) {
@@ -1517,9 +1583,7 @@ export function useGeminiLiveVoice({
                     }
 
                     searchResultsRef.current = fallbackResults;
-                    const results = fallbackResults
-                      .map((p) => `• ${p.name} | ${p.price}€ | ${p.description || ''}`)
-                      .join('\n');
+                    const results = formatVoiceCatalogToolLines(fallbackResults);
                     return {
                       name: c.name,
                       id: c.id,
@@ -1539,7 +1603,13 @@ export function useGeminiLiveVoice({
                   try {
                     const knowledge = await getRelevantKnowledge(query);
                     if (knowledge.length > 0) {
-                      const results = knowledge.map(k => `[${k.title}] : ${k.content}`).join('\n\n');
+                      const results = knowledge
+                        .slice(0, 5)
+                        .map((k) => {
+                          const body = (k.content || '').replace(/\s+/g, ' ').trim().slice(0, 400);
+                          return `[${k.title}] : ${body}`;
+                        })
+                        .join('\n\n');
                       return { name: c.name, id: c.id, response: { results, note: 'Voici les extraits de la base de connaissances. Utilise-les pour répondre au client.' } };
                     }
                     return { name: c.name, id: c.id, response: { note: 'Aucune information trouvée dans la base de connaissances interne pour cette requête.' } };
@@ -1874,7 +1944,20 @@ export function useGeminiLiveVoice({
             });
             if (filteredResponses.length > 0 && !isClosingRef.current && sessionRef.current) {
               try {
-                sessionRef.current.sendToolResponse({ functionResponses: filteredResponses });
+                // JSON.stringify omet les clés à valeur undefined : l'API Live exige un id par réponse.
+                const functionResponses = filteredResponses.map((r, idx) => {
+                  const id =
+                    r.id != null && String(r.id).trim() !== ''
+                      ? String(r.id).trim()
+                      : `${r.name ?? 'tool'}-${idx}`;
+                  const raw = (r as { response?: unknown }).response;
+                  const response =
+                    raw !== null && typeof raw === 'object' && !Array.isArray(raw)
+                      ? shrinkLiveToolResponse(raw as Record<string, unknown>)
+                      : raw;
+                  return { ...r, id, response } as FunctionResponse;
+                });
+                sessionRef.current.sendToolResponse({ functionResponses });
               } catch (toolSendErr: any) {
                 const msg = String(toolSendErr?.message ?? '').toLowerCase();
                 if (!msg.includes('closed') && !msg.includes('closing')) {

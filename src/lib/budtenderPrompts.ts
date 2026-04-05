@@ -1,47 +1,7 @@
 import { Product, Review as BaseReview } from '../lib/types';
 import { Product as PremiumProduct, Review as PremiumReview } from '../types/premiumProduct';
 import { QuizStep } from './budtenderSettings';
-
-// Charge les fichiers .md de manière dynamique via Vite
-const skillsFiles = import.meta.glob('../skills/*.md', { query: '?raw', eager: true, import: 'default' });
-
-const _buildSkillsContext = () => {
-  const filePaths = Object.keys(skillsFiles);
-  if (filePaths.length === 0) return '';
-
-  // skill.md (définitions des outils) doit toujours être injecté EN PREMIER
-  // pour que les autres skills puissent y référer sans ambiguïté.
-  const sorted = [...filePaths].sort((a, b) => {
-    const fa = a.split('/').pop() || '';
-    const fb = b.split('/').pop() || '';
-    if (fa === 'skill.md') return -1;
-    if (fb === 'skill.md') return 1;
-    return fa.localeCompare(fb);
-  });
-
-  let context = '## COMPÉTENCES SPÉCIALISÉES (SKILLS)\nTu possèdes les instructions et les compétences supplémentaires suivantes :\n\n';
-
-  for (const path of sorted) {
-    const fileName = path.split('/').pop() || '';
-    const skillName = fileName.replace('.md', '');
-
-    let content = skillsFiles[path] as string;
-
-    // Minification pour la voix : supprime le markdown que le TTS lirait mot à mot
-    content = content
-      .replace(/\*\*(.+?)\*\*/g, '$1')   // **gras** → texte brut
-      .replace(/\*([^*\n]+?)\*/g, '$1')   // *italique* → texte brut (sans croiser les sauts de ligne)
-      .replace(/`([^`\n]+?)`/g, '$1')     // `code` → texte brut
-      .replace(/^>\s.*/gm, '')            // citations de bloc
-      .replace(/<!--[\s\S]*?-->/g, '')    // commentaires HTML
-      .replace(/\n{2,}/g, '\n')           // doubles sauts de ligne → simple
-      .trim();
-
-    context += `### ${skillName.toUpperCase()}\n${content}\n\n`;
-  }
-
-  return context;
-};
+import { buildCoreVoiceSkillsContext, buildOptionalVoiceSkillsInstruction } from './voiceSkills';
 
 export type QuizAnswers = Record<string, string>;
 
@@ -407,7 +367,8 @@ export const getVoicePrompt = (
     VOICE_FORMAT_RULES,
     `## RÉFÉRENCE TEMPORELLE (TEMPS RÉEL)\nNous sommes le : ${timeStr}`,
     _buildAnalysisProtocol(),
-    _buildSkillsContext(),
+    buildCoreVoiceSkillsContext(),
+    buildOptionalVoiceSkillsInstruction(),
     `## CONTEXTE CLIENT\n${clientContext}`,
     `## CATALOGUE DISPONIBLE (RÉSUMÉ)\n${_buildCatalog(products)}`,
     allowCloseSession ? "## FIN DE SESSION\nSi le client exprime explicitement le souhait de partir ou s'il n'a plus besoin d'aide, tu peux clore la session chaleureusement." : "",
