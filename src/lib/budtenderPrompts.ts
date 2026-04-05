@@ -319,7 +319,7 @@ const _buildClientContext = (
   return ctx;
 };
 
-const _buildCatalog = (products: Product[], limit = 25) =>
+const _buildCatalog = (products: Product[], limit = 10) =>
   products
     .slice(0, limit)
     .map(p => `${p.name}${p.category?.name ? ` (${p.category.name})` : ''} — ${p.price}€`)
@@ -362,9 +362,10 @@ export const getVoicePrompt = (
     minute: '2-digit'
   });
 
-  return [
+  const finalPrompt = [
     _buildIdentity(budtenderName, storeName),
     VOICE_FORMAT_RULES,
+    // Note: Analysis protocol and skills are critical, we keep them near the top
     `## RÉFÉRENCE TEMPORELLE (TEMPS RÉEL)\nNous sommes le : ${timeStr}`,
     _buildAnalysisProtocol(),
     buildCoreVoiceSkillsContext(),
@@ -374,6 +375,16 @@ export const getVoicePrompt = (
     allowCloseSession ? "## FIN DE SESSION\nSi le client exprime explicitement le souhait de partir ou s'il n'a plus besoin d'aide, tu peux clore la session chaleureusement." : "",
     customPrompt?.trim() ? `## INSTRUCTIONS SPÉCIFIQUES\n${customPrompt.trim()}` : '',
   ].filter(Boolean).join('\n\n');
+
+  // Hard limit to 8000 characters to prevent WebSocket 1007 (Invalid Argument) error in Gemini Live.
+  // We sanitize the string by removing potentially problematic non-printable characters or excessive whitespace.
+  const sanitized = finalPrompt.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F-\u009F]/g, '').replace(/\s+/g, ' ').trim();
+  
+  if (sanitized.length > 7990) {
+    console.warn('[Voice][Prompt] Prompt too long (', sanitized.length, '), truncating to 7990 chars.');
+    return sanitized.slice(0, 7990) + '... (truncated for stability)';
+  }
+  return sanitized;
 };
 
 export const getBirthdayGiftPrompt = (

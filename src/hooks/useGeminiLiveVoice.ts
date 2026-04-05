@@ -925,11 +925,14 @@ export function useGeminiLiveVoice({
         const ws = (sessionRef.current as any)?._ws;
         if (ws && ws.readyState !== 1) return; // 1 = OPEN
 
+        const audioData = new Uint8Array(pcm.buffer);
+        if (audioData.length === 0) return; // Skip empty chunks to prevent 1007 errors
+
         try {
           sessionRef.current.sendRealtimeInput({
             audio: {
               mimeType: 'audio/pcm',
-              data: toBase64(new Uint8Array(pcm.buffer))
+              data: toBase64(audioData)
             }
           });
         } catch (err) {

@@ -11,7 +11,7 @@
   <img src="https://img.shields.io/badge/Vite-6-purple?logo=vite" alt="Vite 6" />
   <img src="https://img.shields.io/badge/Supabase-PostgreSQL-green?logo=supabase" alt="Supabase" />
   <img src="https://img.shields.io/badge/TailwindCSS-v4-blue?logo=tailwindcss" alt="Tailwind v4" />
-  <img src="https://img.shields.io/badge/Tests-380%20passing-brightgreen?logo=vitest" alt="Tests 380 passing" />
+  <img src="https://img.shields.io/badge/Tests-412%20passing-brightgreen?logo=vitest" alt="Tests 412 passing" />
   <img src="https://img.shields.io/badge/AI-Gemini_Live-red?logo=google-gemini" alt="AI Gemini" />
 </p>
 
@@ -551,11 +551,13 @@ Accessible depuis le Dashboard, l'overlay wizard guide en **8 étapes** :
 
 ### BudTender Voix (Gemini Live — Voice-Only)
 - **Localisation** : `src/hooks/useGeminiLiveVoice.ts`, `src/lib/budtenderPrompts.ts`
-- **Modèle** : Gemini 2.5 Flash Native Audio (`gemini-2.5-flash-preview-native-audio-dialog`)
+- **Modèle** : Gemini 3.1 Flash Native Audio (`gemini-3.1-flash-native-audio`)
 - **Architecture de Performance** :
   - **Thread-Separation** : Traitement de l'audio dans un `AudioWorklet` (micro) + `Web Worker` statique (`/downsample-worker.js`), communiquant via **Transferable Objects** (zero-copy).
   - **Search Intelligence** : Système à 4 niveaux : Cache FIFO (100 entrées, `MAX_PRODUCT_CACHE_SIZE`) → Exact Match → Substring → **Fuzzy Search Serveur (RPC `search_products_fuzzy` via pg_trgm + index GIST)**.
   - **Sync Robustness** : `messageQueueRef` pour garantir l'envoi des états (panier, activeProduct) même pendant les gaps de connexion WebSocket.
+  - **1007 Stability Guard** : Troncature automatique des instructions système à **8 000 caractères** et réduction du catalogue à 10 items pour garantir la stabilité de la connexion WebSocket.
+  - **Prompt Sanitization** : Nettoyage des caractères non imprimables et des séquences de contrôle (provenant de l'extraction PDF) pour éviter l'invalidation du JSON frame.
   - **Timers Dynamiques** : Relance proactive après 8s (panier actif) ou 15s (navigation seule) pour une assistance intelligente.
 - **Optimisation de Latence (TTFT)** : Passage en **Function Calling exclusif** pour le catalogue. Le prompt système n'inclut plus le catalogue complet, réduisant drastiquement le temps de première réponse.
 - **Prompt Système Optimisé** : Architecture modulaire (Identity + Format Rules + Protocol + Skills + Client Context) avec injection dynamique des données utilisateur.
@@ -577,6 +579,7 @@ Accessible depuis le Dashboard, l'overlay wizard guide en **8 étapes** :
 ### Embeddings & Recherche Vectorielle
 - **Localisation** : `src/lib/embeddings.ts`, `src/lib/budtender/budtenderVectorSearch.ts`
 - **Architecture HNSW Appliquée** : Indexation multidimensionnelle ultra-rapide (Produits, Connaissances, Informations expertes) atteignant la milliseconde en complétion.
+- **Robustesse Testée** : Couverture de **100%** sur `embeddings.ts` et **85%+** sur `pdfKnowledge.ts`.
 - Génération via OpenRouter API
 - Stockage pgvector dans Supabase
 - Cache LRU local (max 1000 entrées)
@@ -616,8 +619,11 @@ src/
 │   ├── cartStore.test.ts
 │   └── ...
 ├── hooks/__tests__/               # Tests hooks (4 fichiers)
-├── lib/__tests__/                 # Tests utilitaires (7 fichiers)
-└── test/
+├── lib/__tests__/                 # Tests utilitaires (10 fichiers)
+│   ├── embeddings.test.ts          # Couverture 100%
+│   ├── pdfKnowledge.test.ts        # Moteur d'extraction PDF
+│   ├── budtenderPrompts.test.ts    # Génération des prompts IA
+├── test/
     ├── setup.ts                   # Configuration globale + mocks
     ├── mocks/supabase.ts          # Mock client Supabase
     └── utils.tsx                  # Helpers render/act
@@ -625,8 +631,8 @@ e2e/                               # Tests Playwright
 ```
 
 ### Couverture
-
-- **380+ tests** au total
+- **410+ tests** au total (Vitest + Playwright)
+- **90%+ de couverture** sur les modules IA critiques (`embeddings`, `budtenderPrompts`, `backgroundTaskStore`)
 - Composants UI, stores, hooks, utilitaires
 - Mock Supabase complet (pas de dépendance réseau)
 - Playwright pour les parcours critiques (checkout, auth)
