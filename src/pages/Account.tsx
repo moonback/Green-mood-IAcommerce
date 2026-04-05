@@ -298,7 +298,7 @@ export default function Account() {
               className="w-full h-full object-cover scale-105"
               alt=""
             />
-            <div className="absolute inset-0 bg-gradient-to-br from-black/88 via-black/55 to-black/80" />
+            <div className="absolute inset-0 bg-gradient-to-br from-[color:var(--color-bg)]/90 via-[color:var(--color-bg)]/60 to-[color:var(--color-bg)]/80 backdrop-blur-[2px]" />
             {/* tier-tinted atmospheric bloom */}
             <motion.div
               animate={{ opacity: [0.18, 0.32, 0.18], scale: [1, 1.12, 1] }}
@@ -310,7 +310,7 @@ export default function Account() {
             />
           </div>
 
-          <div className="relative p-8 sm:p-10 md:p-12 lg:p-14 text-white">
+          <div className="relative p-8 sm:p-10 md:p-12 lg:p-14 text-[color:var(--color-text)]">
             <div className="flex flex-col xl:flex-row items-center xl:items-start gap-10 xl:gap-16 w-full">
 
               {/* ─── Avatar + ring ─── */}
@@ -326,19 +326,18 @@ export default function Account() {
                   <div
                     className="absolute inset-[16px] rounded-full flex items-center justify-center"
                     style={{
-                      background: 'rgba(255,255,255,0.05)',
+                      background: 'color-mix(in srgb, var(--color-text) 5%, transparent)',
                       backdropFilter: 'blur(16px)',
-                      border: '1px solid rgba(255,255,255,0.1)',
+                      border: '1px solid color-mix(in srgb, var(--color-text) 10%, transparent)',
                     }}
                   >
                     <span
+                      className="text-[color:var(--color-text)]"
                       style={{
                         fontFamily: "'DM Serif Display', Georgia, serif",
                         fontSize: '2.4rem',
-                        color: ringColor,
                         letterSpacing: '0.04em',
                         lineHeight: 1,
-                        textShadow: `0 0 24px ${ringGlow}`,
                       }}
                     >
                       {initials}
@@ -355,7 +354,7 @@ export default function Account() {
                     <circle
                       cx="74" cy="74" r={RING_R}
                       fill="none"
-                      stroke="rgba(255,255,255,0.08)"
+                      stroke="color-mix(in srgb, var(--color-text) 8%, transparent)"
                       strokeWidth="5"
                     />
                     {/* Glow under ring */}
@@ -391,7 +390,7 @@ export default function Account() {
                     transition={{ delay: 0.65, type: 'spring', bounce: 0.5 }}
                     className="absolute -bottom-0.5 -right-0.5 p-2 rounded-xl"
                     style={{
-                      background: 'rgba(10,10,10,0.92)',
+                      background: 'color-mix(in srgb, var(--color-bg) 92%, transparent)',
                       backdropFilter: 'blur(10px)',
                       border: `1px solid ${ringColor}45`,
                       boxShadow: `0 0 18px ${ringGlow}`,
@@ -406,24 +405,22 @@ export default function Account() {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.95 }}
-                  className="text-center"
+                  className="text-center mt-2"
                 >
                   {nextTier ? (
                     <p
-                      className="text-[10px] uppercase tracking-widest"
+                      className="text-[10px] uppercase tracking-widest text-[color:var(--color-text)] opacity-70 font-bold"
                       style={{
                         fontFamily: "'DM Mono', monospace",
-                        color: 'rgba(255,255,255,0.38)',
                       }}
                     >
                       {nextTier.minPoints - points} pts → {nextTier.name}
                     </p>
                   ) : (
                     <p
-                      className="text-[10px] uppercase tracking-widest"
+                      className="text-[10px] uppercase tracking-widest text-[color:var(--color-text)] opacity-70 font-bold"
                       style={{
                         fontFamily: "'DM Mono', monospace",
-                        color: ringColor,
                       }}
                     >
                       Niveau maximum ✦
@@ -438,10 +435,9 @@ export default function Account() {
                   initial={{ opacity: 0, y: 6 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.28 }}
-                  className="text-[11px] uppercase tracking-[0.28em] mb-2.5"
+                  className="text-[11px] uppercase tracking-[0.28em] mb-2.5 text-[color:var(--color-text)] opacity-70 font-bold"
                   style={{
                     fontFamily: "'DM Mono', monospace",
-                    color: 'rgba(255,255,255,0.42)',
                   }}
                 >
                   {greeting}
@@ -451,7 +447,7 @@ export default function Account() {
                   initial={{ opacity: 0, y: 14 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.34 }}
-                  className="text-5xl md:text-6xl lg:text-7xl leading-none text-white mb-5 truncate"
+                  className="text-5xl md:text-6xl lg:text-7xl leading-none text-[color:var(--color-text)] mb-5 truncate"
                   style={{ fontFamily: "'DM Serif Display', Georgia, serif" }}
                 >
                   {profile?.full_name ?? 'Membre'}
@@ -465,25 +461,23 @@ export default function Account() {
                 >
                   {/* Tier chip */}
                   <span
-                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest"
+                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest text-[color:var(--color-text)]"
                     style={{
                       fontFamily: "'DM Mono', monospace",
-                      background: `${ringColor}1a`,
-                      border: `1px solid ${ringColor}40`,
-                      color: ringColor,
+                      background: `color-mix(in srgb, ${ringColor} 20%, transparent)`,
+                      border: `1px solid ${ringColor}`,
                       boxShadow: `0 0 16px ${ringGlow}`,
                     }}
                   >
-                    <TierIcon className="w-3 h-3" />
+                    <TierIcon className="w-3 h-3" style={{ color: ringColor }} />
                     {currentTier?.name ?? 'Bronze'}
                   </span>
 
                   {/* Member since */}
                   <span
-                    className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-wider"
+                    className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-[color:var(--color-text)] opacity-70 font-bold"
                     style={{
                       fontFamily: "'DM Mono', monospace",
-                      color: 'rgba(255,255,255,0.35)',
                     }}
                   >
                     <Shield className="w-3 h-3 opacity-60" />
@@ -497,12 +491,12 @@ export default function Account() {
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.42 }}
-                className="flex items-stretch divide-x divide-white/10 shrink-0"
+                className="flex items-stretch divide-x divide-[color:var(--color-border)] shrink-0"
               >
                 {/* Points */}
                 <div className="px-7 text-center flex flex-col items-center justify-center gap-1">
                   <p
-                    className="leading-none text-white"
+                    className="leading-none text-[color:var(--color-text)]"
                     style={{
                       fontFamily: "'DM Serif Display', Georgia, serif",
                       fontSize: '3.2rem',
@@ -511,20 +505,18 @@ export default function Account() {
                     {points.toLocaleString('fr-FR')}
                   </p>
                   <p
-                    className="text-[9px] uppercase tracking-[0.22em]"
+                    className="text-[9px] uppercase tracking-[0.22em] text-[color:var(--color-text)] opacity-70 font-bold mt-1"
                     style={{
                       fontFamily: "'DM Mono', monospace",
-                      color: 'rgba(255,255,255,0.38)',
                     }}
                   >
                     {settings.loyalty_currency_name}
                   </p>
                   <p
+                    className="text-[color:var(--color-text)] opacity-80 font-bold"
                     style={{
                       fontFamily: "'DM Mono', monospace",
-                      color: ringColor,
                       fontSize: '10px',
-                      opacity: 0.8,
                     }}
                   >
                     ≈ {eurValue}€
@@ -534,7 +526,7 @@ export default function Account() {
                 {/* Orders */}
                 <div className="px-7 text-center flex flex-col items-center justify-center gap-1">
                   <p
-                    className="leading-none text-white"
+                    className="leading-none text-[color:var(--color-text)]"
                     style={{
                       fontFamily: "'DM Serif Display', Georgia, serif",
                       fontSize: '3.2rem',
@@ -543,10 +535,9 @@ export default function Account() {
                     {orderCount}
                   </p>
                   <p
-                    className="text-[9px] uppercase tracking-[0.22em]"
+                    className="text-[9px] uppercase tracking-[0.22em] text-[color:var(--color-text)] opacity-70 font-bold mt-1"
                     style={{
                       fontFamily: "'DM Mono', monospace",
-                      color: 'rgba(255,255,255,0.38)',
                     }}
                   >
                     Commandes
@@ -556,29 +547,26 @@ export default function Account() {
                 {/* Progression */}
                 <div className="px-7 text-center flex flex-col items-center justify-center gap-1">
                   <p
-                    className="leading-none"
+                    className="leading-none text-[color:var(--color-text)]"
                     style={{
                       fontFamily: "'DM Serif Display', Georgia, serif",
                       fontSize: '3.2rem',
-                      color: ringColor,
-                      textShadow: `0 0 30px ${ringGlow}`,
                     }}
                   >
                     {progressPercent}%
                   </p>
                   <p
-                    className="text-[9px] uppercase tracking-[0.22em]"
+                    className="text-[9px] uppercase tracking-[0.22em] text-[color:var(--color-text)] opacity-70 font-bold mt-1"
                     style={{
                       fontFamily: "'DM Mono', monospace",
-                      color: 'rgba(255,255,255,0.38)',
                     }}
                   >
                     Progression
                   </p>
                   <p
+                    className="text-[color:var(--color-text)] opacity-80 font-bold"
                     style={{
                       fontFamily: "'DM Mono', monospace",
-                      color: 'rgba(255,255,255,0.25)',
                       fontSize: '10px',
                     }}
                   >
