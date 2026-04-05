@@ -1234,7 +1234,7 @@ export function useGeminiLiveVoice({
               'get_favorites', 'filter_catalog', 'get_referral_link',
               'compare_products', 'suggest_bundle', 'watch_stock',
               'submit_review', 'apply_promo', 'open_product_modal', 'save_preferences',
-              'get_current_time', 'remove_from_cart', 'update_cart_quantity'
+              'get_current_time', 'get_cart', 'remove_from_cart', 'update_cart_quantity'
             ]);
             const phase1Calls = calls.filter(c => PHASE_1_TOOLS.has(c.name!));
             const phase2Calls = calls.filter(c => !PHASE_1_TOOLS.has(c.name!));
@@ -1324,6 +1324,44 @@ export function useGeminiLiveVoice({
                     minute: '2-digit' 
                   });
                   return { name: c.name, id: c.id, response: { result } };
+                }
+
+                if (c.name === 'get_cart') {
+                  const items = cartItemsRef.current || [];
+                  if (items.length === 0) {
+                    return {
+                      name: c.name,
+                      id: c.id,
+                      response: {
+                        result: 'Le panier est actuellement vide.',
+                        item_count: 0,
+                        total: 0,
+                      },
+                    };
+                  }
+                  const cartLines = items.map((item: any) => {
+                    const p = item.product;
+                    const subtotal = (p.price * item.quantity).toFixed(2);
+                    return `${item.quantity}x ${p.name} (${p.price}\u20AC l'unit\u00E9) = ${subtotal}\u20AC`;
+                  });
+                  const total = items.reduce(
+                    (acc: number, item: any) => acc + item.product.price * item.quantity,
+                    0
+                  );
+                  const result = [
+                    `Panier (${items.length} article${items.length > 1 ? 's' : ''}) :`,
+                    ...cartLines,
+                    `Total : ${total.toFixed(2)}\u20AC`,
+                  ].join('\n');
+                  return {
+                    name: c.name,
+                    id: c.id,
+                    response: {
+                      result,
+                      item_count: items.length,
+                      total: total.toFixed(2),
+                    },
+                  };
                 }
 
                 if (c.name === 'add_to_cart') {

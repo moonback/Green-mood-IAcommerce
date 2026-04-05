@@ -253,6 +253,38 @@ const BUDTENDER_TOOLS = [{
       },
     },
     {
+      name: 'get_cart',
+      description: "Consulter le contenu actuel du panier du client : liste des produits, quantités et total. Appeler cet outil dès que le client pose une question sur son panier, avant de répondre.",
+      parameters: {
+        type: 'OBJECT',
+        properties: {},
+      },
+    },
+    {
+      name: 'remove_from_cart',
+      description: "Retirer un produit du panier du client. Si quantity est fourni, réduit la quantité au lieu de supprimer entièrement.",
+      parameters: {
+        type: 'OBJECT',
+        properties: {
+          product_name: { type: 'STRING', description: "Le nom du produit à retirer." },
+          quantity: { type: 'NUMBER', description: "Nombre d'unités à retirer (optionnel, retire tout si absent)." },
+        },
+        required: ['product_name'],
+      },
+    },
+    {
+      name: 'update_cart_quantity',
+      description: "Modifier la quantité d'un produit déjà dans le panier.",
+      parameters: {
+        type: 'OBJECT',
+        properties: {
+          product_name: { type: 'STRING', description: "Le nom du produit dans le panier." },
+          quantity: { type: 'NUMBER', description: "Nouvelle quantité souhaitée." },
+        },
+        required: ['product_name', 'quantity'],
+      },
+    },
+    {
       name: 'close_session',
       description: "Terminer la discussion et fermer la fenêtre vocale (à utiliser après avoir dit au revoir).",
       parameters: {
