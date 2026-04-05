@@ -155,6 +155,7 @@ export default function Catalog() {
   const [selectedMinRating, setSelectedMinRating] = useState<number | null>(null);
   const [shareStatus, setShareStatus] = useState<'idle' | 'copied' | 'error'>('idle');
   const [currentPage, setCurrentPage] = useState(1);
+  const observerTarget = React.useRef<HTMLDivElement>(null);
   const [compareMode, setCompareMode] = useState(false);
   const [compareIds, setCompareIds] = useState<string[]>([]);
   const [showCompareModal, setShowCompareModal] = useState(false);
@@ -165,6 +166,19 @@ export default function Catalog() {
   const [selectedSpecs, setSelectedSpecs] = useState<Record<string, string[]>>({});
   const [impacts, setImpacts] = useState<string[]>([]);
   const [aromas, setAromas] = useState<string[]>([]);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && !isLoading && products.length < totalCount) {
+          setCurrentPage((prev) => prev + 1);
+        }
+      },
+      { threshold: 0.1 }
+    );
+    if (observerTarget.current) observer.observe(observerTarget.current);
+    return () => observer.disconnect();
+  }, [isLoading, products.length, totalCount]);
 
   // ─── Category tree for accordion filter ───
   const [expandedCatNodes, setExpandedCatNodes] = useState<Set<string>>(new Set());
@@ -312,7 +326,7 @@ export default function Catalog() {
 
   useEffect(() => {
     async function fetchProducts() {
-      setIsLoading(true);
+      if (currentPage === 1) setIsLoading(true);
 
       // ── Mode RECHERCHE : vectoriel uniquement (Sémantique IA) ──
       if (searchQuery.trim().length >= 2) {
@@ -395,11 +409,12 @@ export default function Catalog() {
 
       const { data, count, error } = await query;
       if (!error && data) {
-        setProducts(data.map(p => ({
+        const enriched = data.map(p => ({
           ...p,
           avg_rating: p.ratings?.[0]?.avg_rating ?? null,
           review_count: p.ratings?.[0]?.review_count ?? 0,
-        })) as Product[]);
+        })) as Product[];
+        setProducts(prev => currentPage === 1 ? enriched : [...prev, ...enriched]);
         setTotalCount(count || 0);
       }
       setIsLoading(false);
@@ -1176,53 +1191,12 @@ export default function Catalog() {
                   </motion.div>
                 )}
 
-                {/* ─── Pagination (Amazon-style) ─── */}
-                {totalPages > 1 && (
-                  <div className="flex items-center justify-center gap-1.5 mt-12">
-                    <button
-                      onClick={() => { setCurrentPage(p => Math.max(1, p - 1)); window.scrollTo({ top: 180, behavior: 'smooth' }); }}
-                      disabled={currentPage === 1}
-                      className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-[color:var(--color-border)] text-[color:var(--color-text-muted)] text-xs disabled:opacity-30 hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text)] transition-all"
-                    >
-                      <ChevronLeft className="w-3.5 h-3.5" /> Préc.
-                    </button>
-
-                    {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
-                      let page: number;
-                      if (totalPages <= 7) {
-                        page = i + 1;
-                      } else if (currentPage <= 4) {
-                        page = i + 1 <= 5 ? i + 1 : i === 5 ? -1 : totalPages;
-                      } else if (currentPage >= totalPages - 3) {
-                        page = i === 0 ? 1 : i === 1 ? -1 : totalPages - (6 - i);
-                      } else {
-                        const map = [1, -1, currentPage - 1, currentPage, currentPage + 1, -2, totalPages];
-                        page = map[i];
-                      }
-                      if (page < 0) return <span key={`ellipsis-${i}`} className="w-9 text-center text-[color:var(--color-text-muted)] text-sm">…</span>;
-                      return (
-                        <button
-                          key={page}
-                          onClick={() => { setCurrentPage(page); window.scrollTo({ top: 180, behavior: 'smooth' }); }}
-                          className={`w-9 h-9 rounded-xl text-xs font-bold transition-all ${page === currentPage
-                            ? 'bg-green-neon text-black shadow-[0_0_14px_var(--theme-neon)]'
-                            : 'border border-[color:var(--color-border)] text-[color:var(--color-text-muted)] hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text)]'
-                            }`}
-                        >
-                          {page}
-                        </button>
-                      );
-                    })}
-
-                    <button
-                      onClick={() => { setCurrentPage(p => Math.min(totalPages, p + 1)); window.scrollTo({ top: 180, behavior: 'smooth' }); }}
-                      disabled={currentPage === totalPages}
-                      className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-[color:var(--color-border)] text-[color:var(--color-text-muted)] text-xs disabled:opacity-30 hover:border-[color:var(--color-border-strong)] hover:text-[color:var(--color-text)] transition-all"
-                    >
-                      Suiv. <ChevronRight className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                )}
+                {/* ─── Infinite Scroll ─── */}
+                <div ref={observerTarget} className="flex justify-center w-full py-12 mt-6">
+                  {currentPage * PRODUCTS_PER_PAGE < totalCount && (
+                    <div className="w-8 h-8 rounded-full border-2 border-[color:var(--color-primary)] border-t-transparent animate-spin opacity-50" />
+                  )}
+                </div>
               </>
             )}
 
