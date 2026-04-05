@@ -37,7 +37,7 @@ export default function ProductHero({ product, quantity, onQuantityChange, onAdd
       {/* Ambient glow */}
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_60%_50%_at_10%_30%,rgba(var(--theme-neon-rgb),0.08),transparent_60%)]" />
 
-      <div className="relative mx-auto max-w-[1400px] px-4 py-6 sm:px-6 lg:px-8 h-full flex flex-col justify-center">
+      <div className="relative mx-auto px-4 py-6 sm:px-6 lg:px-8 h-full flex flex-col justify-center">
         <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:gap-12 xl:gap-16">
 
           {/* ── LEFT: Image gallery ── */}
