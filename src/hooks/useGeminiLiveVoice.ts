@@ -1020,6 +1020,7 @@ export function useGeminiLiveVoice({
             playbackCtxRef.current = new AudioContext({ sampleRate: OUTPUT_SAMPLE_RATE });
             // On reconnects (1011/auto-retry) skip the greeting so the conversation
             // doesn't restart from scratch — just resume listening silently.
+            const contextBlock = buildContextMessage();
             if (!isRetry) {
               startTimeRef.current = Date.now();
               // Small settling delay to reduce first-turn WS race conditions while
@@ -1036,7 +1037,6 @@ export function useGeminiLiveVoice({
                 const ws = wsRef.current ?? (sessionRef.current as any)?._ws;
                 if (ws && ws.readyState !== WebSocket.OPEN) return;
 
-                const contextBlock = buildContextMessage();
                 const greetingTrigger = userName
                   ? `[START SESSION] Accueille le client par son prénom (${userName}) et demande-lui comment tu peux l'aider aujourd'hui.`
                   : "[START SESSION] Accueille chaleureusement le client et demande-lui comment tu peux l'aider aujourd'hui.";
@@ -1067,6 +1067,13 @@ export function useGeminiLiveVoice({
                 }
               } catch (err) {
                 console.error('[Voice] Failed to log interaction', err);
+              }
+            } else {
+              // On reconnects: send context + hidden resumption hint
+              const ws = wsRef.current ?? (sessionRef.current as any)?._ws;
+              if (ws && ws.readyState === WebSocket.OPEN) {
+                const hint = `[RECONNEXION SESSION] Contexte restauré :\n${contextBlock}\n\nContinue la conversation normalement sans te représenter.`;
+                sessionRef.current?.sendClientContent({ turns: [{ role: 'user', parts: [{ text: hint }] }], turnComplete: false });
               }
             }
           },
