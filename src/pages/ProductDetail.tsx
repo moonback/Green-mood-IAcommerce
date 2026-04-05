@@ -337,32 +337,31 @@ export default function ProductDetail() {
       <SEO {...buildProductSEO(product)} schema={breadcrumbJsonLd} />
 
       {/* ── Header Area ── */}
-      <div className="flex-none z-20"
-        style={{ borderBottom: '1px solid color-mix(in srgb, var(--color-border) 50%, transparent)' }}>
-        <div className="mx-auto max-w-[1400px] px-4 py-3.5 sm:px-6 lg:px-8 flex items-center justify-between gap-4">
-          <nav className="flex items-center gap-1.5 flex-wrap min-w-0"
-            style={{ fontFamily: "'DM Mono', monospace", fontSize: '10px', letterSpacing: '0.16em', textTransform: 'uppercase', color: 'var(--color-text-muted)' }}>
+      <div className="flex-none z-20 border-b border-white/5 bg-[color:var(--color-bg)]/20 backdrop-blur-sm">
+        <div className="mx-auto max-w-[1400px] px-4 py-2.5 sm:px-6 lg:px-8 flex items-center justify-between gap-4">
+          <nav className="flex items-center gap-1.5 flex-wrap min-w-0" 
+            style={{ fontFamily: "'DM Mono', monospace", fontSize: '9px', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--color-text-muted)' }}>
             <Link to="/" className="hover:text-[color:var(--color-primary)] transition-colors shrink-0">Accueil</Link>
-            <ChevronRight className="w-2.5 h-2.5 flex-shrink-0 opacity-40" />
+            <ChevronRight className="w-2.5 h-2.5 flex-shrink-0 opacity-20" />
             <Link to="/catalogue" className="hover:text-[color:var(--color-primary)] transition-colors shrink-0">Catalogue</Link>
             {categoryAncestors.map(cat => (
               <Fragment key={cat.id}>
-                <ChevronRight className="w-2.5 h-2.5 flex-shrink-0 opacity-40" />
+                <ChevronRight className="w-2.5 h-2.5 flex-shrink-0 opacity-20" />
                 <Link to={`/catalogue?category=${cat.slug}`} className="hover:text-[color:var(--color-primary)] transition-colors shrink-0">
                   {cat.name}
                 </Link>
               </Fragment>
             ))}
-            <ChevronRight className="w-2.5 h-2.5 flex-shrink-0 opacity-40" />
-            <span className="text-[color:var(--color-primary)] truncate max-w-[200px]">{product.name}</span>
+            <ChevronRight className="w-2.5 h-2.5 flex-shrink-0 opacity-20" />
+            <span className="text-[color:var(--color-primary)] opacity-80 truncate max-w-[150px]">{product.name}</span>
           </nav>
 
           <button
             onClick={() => navigate(-1)}
-            className="group flex items-center gap-1.5 shrink-0 transition-all"
-            style={{ fontFamily: "'DM Mono', monospace", fontSize: '10px', letterSpacing: '0.2em', textTransform: 'uppercase', color: 'var(--color-text-muted)' }}
+            className="group flex items-center gap-1.5 shrink-0"
+            style={{ fontFamily: "'DM Mono', monospace", fontSize: '9px', letterSpacing: '0.15em', textTransform: 'uppercase', color: 'var(--color-text-muted)' }}
           >
-            <ArrowLeft className="w-3.5 h-3.5 transition-transform duration-300 group-hover:-translate-x-1 group-hover:text-[color:var(--color-primary)]" />
+            <ArrowLeft className="w-3 h-3 group-hover:-translate-x-1 transition-transform group-hover:text-[color:var(--color-primary)]" />
             <span className="group-hover:text-[color:var(--color-primary)] transition-colors">Retour</span>
           </button>
         </div>
