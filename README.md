@@ -1,336 +1,357 @@
 <div align="center">
-<img src="public/header.png" alt="Green-mood" />
+<img src="public/header.png" alt="Green-mood — AI-First E-Commerce Platform" />
 
-# 🚀 Green-mood
+# Green-mood
 
-**La solution e-commerce "Full Stack" & "AI-First" spécialisée dans le CBD et le Bien-être.**
+**Plateforme e-commerce AI-First spécialisée CBD & bien-être.**
+*React 19 · TypeScript · Supabase · Gemini Live Voice · Vector Search · Stripe · POS*
 
 <p align="center">
-  <img src="https://img.shields.io/badge/React-19-blue?logo=react" alt="React 19" />
-  <img src="https://img.shields.io/badge/TypeScript-5.8-blue?logo=typescript" alt="TypeScript" />
-  <img src="https://img.shields.io/badge/Vite-6-purple?logo=vite" alt="Vite 6" />
-  <img src="https://img.shields.io/badge/Supabase-PostgreSQL-green?logo=supabase" alt="Supabase" />
-  <img src="https://img.shields.io/badge/TailwindCSS-v4-blue?logo=tailwindcss" alt="Tailwind v4" />
+  <img src="https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=white" />
+  <img src="https://img.shields.io/badge/TypeScript-5.8-3178C6?logo=typescript&logoColor=white" />
+  <img src="https://img.shields.io/badge/Vite-6-646CFF?logo=vite&logoColor=white" />
+  <img src="https://img.shields.io/badge/Supabase-PostgreSQL-3ECF8E?logo=supabase&logoColor=white" />
+  <img src="https://img.shields.io/badge/TailwindCSS-v4-06B6D4?logo=tailwindcss&logoColor=white" />
+  <img src="https://img.shields.io/badge/Gemini_Live-Voice_AI-EA4335?logo=google&logoColor=white" />
   <img src="https://img.shields.io/badge/Tests-412%20passing-brightgreen?logo=vitest" alt="Tests 412 passing" />
-  <img src="https://img.shields.io/badge/AI-Gemini_Live-red?logo=google-gemini" alt="AI Gemini" />
+  <img src="https://img.shields.io/badge/Stripe-Payments-635BFF?logo=stripe&logoColor=white" />
+  <img src="https://img.shields.io/badge/Tests-Vitest_%2B_Playwright-6E9F18?logo=vitest&logoColor=white" />
 </p>
 
-[Présentation](#-présentation) · [Fonctionnalités](#-fonctionnalités-majeures) · [Nouveautés](#-nouveautés-ajoutées) · [Architecture](#-architecture-générale) · [Installation](#-installation-complète) · [Structure](#-structure-du-projet) · [Administration](#-administration-admin) · [Déploiement](#-déploiement)
+[Présentation](#-présentation) · [Fonctionnalités](#-fonctionnalités) · [Architecture](#-architecture) · [Stack](#-stack-technique) · [Installation](#-installation) · [Variables d'environnement](#-variables-denvironnement) · [Structure](#-structure-du-projet) · [Système IA](#-système-ia) · [Base de données](#-base-de-données) · [Admin](#-administration) · [Déploiement](#-déploiement)
 
 </div>
 
 ---
 
-## 🌟 Présentation
+## Présentation
 
-### Objectif du projet
+### Objectif
 
-**Green-mood** est une plateforme e-commerce "AI-First" spécialisée dans le domaine du CBD, construite avec React 19, TypeScript et Supabase. Elle intègre nativement l'intelligence artificielle à tous les niveaux : conseiller **BudTender IA vocal** (Gemini Live Native Audio) expert en cannabinoïdes, génération de contenu automatisée, recherche vectorielle par effets, recommandations personnalisées, intelligence omnicanale (web + POS + affichage digital) et assistance administrative par commande vocale.
+**Green-mood** est une plateforme e-commerce **production-ready** et **AI-First**, conçue nativement pour le domaine du CBD et du bien-être. L'intelligence artificielle n'est pas un plugin ajouté après coup — elle est intégrée à chaque couche : conseiller vocal temps réel, recherche sémantique par effets, enrichissement automatique des produits, recommandations personnalisées, et assistance administrative par commande vocale.
 
 ### Problème résolu
 
-La majorité des solutions e-commerce existantes (Shopify, WooCommerce) sont des CMS génériques qui nécessitent des dizaines de plugins pour atteindre un niveau de fonctionnalité avancé. Elles ne sont pas conçues pour l'IA nativement. Ce projet résout ce problème en proposant :
+Les solutions génériques (Shopify, WooCommerce) imposent des dizaines de plugins tiers pour atteindre un niveau de personnalisation avancé, et ne sont pas architecturées pour l'IA native. Green-mood résout ce problème en proposant :
 
-- Une architecture "AI-First" où l'IA est un citoyen de première classe
-- Un système omnicanal natif (web + POS physique + affichage digital)
-- Une personnalisation semi-totale sans toucher au code
-- Un programme de fidélisation et de parrainage intégré
-- Une base de connaissance vectorielle (RAG) pour un IA métier précis
+- Une architecture **AI-First** où l'IA est un citoyen de première classe, pas un add-on
+- Un système **omnicanal natif** : web storefront + terminal POS physique + affichage digital (TV)
+- Une **personnalisation totale** via Admin Dashboard sans modifier le code
+- Un **programme de fidélisation et parrainage** intégré nativement
+- Une **base de connaissances vectorielle (RAG)** pour un IA métier précis et fiable
 
-### Cas d'utilisation
+### Cas d'usage
 
-| Secteur | Usage |
-|---------|-------|
-| CBD & Bien-être Premium | Boutique avec BudTender IA vocal + POS |
-| CBD spécialisé | Catalogue de fleurs/huiles + quiz BudTender (effets/besoins) + matching vectoriel |
-| Franchise | White-label, configuration JSON exportable entre instances |
-| Commerce physique | Combinaison boutique en ligne + caisse POS + affichage TV |
-| Abonnements | Commandes récurrentes + fidélisation avancée |
+| Secteur | Usage principal |
+|---------|----------------|
+| CBD & Bien-être Premium | BudTender IA vocal + POS + fidélité |
+| Boutique spécialisée | Catalogue + quiz + matching vectoriel par effets |
+| Commerce physique | En ligne + caisse POS + affichage TV |
+| White-label / Franchise | Configuration JSON exportable entre instances |
+| Abonnements | Commandes récurrentes + paliers de fidélité |
 
 ### Public cible
 
-- **Développeurs** souhaitant une base solide pour un e-commerce IA
-- **Agences web** cherchant un starter kit complet et déployable
-- **Commerçants** avec un profil technique souhaitant une solution sur mesure
-- **Startups** voulant lancer rapidement avec une architecture production-ready
+- **Développeurs** souhaitant une base solide pour un e-commerce IA production-ready
+- **Agences web** cherchant un starter kit complet et déployable en < 1 jour
+- **CTOs / Startups** voulant lancer rapidement avec une architecture scalable
+- **Investisseurs techniques** évaluant une solution SaaS spécialisée
 
 ---
 
-## 🔥 Fonctionnalités Majeures
+## Fonctionnalités
 
-### 🛒 Expérience E-commerce Premium
-- **Storefront Haute Performance** : React 19 + Vite 6, chargement < 1s, lazy loading natif
-- **Recherche Prédictive Instantanée** : Affichage des résultats textuels et visuels en temps réel dès la première frappe.
-- **Catalogue Dynamique** : Recherche sémantique, filtres multicritères, DualRangeSlider prix
-- **Fiches Produits "Conversion-Ready"** : Galerie immersive, badges stock, preuve sociale, guides de consommation
-- **Fidélisation Hub 3.0** :
-  - Monnaie virtuelle configurable (nom, taux d'échange)
-  - Paliers Bronze / Silver / Gold avec avantages automatiques
-  - Parrainage automatisé avec dashboard de suivi
-  - Abonnements récurrents (hebdo / bimensuel / mensuel)
+### E-commerce Premium
 
-- **Interaction Vocale Native (Gemini Live — Voice-Only)** :
-  - **Modèle** : Gemini 2.5 Flash Native Audio pour une expérience conversationnelle ultra-naturelle.
-  - **Performance Temps Réel** : Latence < 500ms via **AudioWorklet** et **Web Worker** dédié (downsampling Int16).
-  - **Infrastructure Zero-Copy** : Utilisation des *Transferable Objects* pour un transfert de données audio sans surcharge CPU.
-  - **Recherche Floue Assistée (pg_trgm)** : Tolérance aux fautes de frappe vocales via recherche trigramme côté serveur (PostgreSQL `fuzzystrmatch` + index GIST).
-  - **Robustesse du Flux** : **Message Queue** intégrée pour synchroniser le panier et la navigation sans perte en cas de reconnexion WebSocket.
-  - **UX Adaptative** : Détection de silence dynamique (8s/15s) pour une assistance proactive intelligente.
-  - **Moteur de Skills Modulaire** : 8 fichiers `.md` injectés dynamiquement pour piloter le comportement vocal (expertise, objections, fidélité, légal, cross-selling, FAQ).
-  - **Optimisation TTFT** : Passage en **Function Calling exclusif** pour le catalogue, éliminant l'injection du catalogue dans le prompt initial.
-  - **Cache Produit FIFO** : Limite à 100 entrées pour éviter les fuites mémoire sur sessions longues.
-- **Mémoire & Personnalisation** : Préférences persistées en base, historique de conversation
-  - **Moteur Vectoriel (RAG)** : `pgvector` + OpenRouter pour des réponses métier précises
-- **Génération de Contenu Admin** : Titres Hero, accroches, FAQ en un clic
-- **Auto-complétion Produits** : Descriptions générées automatiquement via IA
-- **Génération dans le Wizard** : Choix entre saisie manuelle et génération IA automatique
-- **Actions IA de Masse** : Enrichissement automatique et vectorisation forcée de tous les produits d'une catégorie en un clic.
-- **Cross-Selling Intelligent (IA)** : Suggestions automatiques de produits complémentaires via recherche vectorielle sémantique et gestion assistée par IA.
+- **Storefront haute performance** — React 19 + Vite 6, chargement < 1s, lazy loading natif sur toutes les routes
+- **Catalogue dynamique** — Recherche sémantique vectorielle, filtres multicritères, DualRangeSlider prix, tri par popularité / prix / nouveautés
+- **Recherche prédictive instantanée** — Résultats textuels et visuels en temps réel dès la première frappe
+- **Fiches produit "Conversion-Ready"** — Galerie immersive, badges stock, preuve sociale, guides de consommation, spécifications botaniques, profil sensoriel interactif
+- **Panier & tunnel de commande** — CartSidebar persisté, calcul livraison dynamique, codes promo, checkout Stripe 2 étapes (adresse → paiement)
+- **Paiement Stripe natif** — Stripe Elements embarqué (sans redirection), PaymentIntent côté Edge Function, vérification webhook HMAC-SHA256
+- **Gestion abonnements** — Commandes récurrentes (hebdo / bimensuel / mensuel) avec tableau de bord client
+- **Programme fidélité** — Monnaie virtuelle configurable (nom + taux), paliers Bronze / Silver / Gold avec avantages automatiques, historique de transactions
+- **Parrainage automatisé** — Lien unique par client, tableau de bord parrain/filleul, attribution automatique de points
+- **Espace client complet** — Commandes, adresses, profil, abonnements, favoris, avis, historique fidélité
 
-### 🧠 Intelligence Omnicanale (Phase 3)
-- **Dashboard IA POS** : Insights IA temps réel intégrés à l'interface caisse physique pour le personnel en magasin.
-- **Boucle Auto-Apprenante** : Feedback loop optimisant automatiquement les recommandations produit à partir des données de ventes en temps réel.
-- **Dashboard Performance IA** : Métriques de conversion, revenus générés par l'IA, et taux de recommandation avec suivi temporel.
+### BudTender IA Vocal (Gemini Live)
 
-## 🆕 Nouveautés ajoutées
+Le cœur différenciant du projet. Un conseiller expert CBD disponible 24h/24 directement dans le navigateur, sans aucune application externe.
 
-Les dernières fonctionnalités ajoutées sont documentées dans [`explication-fonctionnement/`](explication-fonctionnement/README.md).
+- **Modèle** : `gemini-3.1-flash-live-preview` (Gemini Live Native Audio)
+- **Latence < 500ms** via AudioWorklet (capture) + Web Worker dédié (downsampling Int16 zero-copy)
+- **20+ outils Function Calling** : recherche catalogue, navigation, ajout panier, comparaison produits, suivi commande, gestion favoris, application promo, quiz préférences, etc.
+- **Recherche floue 4 niveaux** : cache FIFO local → exact match → substring → fuzzy RPC PostgreSQL (`pg_trgm`, index GIST)
+- **Calibration adaptative du bruit** : seuil de détection recalibré toutes les 60s, barge-in avec fade-out 80ms
+- **Message Queue** : synchronisation panier / navigation sans perte pendant les gaps WebSocket
+- **Mémoire persistante** : préférences utilisateur stockées en Supabase JSONB, rechargées à chaque session
+- **Moteur de Skills modulaire** : 8 fichiers `.md` injectés dynamiquement, minifiés automatiquement pour le TTS
+- **Token éphémère sécurisé** : la clé API Gemini ne transite jamais dans le navigateur (Edge Function `gemini-token`)
+- **Retry automatique** : jusqu'à 2 reconnexions WebSocket avec back-off exponentiel + jitter
+- **Proactivité intelligente** : relance vocale après 8s (panier actif) ou 15s (navigation seule)
 
-- **Transition Voice-Only** : Suppression complète du chat textuel. Le BudTender est désormais 100% vocal (Gemini Live Native Audio).
-- **Optimisations Performances Vocales** :
-  - **AudioWorklet + Web Worker** : Traitement audio déporté hors du thread principal.
-  - **Transferable Objects** : Transfert zero-copy entre threads pour réduire la latence CPU.
-  - **Message Queue** : File d'attente garantissant la synchronisation panier/navigation même en cas de reconnexion WebSocket.
-  - **Cache Produit FIFO** : Limitation à 100 entrées pour éviter les fuites mémoire.
-  - **Fuzzy Search Serveur (pg_trgm)** : Recherche floue déléguée à PostgreSQL via RPC `search_products_fuzzy` avec index GIST.
-- **Intelligence Omnicanale (Phase 3)** :
-  - Dashboard IA intégré au POS pour le personnel en magasin.
-  - Boucle auto-apprenante pour l'optimisation continue des recommandations.
-  - Dashboard de performance IA avec métriques de conversion et revenus.
-- **SEO produits automatisé** : génération IA des balises `title` + `meta description` et exploitation directe côté front.
-- **Blog automatique via RAG** : génération de guides SEO à partir de la base de connaissances.
-- **Sitemap enrichi** : injection automatique des URLs produits et guides pour améliorer l'indexation.
-- **Import PDF pour base de connaissances** : possibilité d'importer des notices PDF pour enrichir la base de connaissances du conseiller IA.
-- **Gestion vocale des favoris** : l'IA BudTender peut désormais ajouter, retirer et lister les produits favoris du client directement par commande vocale.
-- **Endpoints IA sécurisés** : implémentation de la validation JWT pour les Edge Functions (`gemini-token`, `ai-chat`, `ai-embeddings`) et vérification automatique des rôles administrateurs.
+### Intelligence Omnicanale
 
-### Démarrage rapide des nouveautés
+- **Dashboard IA POS** : insights temps réel intégrés à l'interface caisse pour le personnel en magasin
+- **Boucle auto-apprenante** : feedback loop optimisant les recommandations à partir des données de ventes
+- **Dashboard de performance IA** : métriques de conversion, revenus générés par l'IA, taux de recommandation
 
-```bash
-# Générer les articles/guides automatiques
-npm run blog:generate
+### Terminal POS (Point de Vente)
 
-# Regénérer les sitemaps
-npx tsx scripts/generate-sitemap.ts
-```
+- Interface tactile optimisée, grille produits par catégorie, scanner QR codes produits
+- Sélection client (liaison avec comptes existants), attribution automatique de points fidélité
+- Encaissement hybride (espèces / carte), modal de paiement avec calcul monnaie
+- Rapports X & Z (clôture de caisse), modal de rapport détaillé
+- Écran client dédié (affichage secondaire via WebSocket temps réel)
+- Commandes IA POS : suggestions de produits complémentaires pour le vendeur
 
-### 🏪 Omnicanalité & Magasin Physique
-- **Terminal POS** : Interface tactile, scanner QR, encaissement hybride (espèces / carte)
-- **Rapports X & Z** : Clôture de caisse certifiée
-- **Affichage TV (Digital Signage)** : Rotation produits, flash promos avec compte à rebours, météo locale
-- **Écran Client Dédié** : Affichage secondaire WebSocket lors de l'encaissement
+### Affichage Digital (Digital Signage)
 
-### 🔐 Administration & Back-Office "Power User"
-- **28 Modules de Gestion** : Stock, Commandes (liste & Kanban), CRM, Marketing, Analytique
-- **CRM Hyper-Ciblé** : Suivi des anniversaires clients pour l'automatisation de fidélisation via récompenses.
-- **Campagnes Publicitaires Intégrées** : Gestion centralisée pour planifier et diffuser des alertes ou bannières promotionnelles sur le storefront.
-- **Analyses & Traçabilité** : Module gérant la complexité de conformité propre au CBD (certificats d'analyses labo, suivi des taux de THC/CBD, traçabilité des lots).
-- **Dashboard DataViz** : Recharts, KPIs temps réel, top produits, revenus
-- **Modification de Masse** : Centaines de prix / stocks mis à jour simultanément
-- ⚡ **Setup Wizard** : Wizard guidé **9 étapes** pour onboarder une boutique en < 5 minutes (dont configuration Stripe)
-- **Gestion Avancée des Paramètres** : Export / import JSON, réinitialisation aux défauts
-- **Module Cross-Selling 2.0** : Interface dédiée avec indicateurs de couverture ("Sans recommandations") et suggestions intelligentes pour maximiser l'AOV (Average Order Value).
+- **Store Display** (`/store-display`) — Rotation produits configurée en admin, flash promos avec compte à rebours, météo locale
+- **Customer Display** (`/customer-display`) — Récapitulatif commande affiché sur écran secondaire pendant l'encaissement POS
 
-### 💳 Paiement Stripe Natif
-- **Stripe Elements Embarqué** : Formulaire de paiement directement sur la page checkout (sans redirection)
-- **Checkout 2 étapes** : Formulaire de livraison → formulaire de paiement séparé
-- **Simulateur Dev** : Bannière orange DEV-only pour tester les scénarios succès / refus / annulation sans vraie transaction
-- **Edge Functions Deno** : `stripe-payment` (création PaymentIntent) + `stripe-webhook` (confirmation & refunds)
-- **Sécurité Webhook** : Vérification HMAC-SHA256 via Web Crypto API (compatible Deno)
-- **Rollback automatique** : Stocks restaurés + commande annulée si paiement échoué
-- **Configuration Admin** : Clé publique, mode Test/Live, activation toggle — onglet dédié **Admin → Paramètres → Paiement**
+### Administration Back-office (28 modules)
+
+| Module | Capacités |
+|--------|-----------|
+| **Dashboard** | KPIs temps réel, graphiques Recharts, revenus, top produits |
+| **Produits** | CRUD complet, auto-fill IA, import CSV massif, modification de masse, vectorisation forcée |
+| **Catégories** | Arborescence 3 niveaux (Root → Sub → Sub-sub), icônes, slugs |
+| **Commandes** | Vue liste + Kanban drag-drop, détail complet, changement de statut |
+| **Stock** | Mouvements, alertes seuil bas, historique |
+| **Clients (CRM)** | Profils, historique achats, points fidélité, anniversaires |
+| **Analytics** | Taux de conversion, pages vues, événements personnalisés |
+| **BudTender IA** | Configuration quiz, ton, prompt custom, base de connaissances |
+| **POS** | Configuration terminal, rapport de caisse |
+| **Marketing** | Campagnes publicitaires, bannières promotionnelles |
+| **Promo Codes** | Création codes avec type (% / fixe), limites, expiration |
+| **Fidélité** | Taux points, paliers, historique transactions |
+| **Parrainage** | Suivi filleuls, attributions, statistiques |
+| **Recommandations** | Cross-selling IA, associations produits, couverture catalogue |
+| **Abonnements** | Gestion commandes récurrentes, fréquences |
+| **Avis** | Modération, réponses, approbation |
+| **Blog RAG** | Génération guides SEO depuis base de connaissances |
+| **Base de connaissances** | Import PDF, CRUD articles, vectorisation auto |
+| **Cannabis Conditions** | Base de données scientifique (evidence score, études) |
+| **SEO Auto** | Génération IA title + meta description par produit |
+| **Comptabilité** | Export CSV/Excel, génération factures PDF |
+| **Sessions IA** | Historique conversations BudTender, durées |
+| **Publicités** | Création et planification campagnes storefront |
+| **Anniversaires** | Automatisation récompenses clients |
+| **Display** | Configuration affichage TV / digital signage |
+| **Modèles IA** | Sélection et configuration des modèles OpenRouter |
+| **Paramètres** | Configuration globale + export/import JSON + reset |
+| **Setup Wizard** | Onboarding guidé 9 étapes (< 5 min pour lancer une boutique) |
+
+### SEO & Contenu Automatisé
+
+- **SEO produits automatisé** : génération IA des balises `title` + `meta description` exploitées côté front
+- **Blog automatique via RAG** : génération de guides SEO depuis la base de connaissances (`npm run blog:generate`)
+- **Sitemap enrichi** : injection automatique des URLs produits et guides (`npx tsx scripts/generate-sitemap.ts`)
+- **JSON-LD structuré** : schemas Product, BreadcrumbList, Organization pour le rich snippet Google
+- **Open Graph** : balises OG complètes pour le partage réseaux sociaux
+
+### Sécurité & Robustesse
+
+- **RLS Supabase** : Row Level Security sur toutes les tables sensibles
+- **JWT Validation** : vérification systématique dans les Edge Functions (`gemini-token`, `ai-chat`, `ai-embeddings`)
+- **Vérification rôle admin** : guard côté serveur pour les actions admin-only
+- **Webhook HMAC** : signature Stripe vérifiée via Web Crypto API (compatible Deno runtime)
+- **Rollback automatique** : stocks restaurés + commande annulée si paiement Stripe échoue
+- **Token éphémère Gemini** : clé API Gemini jamais exposée côté client
 
 ---
 
-## 🏗 Architecture Générale
+## Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                     FRONTEND (React 19 + Vite)                  │
-│                                                                  │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────────────┐  │
-│  │  Storefront  │  │ Admin Panel  │  │    POS / Display      │  │
-│  │  (40+ pages) │  │  (26 tabs)   │  │  (TouchUI + WebSocket)│  │
-│  └──────┬───────┘  └──────┬───────┘  └──────────┬────────────┘  │
-│         │                 │                       │              │
-│  ┌──────▼─────────────────▼───────────────────────▼───────────┐  │
-│  │              Zustand State Management (7 stores)            │  │
-│  │  authStore · cartStore · settingsStore · wishlistStore      │  │
-│  │  toastStore · recentlyViewedStore · backgroundTaskStore     │  │
-│  └──────────────────────────┬──────────────────────────────────┘  │
-└─────────────────────────────┼───────────────────────────────────┘
-                              │
-┌─────────────────────────────▼───────────────────────────────────┐
-│                     SUPABASE BACKEND                             │
-│                                                                  │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────────────┐  │
-│  │  PostgreSQL  │  │ Edge Functions│  │      Storage         │  │
-│  │  (20+ tables)│  │  (5 Deno fns) │  │  (product-images/)   │  │
-│  │  + pgvector  │  │  ai-chat      │  │  store/ ads/         │  │
-│  │  + RLS       │  │  ai-embeddings│  │  categories/         │  │
-│  │              │  │  gemini-token │  │                      │  │
-│  │              │  │  stripe-payment│ │                      │  │
-│  │              │  │  stripe-webhook│ │                      │  │
-│  └──────────────┘  └──────────────┘  └──────────────────────┘  │
-└─────────────────────────────────────────────────────────────────┘
-                              │
-┌─────────────────────────────▼───────────────────────────────────┐
-│                     EXTERNAL AI SERVICES                         │
-│                                                                  │
-│  ┌──────────────────┐   ┌─────────────────┐                     │
-│  │  OpenRouter API  │   │  Google Gemini   │                     │
-│  │  (text + embeds) │   │  (Live Voice API)│                     │
-│  └──────────────────┘   └─────────────────┘                     │
-└─────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────┐
+│                      FRONTEND  (React 19 + Vite 6)                  │
+│                                                                      │
+│  ┌──────────────┐   ┌──────────────┐   ┌─────────────────────────┐  │
+│  │  Storefront  │   │  Admin Panel │   │   POS  /  Display       │  │
+│  │  35+ pages   │   │  28 modules  │   │  Touch UI + WebSocket   │  │
+│  └──────┬───────┘   └──────┬───────┘   └────────────┬────────────┘  │
+│         │                  │                         │               │
+│  ┌──────▼──────────────────▼─────────────────────────▼────────────┐  │
+│  │                  Zustand 5  (9 stores)                          │  │
+│  │  auth · cart · settings · wishlist · toast                      │  │
+│  │  recentlyViewed · backgroundTask · budtender                    │  │
+│  └─────────────────────────┬───────────────────────────────────────┘  │
+└────────────────────────────┼────────────────────────────────────────┘
+                             │  Supabase JS SDK
+┌────────────────────────────▼────────────────────────────────────────┐
+│                       SUPABASE BACKEND                               │
+│                                                                      │
+│  ┌─────────────────┐  ┌──────────────────┐  ┌──────────────────┐   │
+│  │   PostgreSQL     │  │  Edge Functions  │  │    Storage       │   │
+│  │  20+ tables      │  │  (Deno runtime)  │  │  product-images  │   │
+│  │  pgvector        │  │                  │  │  store / ads     │   │
+│  │  pg_trgm         │  │  ai-chat         │  │  categories      │   │
+│  │  RLS policies    │  │  ai-embeddings   │  └──────────────────┘   │
+│  │  RPC functions   │  │  gemini-token    │                         │
+│  └─────────────────┘  │  stripe-payment  │                         │
+│                        │  stripe-webhook  │                         │
+│                        │  admin-action    │                         │
+│                        └──────────────────┘                         │
+└──────────────────────────────┬──────────────────────────────────────┘
+                               │
+          ┌────────────────────┼────────────────────┐
+          ▼                    ▼                    ▼
+┌──────────────────┐  ┌─────────────────┐  ┌──────────────────┐
+│  OpenRouter API  │  │  Google Gemini  │  │  Stripe API      │
+│  LLM streaming   │  │  Live Voice API │  │  PaymentIntents  │
+│  Embeddings      │  │  WebSocket WSS  │  │  Webhooks        │
+└──────────────────┘  └─────────────────┘  └──────────────────┘
 ```
 
-### Modules et Responsabilités
+### Couche IA — Flux de données
+
+```
+Utilisateur parle dans le micro
+        │
+        ▼
+AudioWorklet (src mic) ──► Web Worker /downsample-worker.js
+        │                   (Int16 downsampling 48kHz→16kHz, zero-copy)
+        ▼
+sessionRef.sendRealtimeInput(audio PCM base64)
+        │
+        ▼
+WebSocket ──► Gemini Live API (gemini-3.1-flash-live-preview)
+        │
+        ▼
+onmessage: serverContent | toolCall
+        │
+   ┌────┴─────────────────────────────────┐
+   ▼                                      ▼
+Audio PCM chunks (24kHz)             Function Calls (20+ tools)
+   │                                      │
+   ▼                                      ▼
+playPcmChunk() → AudioContext       executeToolCall()
+  (scheduled, barge-in capable)       │
+                                  ┌───┴────────────────────────────┐
+                                  │  search_catalog → pgvector RPC  │
+                                  │  add_to_cart → cartStore        │
+                                  │  navigate_to → React Router     │
+                                  │  track_order → Supabase query   │
+                                  │  save_preferences → JSONB DB    │
+                                  │  compare_products → UI modal    │
+                                  └────────────────────────────────┘
+```
+
+### Modules et responsabilités
 
 | Module | Rôle | Fichiers clés |
 |--------|------|---------------|
 | **Storefront** | Pages publiques, catalogue, panier, commandes | `src/pages/*.tsx` |
 | **Admin Panel** | Dashboard, CRUD, analytics, configuration | `src/components/admin/` |
-| **BudTender AI** | Conseiller IA vocal expert CBD (Moteur de Skills) | `src/skills/`, `src/lib/budtenderPrompts.ts` |
+| **BudTender Voice** | Conseiller IA vocal expert CBD | `src/hooks/useGeminiLiveVoice.ts` |
+| **Prompts Engine** | Génération system prompts modulaires | `src/lib/budtenderPrompts.ts`, `src/skills/` |
 | **POS System** | Terminal de caisse physique | `src/components/admin/pos/`, `src/pages/POSPage.tsx` |
 | **State Management** | Stores Zustand globaux | `src/store/*.ts` |
-| **Supabase Layer** | Requêtes DB, auth, storage | `src/lib/supabase.ts` |
-| **Settings Service** | Sauvegarde centralisée des paramètres boutique | `src/lib/settingsService.ts` |
-| **AI Utilities** | Prompts, embeddings, cache | `src/lib/budtender/`, `src/lib/embeddings.ts` |
-| **SEO Engine** | Meta tags, JSON-LD, Open Graph | `src/lib/seo/`, `src/components/SEO.tsx` |
-
-### 📂 Architecture BudTender Skills (`src/skills/`)
-
-Le comportement de l'IA est piloté par un système modulaire de **8 fichiers Markdown** :
-
-1. **Chargement Dynamique** : `import.meta.glob` dans `budtenderPrompts.ts`.
-2. **Filtrage Intelligent** : Les skills sont injectés au vol selon le contexte.
-3. **Minification Audio** : Nettoyage automatique des marqueurs de mise en forme pour une lecture TTS fluide.
-
-| Skill | Rôle Technique | Canal |
-|-------|----------------|-------|
-| `skill.md` | Déclaration et orchestration des **Action Tools** (20+ outils) | Vocal |
-| `vocal_actions.md` | Protocole vocal : feedback simultané, gestion du délai, phrases de transition | Vocal |
-| `botanique_expert.md` | Expertise terpènes, cannabinoïdes, effet d'entourage, variétés | Vocal |
-| `cross_selling.md` | Stratégie de bundles, associations logiques, upselling discret | Vocal |
-| `objections.md` | Levée de doutes : prix, qualité, hésitation, concurrence | Vocal |
-| `fidelite.md` | Programme Carats : paliers, conversion, parrainage, gamification | Vocal |
-| `faq_boutique.md` | Logistique : livraison, paiement, retours, support, origine | Vocal |
-| `legal_confidentialite.md` | Disclaimers médicaux, THC < 0.3%, RGPD, discrétion livraison | Vocal |
+| **Supabase Layer** | Requêtes DB, auth, storage, RPC | `src/lib/supabase.ts` |
+| **AI Utilities** | Embeddings, vector search, product AI | `src/lib/embeddings.ts`, `src/lib/productAI.ts` |
+| **SEO Engine** | Meta tags, JSON-LD, Open Graph, sitemap | `src/lib/seo/`, `src/seo/SEOProvider.tsx` |
+| **Settings Service** | Configuration boutique centralisée | `src/lib/settingsService.ts`, `src/store/settingsStore.ts` |
 
 ---
 
-## 🛠 Stack Technique
+## Stack Technique
 
-| Domaine | Technologies | Version |
-|---------|-------------|---------|
-| **Core Framework** | React | 19 |
-| **Langage** | TypeScript | 5.8 |
-| **Bundler** | Vite | 6 |
-| **Styles** | TailwindCSS | v4 |
-| **Animations** | Motion/React (Framer Motion) | 12 |
-| **State Management** | Zustand | 5 |
-| **Routing** | React Router DOM | 7.13 |
-| **Backend / BaaS** | Supabase (PostgreSQL + Edge Functions) | 2.98 |
-| **Vector Search** | pgvector (Supabase extension) | — |
-| **AI Chat / Embeddings** | OpenRouter API | — |
-| **AI Voice** | Google Gemini Live API | @google/genai 1.29 |
-| **Charts** | Recharts | 3.7 |
-| **Icons** | Lucide React | 0.546 |
-| **PDF / Factures** | jsPDF + jspdf-autotable | 4.2 / 5 |
-| **QR Codes** | html5-qrcode, qrcode.react | 2.3 / 4.2 |
-| **CSV / Excel** | PapaParse, xlsx | 5.5 / 0.18 |
-| **Tests unitaires** | Vitest + Testing Library | 4 / 6 |
-| **Tests E2E** | Playwright | 1.58 |
-| **Déploiement** | Vercel, Netlify | — |
+| Domaine | Technologie | Version | Rôle |
+|---------|------------|---------|------|
+| **Core** | React | 19 | Framework UI avec concurrent features |
+| **Langage** | TypeScript | 5.8 | Typage strict, 40+ interfaces partagées |
+| **Bundler** | Vite | 6 | HMR, code splitting manuel, assets |
+| **Styles** | Tailwind CSS | v4 | CSS variables dynamiques, theming runtime |
+| **Animations** | Motion/React | 12 | Framer Motion v11+, AnimatePresence |
+| **State** | Zustand | 5 | 9 stores globaux, persist middleware |
+| **Routing** | React Router | 7.13 | Lazy loading, route guards, BrowserRouter |
+| **Backend/BaaS** | Supabase | 2.98 | PostgreSQL + PostgREST + Edge Functions + Storage |
+| **Vector Search** | pgvector | — | Embeddings, similarité cosinus, index HNSW |
+| **Fuzzy Search** | pg_trgm | — | Recherche floue, index GIST, RPC server-side |
+| **Runtime Edge** | Deno (Supabase) | — | Edge Functions isolées, crypto native |
+| **AI LLM** | OpenRouter API | — | Streaming LLM, génération contenu, embeddings |
+| **AI Embeddings** | text-embedding-3-large | 3072d | Vecteurs produits, knowledge base, conditions |
+| **AI Voice** | Google Gemini Live | @google/genai 1.29 | WebSocket bidirectionnel, audio natif |
+| **Audio** | AudioWorklet + Web Worker | — | Capture mic, downsampling, barge-in |
+| **Paiements** | Stripe | Elements 5.6 | PaymentIntent, webhook HMAC, Elements UI |
+| **Charts** | Recharts | 3.7 | KPIs, revenus, histogrammes |
+| **Icons** | Lucide React | 0.546 | Seule bibliothèque d'icônes utilisée |
+| **PDF** | jsPDF + autotable | 4.2 | Factures, exports comptables |
+| **QR Codes** | html5-qrcode + qrcode.react | 2.3 / 4.2 | Scanner POS, génération QR |
+| **CSV / Excel** | PapaParse + xlsx | 5.5 / 0.18 | Import/export produits, comptabilité |
+| **Tests unitaires** | Vitest | 4 | jsdom, Testing Library, coverage |
+| **Tests E2E** | Playwright | 1.58 | Auto-start dev server, 5 scénarios |
+| **Monitoring** | Sentry | — | Optionnel, DSN configurable |
+| **Déploiement** | Vercel / Netlify | — | `vercel.json` + `netlify.toml` inclus |
 
 ---
 
-## 📦 Installation Complète
+## Installation
 
 ### Prérequis
 
-- **Node.js** ≥ 18.0
-- **npm** ≥ 9.0 (ou pnpm / yarn)
-- **Compte Supabase** (gratuit) — [supabase.com](https://supabase.com)
-- **Compte OpenRouter** pour les fonctionnalités IA — [openrouter.ai](https://openrouter.ai)
+- **Node.js** ≥ 18.0 (recommandé : 20 LTS)
+- **npm** ≥ 9 (ou pnpm / yarn)
+- **Compte Supabase** (tier gratuit suffisant pour démarrer) — [supabase.com](https://supabase.com)
+- **Compte OpenRouter** pour les fonctionnalités IA text + embeddings — [openrouter.ai](https://openrouter.ai)
 - **Clé API Google Gemini** pour la voix — [aistudio.google.com](https://aistudio.google.com)
+- **Compte Stripe** pour les paiements (mode test disponible) — [stripe.com](https://stripe.com)
 
-### Installation
+### Étape 1 — Cloner et installer
 
 ```bash
-# 1. Cloner le repository
-git clone https://github.com/votre-org/ecommerce-full.git
-cd ecommerce-full
-
-# 2. Installer les dépendances
+git clone https://github.com/votre-org/green-mood.git
+cd green-mood
 npm install
-
-# 3. Configurer les variables d'environnement
-cp .env.example .env
 ```
 
-### Variables d'environnement
-
-Éditer `.env` avec vos clés :
-
-```env
-# Supabase — Obligatoire
-VITE_SUPABASE_URL=https://votre-projet.supabase.co
-VITE_SUPABASE_ANON_KEY=eyJhbGci...
-
-# OpenRouter — Requis pour IA embeddings
-OPENROUTER_API_KEY=sk-or-...
-
-# Google Gemini — Requis pour l'IA vocale
-GEMINI_API_KEY=AIzaSy...
-
-# Stripe — Paiement en ligne (clé publique côté client)
-VITE_STRIPE_PUBLIC_KEY=pk_test_...
-```
-
-### Configuration de la base de données
+### Étape 2 — Variables d'environnement
 
 ```bash
-# Option A — Supabase CLI (recommandé)
+cp .env.example .env
+# Éditer .env avec vos clés (voir section Variables d'environnement)
+```
+
+### Étape 3 — Configurer Supabase
+
+```bash
+# Option A : Supabase CLI (recommandé)
 npx supabase login
-npx supabase link --project-ref votre-project-ref
+npx supabase link --project-ref VOTRE_PROJECT_REF
 npx supabase db push
 
-# Option B — Importer le schéma manuellement
-# Ouvrir Supabase Dashboard → SQL Editor
-# Coller et exécuter le contenu de supabase/boutique-vierge.sql
+# Option B : Import manuel
+# Dashboard Supabase → SQL Editor
+# Exécuter supabase/boutique-vierge.sql
+# Puis supabase/migrations/20260327_fuzzy_search.sql
+# Puis supabase/add_stripe_migration.sql (si Stripe activé)
 ```
 
-### Déploiement des Edge Functions
+**Extensions Supabase requises** (activer via Dashboard → Database → Extensions) :
+- `vector` — recherche vectorielle pgvector
+- `pg_trgm` — recherche floue trigram (fuzzy search)
+
+### Étape 4 — Déployer les Edge Functions
 
 ```bash
-# Déployer toutes les fonctions
+# Déployer les fonctions
+npx supabase functions deploy ai-chat
 npx supabase functions deploy ai-embeddings
 npx supabase functions deploy gemini-token
 npx supabase functions deploy stripe-payment
 npx supabase functions deploy stripe-webhook
+npx supabase functions deploy admin-action
 
-# Configurer les secrets des fonctions
+# Configurer les secrets (NE JAMAIS préfixer avec VITE_)
 npx supabase secrets set OPENROUTER_API_KEY=sk-or-...
 npx supabase secrets set GEMINI_API_KEY=AIzaSy...
 npx supabase secrets set STRIPE_SECRET_KEY=sk_test_...
 npx supabase secrets set STRIPE_WEBHOOK_SECRET=whsec_...
-
-# Appliquer la migration Stripe
-# Ouvrir Supabase Dashboard → SQL Editor → coller supabase/add_stripe_migration.sql
 ```
 
-### Lancement
+### Étape 5 — Lancer l'application
 
 ```bash
 # Développement (port 3000)
@@ -341,442 +362,629 @@ npm run build
 
 # Prévisualisation du build
 npm run preview
+
+# Serveur d'import produits (optionnel)
+npm run dev:importer
+```
+
+### Étape 6 — Configuration initiale via Setup Wizard
+
+Accéder à `/admin` (se connecter avec un compte ayant `is_admin = true` dans Supabase), puis cliquer sur **"Lancer le Setup Wizard"** depuis le Dashboard pour configurer la boutique en 9 étapes guidées.
+
+---
+
+## Variables d'environnement
+
+### Client (préfixe `VITE_` — exposées dans le bundle)
+
+```env
+# Supabase — OBLIGATOIRE
+VITE_SUPABASE_URL=https://votre-projet.supabase.co
+VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+
+# Stripe — clé publique uniquement (sans secret)
+VITE_STRIPE_PUBLIC_KEY=pk_test_51...
+
+# OpenRouter Embeddings — dimensions DOIVENT correspondre à vector(N) en DB
+VITE_OPENROUTER_EMBED_MODEL=openai/text-embedding-3-large
+VITE_OPENROUTER_EMBED_DIMENSIONS=3072
+
+# Monitoring (optionnel)
+VITE_SENTRY_DSN=https://xxx@sentry.io/yyy
+```
+
+### Serveur — Edge Functions uniquement (`supabase secrets set`)
+
+> **Attention** : Ces variables ne doivent **jamais** avoir le préfixe `VITE_`. Elles sont injectées dans les Edge Functions Deno via `supabase secrets set` et n'apparaissent jamais dans le bundle client.
+
+```env
+# OpenRouter — LLM streaming + génération embeddings
+OPENROUTER_API_KEY=sk-or-v1-...
+
+# Google Gemini — token éphémère pour Gemini Live Voice
+GEMINI_API_KEY=AIzaSy...
+
+# Stripe — secret pour créer les PaymentIntents
+STRIPE_SECRET_KEY=sk_test_51... (ou sk_live_... en production)
+
+# Stripe — validation signature webhook (HMAC-SHA256)
+STRIPE_WEBHOOK_SECRET=whsec_...
+
+# Application URL (pour les webhooks, emails transactionnels)
+APP_URL=https://votre-app.vercel.app
+```
+
+### Règle de sécurité critique
+
+```
+VITE_* → Bundle navigateur (publique)  → Valeurs non sensibles uniquement
+Secrets → Edge Function Deno (serveur) → API keys, secrets, tokens
 ```
 
 ---
 
-## 📁 Structure du Projet
+## Structure du Projet
 
 ```
-ecommerce-full/
+green-mood/
 │
 ├── src/
-│   ├── App.tsx                    # Router principal (40+ routes, theme injection)
-│   ├── main.tsx                   # Point d'entrée (ErrorBoundary, SEOProvider)
-│   ├── index.css                  # Styles globaux (Tailwind v4 + variables CSS)
+│   ├── App.tsx                        # Router principal, 40+ routes lazy-loaded
+│   ├── main.tsx                       # Entrée : ErrorBoundary → SEOProvider → ThemeProvider → App
+│   ├── index.css                      # Tailwind v4 + CSS variables dynamiques (--color-*)
 │   │
-│   ├── pages/                     # 40+ pages (lazy-loaded)
-│   │   ├── Home.tsx               # Page d'accueil (hero, stats, catégories, FAQ)
-│   │   ├── Products.tsx           # Liste produits avec filtres avancés
-│   │   ├── ProductDetail.tsx      # Fiche produit rich (galerie, specs, avis)
-│   │   ├── Cart.tsx               # Panier
-│   │   ├── Checkout.tsx           # Tunnel de commande
-│   │   ├── Account.tsx            # Espace client
-│   │   ├── Admin.tsx              # Dashboard admin (26 tabs)
-│   │   ├── POSPage.tsx            # Terminal de caisse
-│   │   ├── CustomerDisplay.jsx    # Écran client POS (WebSocket)
-│   │   ├── StoreDisplay.jsx       # Affichage TV / Digital Signage
-│   │   └── ...                    # 30+ autres pages
+│   ├── pages/                         # 35 pages (toutes lazy-loaded via React.lazy)
+│   │   ├── Home.tsx / HomeV2.tsx      # Page d'accueil avec hero dynamique
+│   │   ├── Catalog.tsx                # Catalogue filtrable + recherche vectorielle
+│   │   ├── Products.tsx               # Liste produits avec filtres avancés
+│   │   ├── ProductDetail.tsx          # Fiche produit premium (22 KB, galerie, specs, avis)
+│   │   ├── Cart.tsx / Checkout.tsx    # Panier + tunnel de commande Stripe
+│   │   ├── OrderConfirmation.tsx      # Page de confirmation post-paiement
+│   │   ├── Account.tsx                # Espace client (commandes, favoris, points)
+│   │   ├── Admin.tsx                  # Dashboard admin central (28 tabs, 13KB)
+│   │   ├── POSPage.tsx                # Terminal de caisse (wrapper)
+│   │   ├── CustomerDisplay.tsx        # Écran client POS (WebSocket)
+│   │   ├── StoreDisplay.tsx           # Affichage digital signage TV
+│   │   ├── Guides.tsx                 # Blog guides SEO générés par RAG
+│   │   └── ...                        # Login, FAQ, CGV, Livraison, Contact, etc.
 │   │
 │   ├── components/
-│   │   ├── layout/                # Header, Footer, BannerTicker, Search
-│   │   ├── admin/                 # 40+ composants admin
-│   │   │   ├── layout/            # AdminLayout, AdminSidebar, AdminHeader
-│   │   │   ├── pos/               # Composants POS (grille, panier, paiement)
-│   │   │   └── AdminSetupWizard.tsx # Wizard 8 étapes
-│   │   ├── budtender/             # Composants IA advisor
-│   │   ├── budtender-ui/          # UI atomique du BudTender
-│   │   ├── product-premium/       # Composants fiche produit premium
-│   │   └── ...                    # CartSidebar, ProductCard, LoyaltyCard, etc.
+│   │   ├── Layout.tsx                 # Header + Footer + BannerTicker
+│   │   ├── ThemeProvider.tsx          # Injection CSS variables depuis settingsStore
+│   │   ├── ErrorBoundary.tsx          # Catch d'erreurs React
+│   │   ├── SEO.tsx                    # Balises meta + JSON-LD dynamiques
+│   │   ├── ProductCard.tsx            # Carte produit (version legacy)
+│   │   ├── ProductCardV2.tsx          # Carte produit redesignée
+│   │   ├── ProductCompareModal.tsx    # Tableau de comparaison produits
+│   │   ├── CartSidebar.tsx            # Panier latéral
+│   │   ├── BudTender.tsx              # Wrapper BudTender vocal
+│   │   ├── VoiceAdvisor.tsx           # Interface widget vocal
+│   │   │
+│   │   ├── admin/                     # 35+ composants admin
+│   │   │   ├── layout/                # AdminLayout, AdminSidebar, AdminHeader
+│   │   │   ├── pos/                   # 10 composants POS (grille, panier, paiement, QR)
+│   │   │   ├── AdminProductsTab.tsx   # CRUD produits (99 KB, feature-rich)
+│   │   │   ├── AdminSettingsTab.tsx   # Configuration globale (114 KB)
+│   │   │   ├── AdminBudTenderTab.tsx  # Config IA BudTender (88 KB)
+│   │   │   └── AdminSetupWizard.tsx   # Wizard 9 étapes (89 KB)
+│   │   │
+│   │   ├── budtender/                 # Composants IA advisor (recommandations, quiz)
+│   │   ├── budtender-ui/              # Atoms UI du widget BudTender
+│   │   ├── product-premium/           # 13 composants fiche produit premium
+│   │   └── home/                      # Hero, Hero2, FuturisticBackground
 │   │
-│   ├── store/                     # Zustand stores (7)
-│   │   ├── authStore.ts           # Auth + sessions actives
-│   │   ├── cartStore.ts           # Panier (persisté)
-│   │   ├── settingsStore.ts       # Config boutique 
-│   │   ├── wishlistStore.ts       # Favoris (persisté)
-│   │   ├── toastStore.ts          # Notifications
-│   │   ├── recentlyViewedStore.ts # Historique navigation (persisté)
-│   │   └── backgroundTaskStore.ts # Tâches IA en arrière-plan
+│   ├── store/                         # Zustand stores (9)
+│   │   ├── authStore.ts               # Session utilisateur, rôle admin
+│   │   ├── cartStore.ts               # Panier, persistance localStorage
+│   │   ├── settingsStore.ts           # Config boutique, theme, modules activés
+│   │   ├── wishlistStore.ts           # Produits favoris
+│   │   ├── toastStore.ts              # Notifications toast
+│   │   ├── recentlyViewedStore.ts     # Historique de navigation
+│   │   ├── backgroundTaskStore.ts     # Tâches IA en arrière-plan (progress)
+│   │   └── budtenderStore.ts          # État BudTender
 │   │
-│   ├── hooks/                     # Hooks React personnalisés
-│   │   ├── useBudTenderMemory.ts  # Mémoire préférences utilisateur
-│   │   ├── useBudTenderQuiz.ts    # Machine d'état quiz IA
-│   │   ├── useGeminiLiveVoice.ts  # Chat vocal Gemini Live
-│   │   ├── useGeminiAdminVoice.ts # Commandes vocales admin
-│   │   └── useAds.ts             # Campagnes publicitaires
+│   ├── hooks/                         # 13 hooks React personnalisés
+│   │   ├── useGeminiLiveVoice.ts      # Moteur vocal complet (104 KB, 20+ tools)
+│   │   ├── useGeminiAdminVoice.ts     # Commandes vocales admin (37 KB)
+│   │   ├── useBudTenderMemory.ts      # Mémoire préférences utilisateur (Supabase JSONB)
+│   │   ├── useBudTenderQuiz.ts        # Machine d'état quiz IA
+│   │   ├── useCustomerDisplayChannel.ts # WebSocket écran client POS
+│   │   └── usePageTracker.ts          # Tracking analytics pages vues
 │   │
-│   ├── lib/                       # Utilitaires & services
-│   │   ├── supabase.ts            # Client Supabase singleton
-│   │   ├── types.ts               # 40+ interfaces TypeScript
-│   │   ├── utils.ts               # Fonctions helper
-│   │   ├── productAI.ts           # Auto-complétion produits IA
-│   │   ├── embeddings.ts          # Génération embeddings vectoriels
-│   │   ├── invoiceGenerator.ts    # Génération PDF factures
-│   │   ├── accountingExport.ts    # Export CSV/Excel comptabilité
-│   │   ├── budtender/             # IA utilities (prompts, cache, vector search)
-│   │   └── seo/                   # SEO utilities (meta, JSON-LD)
+│   ├── lib/                           # 27 modules utilitaires
+│   │   ├── types.ts                   # 40+ interfaces TypeScript partagées
+│   │   ├── supabase.ts                # Client singleton + exports URL/KEY
+│   │   ├── budtenderPrompts.ts        # Constructeur system prompts (21 KB)
+│   │   ├── budtenderKnowledge.ts      # Requêtes base de connaissances vectorielle
+│   │   ├── productAI.ts               # Auto-complétion produits via LLM (17 KB)
+│   │   ├── embeddings.ts              # Génération + cache embeddings (OpenRouter)
+│   │   ├── matchProductsRpc.ts        # Wrapper RPC pgvector + guard disponibilité
+│   │   ├── categoryTree.ts            # Utilitaires hiérarchie catégories 3 niveaux
+│   │   ├── invoiceGenerator.ts        # Génération PDF factures (20 KB)
+│   │   ├── accountingExport.ts        # Export CSV/Excel comptabilité (13 KB)
+│   │   ├── cannabisKnowledgeService.ts# Recherche vectorielle cannabis conditions
+│   │   ├── voiceSkills.ts             # Chargement dynamique skills vocaux
+│   │   ├── analytics.ts               # Event tracking Supabase
+│   │   ├── monitoring.ts              # Sentry initialisation
+│   │   └── seo/                       # metaBuilder.ts, schemaBuilder.ts, internalLinks.ts
+│   │
+│   ├── skills/                        # 8 fichiers Markdown (skills IA)
+│   │   ├── skill.md                   # Déclaration tools (toujours injecté en premier)
+│   │   ├── vocal_actions.md           # Protocole vocal, phrases de transition
+│   │   ├── botanique_expert.md        # Expertise terpènes, cannabinoïdes
+│   │   ├── cross_selling.md           # Stratégie bundles, upselling
+│   │   ├── objections.md              # Levée de doutes, hésitations
+│   │   ├── fidelite.md                # Programme Carats, parrainage
+│   │   ├── faq_boutique.md            # Livraison, paiement, retours
+│   │   └── legal_confidentialite.md   # Disclaimers médicaux, RGPD
 │   │
 │   ├── seo/
-│   │   └── SEOProvider.tsx        # Context SEO global
+│   │   └── SEOProvider.tsx            # Context SEO global (title, OG, canonical)
 │   │
 │   ├── types/
-│   │   └── premiumProduct.ts      # Types produit premium
+│   │   └── premiumProduct.ts          # Types produit premium enrichis
 │   │
-│   ├── constants/
-│   │   └── navigation.ts          # Définitions de routes
-│   │
-│   └── test/                      # Utilitaires de test
-│       ├── setup.ts               # Configuration Vitest
-│       ├── mocks/supabase.ts      # Mock Supabase
-│       └── utils.tsx              # Helpers de test
+│   └── test/
+│       ├── setup.ts                   # Config Vitest (jsdom, globals)
+│       ├── mocks/supabase.ts          # Mock client Supabase
+│       └── utils.tsx                  # Helpers de rendu test
 │
 ├── supabase/
-│   ├── config.toml                # Configuration Supabase local
-│   ├── boutique-vierge.sql        # Schéma complet de la base
-│   ├── migration_v8_esil_data.sql # Données d'exemple
-│   ├── migrations/
-│   │   └── 20260327_fuzzy_search.sql # Extension pg_trgm + RPC fuzzy search
-│   └── functions/                 # Edge Functions Deno
-│       ├── ai-embeddings/index.ts # Génération embeddings
-│       └── gemini-token/index.ts  # Token Gemini Live
+│   ├── config.toml                    # Configuration Supabase local dev
+│   ├── boutique-vierge.sql            # Schéma complet (62 KB)
+│   ├── migration_v8_esil_data.sql     # Données d'exemple (22 KB)
+│   ├── functions/                     # 6 Edge Functions Deno
+│   │   ├── ai-chat/                   # Streaming LLM chat
+│   │   ├── ai-embeddings/             # Génération embeddings batch
+│   │   ├── gemini-token/              # Token éphémère Gemini Live
+│   │   ├── stripe-payment/            # Création PaymentIntent
+│   │   ├── stripe-webhook/            # Confirmation paiement + rollback
+│   │   ├── admin-action/              # Actions admin sécurisées
+│   │   └── _shared/                   # CORS headers, embedding cache utils
+│   └── migrations/                    # Migrations incrémentales
+│       ├── 20260325173918_remote_commit.sql  # Migration principale (127 KB)
+│       ├── 20260326_centralize_loyalty.sql   # Centralisation fidélité
+│       ├── 20260326_orders_rls_fix.sql       # Fix RLS commandes
+│       └── 20260327_fuzzy_search.sql         # pg_trgm + RPC fuzzy + index GIST
 │
-├── public/                        # Assets statiques
-├── e2e/                           # Tests Playwright E2E
-├── package.json
-├── vite.config.ts
-├── tsconfig.json
-├── vitest.config.ts
-├── playwright.config.ts
-├── netlify.toml
-└── vercel.json
+├── public/
+│   ├── audio-processor.js             # AudioWorklet (capture micro, isolation thread)
+│   ├── downsample-worker.js           # Web Worker downsampling 48kHz→16kHz
+│   ├── sw.js                          # Service Worker (cache offline)
+│   ├── manifest.webmanifest           # PWA manifest
+│   ├── robots.txt / ai.txt            # SEO + directives crawlers IA
+│   └── logo.png / header*.png         # Assets statiques
+│
+├── e2e/                               # Tests Playwright
+│   ├── auth.spec.ts
+│   ├── cart.spec.ts
+│   ├── homepage.spec.ts
+│   ├── protected-routes.spec.ts
+│   └── shop.spec.ts
+│
+├── scripts/                           # Scripts d'automatisation
+│   ├── generate-rag-blog.ts           # Génération guides blog depuis RAG
+│   ├── generate-sitemap.ts            # Génération sitemap XML enrichi
+│   ├── sync-embeddings.ts             # Synchronisation embeddings produits
+│   ├── import-cannabis-conditions.ts  # Import base conditions médicales
+│   ├── index-cannabis-condition-vectors.ts
+│   ├── seed-knowledge.ts              # Population base de connaissances
+│   └── check_settings.ts             # Validation configuration
+│
+├── server/
+│   └── index.ts                       # Serveur Express import produits (/api)
+│
+├── vite.config.ts                     # Code splitting, chunks manuels, proxy
+├── tsconfig.json                      # TypeScript strict, paths alias @/*
+├── vitest.config.ts                   # Configuration Vitest
+├── playwright.config.ts               # Config E2E (auto-start port 3000)
+├── netlify.toml                       # Redirects Netlify SPA
+└── vercel.json                        # Configuration Vercel
 ```
 
 ---
 
-## 🔄 Flux Global de l'Application
+## Système IA
 
-### Flux Client (Storefront)
+### Architecture BudTender Voice
 
+Le hook `useGeminiLiveVoice.ts` (104 KB) est le moteur de l'expérience vocale. Il gère intégralement :
+
+**Audio Pipeline**
 ```
-Visiteur → AgeGate (si activé) → SplashScreen (si activé)
+MediaDevices.getUserMedia()
     ↓
-Home (hero dynamique + contenu via settingsStore)
+AudioContext → AudioWorkletNode (audio-processor.js)
+    ↓  [Float32Array, Transferable]
+Web Worker (downsample-worker.js)
+    ↓  [Int16Array 16kHz, zero-copy]
+session.sendRealtimeInput({ audio: { mimeType: 'audio/pcm', data: base64 } })
     ↓
-Navigation: Catalogue → ProductDetail
+Gemini Live API ──► PCM chunks (24kHz)
     ↓
-BudTender Widget (vocal) ──→ Recommandations de fleurs, huiles et produits CBD
-    ↓
-AddToCart → CartSidebar (calcul livraison + promo liée au CBD)
-    ↓
-Login/Register (si non connecté)
-    ↓
-Checkout (adresse + paiement Stripe Natif)
-    ↓
-OrderConfirmation → Email (Supabase)
-    ↓
-Account: Orders, Subscriptions, Loyalty, Referrals
+AudioBufferSourceNode → AudioContext.destination
 ```
 
-### Flux Admin
+**Système de détection de barge-in (interruption)**
 
 ```
-Admin.tsx → Authentification vérifiée (AdminRoute)
-    ↓
-Dashboard (KPIs temps réel via Supabase)
-    ↓
-Onglets spécialisés (26 modules)
-    ├── Products: CRUD + IA auto-fill + CSV import
-    ├── Orders: Vue liste + Kanban drag-drop
-    ├── Settings:  paramètres + Export JSON
-    ├── BudTender: Config IA + quiz personnalisé
-    └── Setup Wizard: Onboarding guidé 8 étapes
+RMS frame ≥ threshold (adaptif) pendant 80ms + 1 frame stable
+    → stopAllPlayback(80ms fade)
+    → setVoiceState('listening')
+    → cooldown 500ms
+
+Calibration bruit ambiant : 2s au démarrage de session
+Seuil = median(samples) × 3.5, clampé [0.02, 0.12]
+Recalibration automatique toutes les 60s
 ```
 
-### Flux IA (BudTender)
+**Token éphémère Gemini**
 
 ```
-Utilisateur active BudTender (voix)
-    ↓
-useGeminiLiveVoice → buildPrompt avec contexte:
-    - Catalogue complet
-    - Préférences utilisateur (DB)
-    - Historique de commandes
-    - Panier actuel
-    - Mémoire session
-    ↓
-Connexion WebSocket API Google Gemini Live Mode
-    ↓
-Interaction via **Message Queue** (évite les pertes de paquets)
-    ↓
-Traitement audio déporté (**Web Worker** Int16 + **AudioWorklet**)
-    ↓
-Utilisation des tools (navigation, recherche floue **pg_trgm**)
-    ↓
+Client → POST /functions/v1/gemini-token
+    { model, systemInstruction, voiceName, assistantType }
+Edge Function → Google Gemini API (avec GEMINI_API_KEY serveur)
+    ← { token, expireTime }
+Client → new GoogleGenAI({ apiKey: token })
+// La GEMINI_API_KEY réelle n'est jamais dans le bundle
 ```
+
+### Moteur de Skills (src/skills/)
+
+Les skills sont des fichiers Markdown qui définissent le comportement de l'IA. Ils sont chargés via `import.meta.glob` et injectés dynamiquement dans le system prompt selon le contexte (vocal / chat).
+
+| Skill | Canal | Rôle |
+|-------|-------|------|
+| `skill.md` | Vocal uniquement | Déclaration et orchestration des 20+ Action Tools |
+| `vocal_actions.md` | Vocal uniquement | Protocole feedback simultané, gestion délai, transitions |
+| `botanique_expert.md` | Vocal | Expertise terpènes, cannabinoïdes, effet d'entourage |
+| `cross_selling.md` | Vocal | Stratégie bundles, associations, upselling discret |
+| `objections.md` | Vocal | Levée de doutes : prix, qualité, hésitation, concurrence |
+| `fidelite.md` | Vocal | Programme Carats : paliers, conversion, parrainage |
+| `faq_boutique.md` | Vocal | Livraison, paiement, retours, support |
+| `legal_confidentialite.md` | Vocal | Disclaimers médicaux, THC < 0.3%, RGPD |
+
+**Règles de chargement** :
+- `skill.md` est toujours trié **en premier** (définitions tools avant règles d'usage)
+- `vocal_actions.md` exclu du mode chat
+- `skill.md` exclu du mode chat
+- Mode vocal : minification automatique (suppression `**bold**`, `*italic*`, backticks, blocs de citation) pour compatibilité TTS
+
+### Tools disponibles (Function Calling)
+
+**Phase 1 — Exécution parallèle** :
+
+| Tool | Description |
+|------|-------------|
+| `think` | Raisonnement interne avant action |
+| `search_catalog` | Recherche vectorielle pgvector + fallback keyword |
+| `filter_catalog` | Filtrage par catégorie, prix, stock |
+| `search_knowledge` | Recherche base de connaissances RAG |
+| `search_cannabis_conditions` | Base scientifique conditions + evidence score |
+| `search_expert_data` | Données techniques expertes |
+| `navigate_to` | Navigation React Router (40+ routes mappées) |
+| `track_order` | Suivi commandes Supabase |
+| `get_favorites` | Liste favoris du client |
+| `get_cart` | État panier courant |
+| `get_referral_link` | Lien parrainage personnalisé |
+| `compare_products` | Comparaison 2 produits + affichage modal UI |
+| `suggest_bundle` | Suggestion produit complémentaire |
+| `watch_stock` | Alerte disponibilité |
+| `submit_review` | Soumission avis produit |
+| `apply_promo` | Application code promo (validation DB) |
+| `open_product_modal` | Ouverture section modale produit |
+| `save_preferences` | Persistance profil évolutif JSONB |
+| `get_current_time` | Date/heure locale formatée |
+| `remove_from_cart` | Retrait article panier |
+| `update_cart_quantity` | Mise à jour quantité panier |
+| `load_voice_skill` | Chargement dynamique skill optionnel |
+
+**Phase 2 — Après Phase 1** :
+
+| Tool | Description |
+|------|-------------|
+| `view_product` | Affichage fiche produit (obligatoire avant add_to_cart) |
+| `add_to_cart` | Ajout au panier (nécessite consentement explicite + view_product préalable) |
+| `toggle_favorite` | Ajout/retrait favoris |
+| `close_session` | Fermeture session vocale |
+
+### Recherche vectorielle (pgvector)
+
+```sql
+-- Fonction RPC principale
+SELECT * FROM match_products(
+  query_embedding  vector(3072),  -- généré via OpenRouter text-embedding-3-large
+  match_threshold  float,          -- seuil similarité cosinus (défaut 0.1)
+  match_count      int             -- nombre max de résultats
+);
+
+-- Fuzzy search (pg_trgm)
+SELECT * FROM search_products_fuzzy(
+  search_text     text,            -- query vocale brute
+  match_threshold float,           -- similarité trigramme (défaut 0.3)
+  match_count     int
+);
+```
+
+**Pipeline de recherche produit (4 niveaux)** :
+1. **Cache FIFO local** (max 100 entrées, clé = query normalisée)
+2. **Exact match** + substring (L1/L2)
+3. **Tous les mots présents** + fuzzy Levenshtein local ≤ 2 (L3)
+4. **Supabase RPC** `search_products_fuzzy` (pg_trgm, L4)
+
+### Mémoire et personnalisation
+
+```typescript
+// Structure SavedPrefs persistée en Supabase JSONB (table: budtender_user_prefs)
+interface SavedPrefs {
+  usage_type?: string;       // Loisir / Bien-être / Médical
+  experience?: string;       // Débutant / Intermédiaire / Expert
+  preferred_effects?: string[];
+  terpene_preferences?: string[];
+  consumption_method?: string;
+  sensitivity?: string;
+  // ... champs personnalisables via quiz admin
+}
+```
+
+La mémoire est rechargée à chaque session vocale et mise à jour en temps réel via le tool `save_preferences` (sync mid-session via `messageQueueRef`).
 
 ---
 
-## 🛠 Administration (`/admin`)
+## Base de Données
 
-Le panel admin comprend **28 onglets** organisés par domaine :
+### Tables principales
 
-### Dashboard
-- KPIs temps réel : revenus, commandes, stocks faibles, clients
-- Graphiques Recharts (revenus, top produits)
-- Widget "Configuration Rapide" (Setup Wizard)
+| Table | Description | Colonnes clés |
+|-------|-------------|---------------|
+| `profiles` | Comptes utilisateurs | `id`, `is_admin`, `loyalty_points`, `referral_code` |
+| `products` | Catalogue produits | `id`, `name`, `price`, `stock_quantity`, `embedding vector(3072)`, `attributes jsonb` |
+| `categories` | Arbre catégories | `id`, `parent_id`, `depth`, `slug` |
+| `orders` | Commandes | `id`, `user_id`, `status`, `total`, `stripe_payment_intent_id` |
+| `order_items` | Lignes de commande | `order_id`, `product_id`, `quantity`, `price` |
+| `addresses` | Adresses livraison | `user_id`, `street`, `city`, `country` |
+| `loyalty_transactions` | Historique points | `user_id`, `points`, `type`, `order_id` |
+| `referrals` | Parrainage | `referrer_id`, `referred_id`, `status` |
+| `reviews` | Avis produits | `product_id`, `user_id`, `rating`, `comment`, `approved` |
+| `promo_codes` | Codes promo | `code`, `discount_type`, `discount_value`, `max_uses`, `expires_at` |
+| `settings` | Configuration boutique | `key`, `value jsonb` |
+| `knowledge_base` | Base de connaissances RAG | `title`, `content`, `embedding vector(3072)` |
+| `cannabis_conditions_vectors` | Conditions médicales | `condition`, `evidence_score`, `summary`, `embedding` |
+| `budtender_interactions` | Sessions IA | `user_id`, `interaction_type`, `duration_seconds` |
+| `budtender_user_prefs` | Préférences IA | `user_id`, `preferences jsonb` |
+| `analytics_events` | Événements tracking | `event_type`, `properties jsonb`, `user_id` |
+| `blog_posts` | Articles guides | `title`, `content`, `slug`, `generated_at` |
+| `stock_movements` | Traçabilité stock | `product_id`, `quantity`, `type`, `created_by` |
 
-### Gestion Produits
-- CRUD complet avec validation
-- Génération automatique descriptions IA
-- Import CSV massif (CSVImporter)
-- Modification de masse (MassModifyModal)
-- Synchronisation vectorielle (pgvector)
-- Prévisualisation produit (AdminProductPreviewModal)
+### Fonctions RPC
 
-### Gestion Commandes
-- Vue liste filtrée par statut
-- Détail complet (client, articles, adresse, paiement)
-- Kanban drag-drop entre colonnes de statut
+| RPC | Paramètres | Description |
+|-----|-----------|-------------|
+| `match_products` | `embedding`, `match_threshold`, `match_count` | Recherche sémantique vectorielle (pgvector) |
+| `search_products_fuzzy` | `search_text`, `match_threshold`, `match_count` | Recherche floue trigramme (pg_trgm) |
+| `process_checkout` | `user_id`, `items[]`, `address_id`, `payment_intent` | Checkout atomique (commande + décrémentation stock) |
 
-### Configuration (Settings)
-- **5 sous-onglets** : Boutique, Design, Contenu, Livraison, Social
-- Export JSON / Import JSON / Réinitialisation
-- champs configurables
+### Row Level Security (RLS)
 
-### ⚡ Setup Wizard
-Accessible depuis le Dashboard, l'overlay wizard guide en **8 étapes** :
-1. **Identité** — Nom, slogan, description, secteur, logo (upload + URL)
-2. **Design** — Couleurs (présets), typographie (templates)
-3. **Contenu** — Hero, marquee, bannière 
-4. **Livraison** — Frais, seuil gratuit, informations légales
-5. **Réseaux Sociaux** — Instagram, Facebook, Twitter, TikTok
-6. **Modules** — Toggles de toutes les fonctionnalités
-7. **IA & Fidélité** — Config conseiller BudTender (ton, expertise CBD), taux de points
-8. **Paiement** — Stripe (CB)
-9. **Récapitulatif** — Validation et sauvegarde Supabase
-
----
-
-## 🤖 Fonctionnalités IA Détaillées
-
-### BudTender Voix (Gemini Live — Voice-Only)
-- **Localisation** : `src/hooks/useGeminiLiveVoice.ts`, `src/lib/budtenderPrompts.ts`
-- **Modèle** : Gemini 3.1 Flash Native Audio (`gemini-3.1-flash-native-audio`)
-- **Architecture de Performance** :
-  - **Thread-Separation** : Traitement de l'audio dans un `AudioWorklet` (micro) + `Web Worker` statique (`/downsample-worker.js`), communiquant via **Transferable Objects** (zero-copy).
-  - **Search Intelligence** : Système à 4 niveaux : Cache FIFO (100 entrées, `MAX_PRODUCT_CACHE_SIZE`) → Exact Match → Substring → **Fuzzy Search Serveur (RPC `search_products_fuzzy` via pg_trgm + index GIST)**.
-  - **Sync Robustness** : `messageQueueRef` pour garantir l'envoi des états (panier, activeProduct) même pendant les gaps de connexion WebSocket.
-  - **1007 Stability Guard** : Troncature automatique des instructions système à **8 000 caractères** et réduction du catalogue à 10 items pour garantir la stabilité de la connexion WebSocket.
-  - **Prompt Sanitization** : Nettoyage des caractères non imprimables et des séquences de contrôle (provenant de l'extraction PDF) pour éviter l'invalidation du JSON frame.
-  - **Timers Dynamiques** : Relance proactive après 8s (panier actif) ou 15s (navigation seule) pour une assistance intelligente.
-- **Optimisation de Latence (TTFT)** : Passage en **Function Calling exclusif** pour le catalogue. Le prompt système n'inclut plus le catalogue complet, réduisant drastiquement le temps de première réponse.
-- **Prompt Système Optimisé** : Architecture modulaire (Identity + Format Rules + Protocol + Skills + Client Context) avec injection dynamique des données utilisateur.
-- **Outils Intégrés (20+)** : `search_catalog`, `filter_catalog`, `view_product`, `add_to_cart`, `suggest_bundle`, `compare_products`, `navigate_to`, `track_order`, `save_preferences`, `toggle_favorite`, `get_favorites`, `watch_stock`, `open_product_modal`, `search_knowledge`, `search_cannabis_conditions`, `search_expert_data`.
-- **Moteur de Skills** : 8 fichiers `.md` chargés dynamiquement via `import.meta.glob`, minifiés automatiquement pour le TTS.
-- **Migration SQL** : `supabase/migrations/20260327_fuzzy_search.sql` (extension `pg_trgm` + fonction RPC + index GIST).
-
-### Admin Voice Commands
-- **Localisation** : `src/hooks/useGeminiAdminVoice.ts`
-- Commandes vocales pour l'administration
-- Parsing d'intentions (créer produit, modifier stock, etc.)
-
-### Auto-complétion Produits
-- **Localisation** : `src/lib/productAI.ts`
-- Génération automatique de descriptions produits
-- Gestion du cache pour éviter les appels redondants
-- Progression via `backgroundTaskStore`
-
-### Embeddings & Recherche Vectorielle
-- **Localisation** : `src/lib/embeddings.ts`, `src/lib/budtender/budtenderVectorSearch.ts`
-- **Architecture HNSW Appliquée** : Indexation multidimensionnelle ultra-rapide (Produits, Connaissances, Informations expertes) atteignant la milliseconde en complétion.
-- **Robustesse Testée** : Couverture de **100%** sur `embeddings.ts` et **85%+** sur `pdfKnowledge.ts`.
-- Génération via OpenRouter API
-- Stockage pgvector dans Supabase
-- Cache LRU local (max 1000 entrées)
-- Similarité cosinus configurable par seuil
+Toutes les tables sensibles ont des policies RLS :
+- `profiles` : lecture propre uniquement, écriture self
+- `orders` : lecture/écriture liée à `auth.uid()`
+- `products` : lecture publique, écriture admin uniquement
+- `settings` : lecture publique, écriture admin uniquement
+- `knowledge_base` : lecture publique, écriture admin
 
 ---
 
-## 🧪 Tests
+## Administration
 
-### Lancer les tests
+### Accès
+
+URL : `/admin` — nécessite `is_admin = true` dans la table `profiles`.
+
+Pour créer un admin :
+```sql
+UPDATE profiles SET is_admin = true WHERE id = 'YOUR_USER_UUID';
+```
+
+### Setup Wizard (9 étapes)
+
+Le wizard guide l'onboarding complet d'une boutique en < 5 minutes :
+
+| Étape | Contenu |
+|-------|---------|
+| **1 - Identité** | Nom boutique, slogan, description, secteur, upload logo |
+| **2 - Design** | Palette couleurs (présets), typographie, thème clair/sombre |
+| **3 - Contenu** | Hero, marquee ticker, bannière promotionnelle |
+| **4 - Livraison** | Frais, seuil livraison gratuite, mentions légales |
+| **5 - Réseaux sociaux** | Instagram, Facebook, Twitter, TikTok |
+| **6 - Modules** | Toggles de toutes les fonctionnalités (voix, quiz, avis, etc.) |
+| **7 - IA & Fidélité** | Config BudTender (ton, expertise), taux points, nom monnaie |
+| **8 - Paiement** | Stripe (clé publique, mode Test/Live) |
+| **9 - Récapitulatif** | Validation et sauvegarde complète Supabase |
+
+### Commandes admin disponibles
 
 ```bash
-# Tests unitaires (Vitest)
-npm test
+# Générer les guides blog depuis la base de connaissances RAG
+npm run blog:generate
 
-# Avec couverture de code
-npm run test:coverage
+# Régénérer le sitemap XML
+npx tsx scripts/generate-sitemap.ts
 
-# Tests E2E (Playwright)
-npm run test:e2e
+# Synchroniser les embeddings produits
+npx tsx scripts/sync-embeddings.ts
 
-# Vérification TypeScript
-npm run lint
+# Importer la base de conditions médicales cannabis
+npx tsx scripts/import-cannabis-conditions.ts
+
+# Valider la configuration settings
+npx tsx scripts/check_settings.ts
 ```
-
-### Structure des tests
-
-```
-src/
-├── components/__tests__/          # Tests composants (14 fichiers)
-│   ├── ProductCard.test.tsx
-│   ├── AgeGate.test.tsx
-│   ├── Toast.test.tsx
-│   └── ...
-├── store/__tests__/               # Tests stores Zustand (7 fichiers)
-│   ├── authStore.test.ts
-│   ├── cartStore.test.ts
-│   └── ...
-├── hooks/__tests__/               # Tests hooks (4 fichiers)
-├── lib/__tests__/                 # Tests utilitaires (10 fichiers)
-│   ├── embeddings.test.ts          # Couverture 100%
-│   ├── pdfKnowledge.test.ts        # Moteur d'extraction PDF
-│   ├── budtenderPrompts.test.ts    # Génération des prompts IA
-├── test/
-    ├── setup.ts                   # Configuration globale + mocks
-    ├── mocks/supabase.ts          # Mock client Supabase
-    └── utils.tsx                  # Helpers render/act
-e2e/                               # Tests Playwright
-```
-
-### Couverture
-- **410+ tests** au total (Vitest + Playwright)
-- **90%+ de couverture** sur les modules IA critiques (`embeddings`, `budtenderPrompts`, `backgroundTaskStore`)
-- Composants UI, stores, hooks, utilitaires
-- Mock Supabase complet (pas de dépendance réseau)
-- Playwright pour les parcours critiques (checkout, auth)
 
 ---
 
-## 🚀 Déploiement
+## Tests
 
-### Vercel (Recommandé)
+### Tests unitaires (Vitest)
 
 ```bash
-# Via CLI
-npx vercel deploy
-
-# Via GitHub integration
-# → Connecter le repo sur vercel.com
-# → Configurer les variables d'environnement dans le dashboard
+npm test              # Mode watch
+npm run test:run      # Single run (CI)
+npm run test:coverage # Avec rapport de couverture
+npm run test:ui       # Interface graphique Vitest
 ```
+
+**Couverture** :
+- `src/lib/embeddings.ts` : 100%
+- `src/lib/pdfKnowledge.ts` : 85%+
+- `src/store/__tests__/` : stores Zustand
+- `src/hooks/__tests__/` : hooks custom
+
+### Tests E2E (Playwright)
+
+```bash
+npm run test:e2e        # Headless (auto-start port 3000)
+npm run test:e2e:ui     # Interface graphique Playwright
+```
+
+**Scénarios couverts** :
+- `auth.spec.ts` — Connexion, déconnexion, inscription
+- `cart.spec.ts` — Ajout panier, modification quantité, suppression
+- `homepage.spec.ts` — Rendu page d'accueil, navigation
+- `protected-routes.spec.ts` — Guard routes admin et compte
+- `shop.spec.ts` — Catalogue, filtres, recherche
+
+---
+
+## Déploiement
+
+### Vercel (recommandé)
+
+```bash
+# 1. Pusher sur GitHub
+git push origin main
+
+# 2. Importer sur Vercel (vercel.com)
+# 3. Configurer les variables d'environnement VITE_* dans l'interface Vercel
+# 4. Build Command : npm run build
+# 5. Output Directory : dist
+```
+
+Le fichier `vercel.json` est déjà configuré pour le routing SPA.
 
 ### Netlify
 
 ```bash
-# Build command: npm run build
-# Publish directory: dist
-# Le fichier netlify.toml est préconfiguré
+# Build Command : npm run build
+# Publish Directory : dist
+# Le fichier netlify.toml + public/_redirects gèrent le routing SPA
 ```
 
-### Variables d'environnement en production
+### Variables à configurer sur la plateforme
 
-```env
-VITE_SUPABASE_URL=https://votre-projet.supabase.co
-VITE_SUPABASE_ANON_KEY=eyJ...
-OPENROUTER_API_KEY=sk-or-...
-GEMINI_API_KEY=AIzaSy...
+Sur Vercel / Netlify, configurer dans les variables d'environnement :
+```
+VITE_SUPABASE_URL
+VITE_SUPABASE_ANON_KEY
+VITE_STRIPE_PUBLIC_KEY
+VITE_OPENROUTER_EMBED_MODEL
+VITE_OPENROUTER_EMBED_DIMENSIONS
+VITE_SENTRY_DSN  (optionnel)
 ```
 
-### Checklist de déploiement
+Les secrets Gemini / OpenRouter / Stripe côté serveur restent dans Supabase secrets (jamais en variables plateforme front).
 
-- [ ] Schéma DB importé dans Supabase
-- [ ] Edge Functions déployées et secrets configurés
-- [ ] Variables d'environnement définies sur la plateforme
-- [ ] Bucket `product-images` créé dans Supabase Storage (public)
-- [ ] Extension pgvector activée dans Supabase
-- [ ] Extension pg_trgm activée (`CREATE EXTENSION IF NOT EXISTS pg_trgm`)
-- [ ] Migration fuzzy search appliquée (`supabase/migrations/20260327_fuzzy_search.sql`)
-- [ ] Règles RLS configurées correctement
-- [ ] Configuration du store (Nom, email, etc.) via le Setup Wizard
+### Checklist production
+
+- [ ] Supabase : activer les extensions `vector` et `pg_trgm`
+- [ ] Supabase : exécuter `boutique-vierge.sql` + toutes les migrations
+- [ ] Supabase : déployer les 6 Edge Functions avec leurs secrets
+- [ ] Stripe : configurer le webhook endpoint `https://votre-app.com/api/stripe-webhook`
+- [ ] Stripe : passer en mode Live (clés `pk_live_` / `sk_live_`)
+- [ ] Variables d'environnement VITE_* configurées sur la plateforme
+- [ ] Domaine custom configuré (Vercel / Netlify)
+- [ ] HTTPS actif (requis pour `getUserMedia` / AudioWorklet)
+- [ ] Setup Wizard complété depuis `/admin`
 
 ---
 
-## 🤝 Contribution
+## Performance & Sécurité
 
-### Workflow
+### Optimisations frontend
+
+| Optimisation | Implémentation |
+|-------------|----------------|
+| Code splitting | Chunks manuels Vite : `app-admin`, `app-budtender`, `app-account`, vendors séparés |
+| Lazy loading | `React.lazy` + `Suspense` sur toutes les routes |
+| Audio thread-safe | AudioWorklet + Web Worker + Transferable Objects (zero-copy) |
+| Cache produits | FIFO 100 entrées dans `useGeminiLiveVoice` |
+| Cache embeddings | LRU local 1000 entrées dans `embeddings.ts` |
+| Image optimization | Lazy loading natif, Supabase Storage CDN |
+| Vector index | HNSW index sur `products.embedding` (sub-milliseconde) |
+
+### Sécurité
+
+| Mesure | Détail |
+|--------|--------|
+| RLS Supabase | Policies sur toutes les tables sensibles |
+| JWT validation | Vérification systématique dans les Edge Functions |
+| API keys serveur | Jamais dans le bundle client (Supabase secrets) |
+| Token éphémère Gemini | Durée de vie limitée, générée à la demande |
+| HMAC webhook Stripe | Vérification signature via Web Crypto API |
+| Admin guard | Vérification `is_admin` côté serveur ET client |
+| HTTPS requis | `isSecureContext` vérifié avant activation mic |
+
+---
+
+## Commandes de référence
 
 ```bash
-# 1. Fork et clone
-git clone https://github.com/votre-fork/ecommerce-full.git
+npm run dev              # Serveur dev localhost:3000
+npm run build            # Build production
+npm run preview          # Prévisualisation build
+npm run lint             # TypeScript tsc --noEmit
+npm run test             # Vitest watch mode
+npm run test:run         # Vitest CI (single run)
+npm run test:coverage    # Coverage report
+npm run test:e2e         # Playwright E2E
+npm run blog:generate    # Génération guides blog RAG
+npm run dev:importer     # Serveur Express import produits
 
-# 2. Créer une branche
+# Scripts utilitaires
+npx tsx scripts/generate-sitemap.ts
+npx tsx scripts/sync-embeddings.ts
+npx tsx scripts/import-cannabis-conditions.ts
+```
+
+---
+
+## Contribution
+
+```bash
+# Créer une branche feature
 git checkout -b feature/ma-fonctionnalite
 
-# 3. Développer + tester
-npm test
+# Développer + tester
+npm run test:run
+npm run lint
 
-# 4. Commiter (conventional commits)
-git commit -m "feat: ajouter filtrage par prix sur catalogue"
+# Commiter
+git commit -m "feat: description courte"
 
-# 5. Push + Pull Request
+# Pull Request vers main
 git push origin feature/ma-fonctionnalite
 ```
 
-### Conventions de code
-
-- **TypeScript strict** : pas de `any` implicite
-- **Composants fonctionnels** uniquement (pas de classes)
-- **Zustand** pour tout état global
-- **Tailwind** pour tous les styles (pas de CSS inline sauf animations)
-- **Lucide React** pour les icônes (pas d'autres librairies d'icônes)
-- **Imports absolus** via alias `@/`
-- **Tests requis** pour toute logique métier nouvelle
-
 ---
 
-## 📊 Analytics & Métriques
+## Licence
 
-Green-mood embarque un système d'analytics **first-party** complet, sans dépendance externe, stocké directement dans Supabase.
-
-### Infrastructure de tracking
-
-| Fichier | Rôle |
-|---|---|
-| `supabase/analytics_events.sql` | Table `analytics_events` avec RLS (insert public, select admin) |
-| `src/lib/analytics.ts` | Module fire-and-forget : session_id, UTM params, `document.referrer` |
-| `src/hooks/usePageTracker.ts` | Auto-track `page_view` à chaque changement de route (admin ignoré) |
-
-### Événements trackés automatiquement
-
-| Événement | Déclencheur | Payload |
-|---|---|---|
-| `page_view` | Changement de route (via `usePageTracker`) | page, referrer, UTM |
-| `cart_add` | `cartStore.addItem()` | product_id, quantity, unit_price |
-| `checkout_start` | `handlePrepareOrder()` dans Checkout | order_id, total |
-| `purchase` | `handlePaymentSuccess()` dans Checkout | order_id, total |
-| `cart_abandon` | `handleCancelOrder()` dans Checkout | order_id |
-
-### Métriques disponibles dans l'Admin (`/admin` → Analytics)
-
-#### Métriques existantes
-- Revenus et CA (7j / 30j / 90j)
-- Panier moyen (AOV) par jour
-- Top produits & revenus par catégorie
-- Distribution des statuts de commandes
-- Acquisition client par jour
-- Interactions BudTender IA (voix, feedback)
-
-#### Nouvelles métriques (Sprint 2)
-- **Funnel de conversion** — Taux panier → checkout → achat avec % d'abandon par étape
-- **Abandon de panier** — BarChart empilé converti/abandonné par jour
-- **LTV par client** — Top 20 clients par lifetime value totale, panier moyen, date 1ère commande
-- **Cohortes d'acquisition** — Matrice 6 mois × 6 colonnes (M+0…M+5) avec heat-coloring vert
-- **Heatmap des pages** — Top 12 pages visitées (slugs normalisés, URLs détail regroupées)
-- **Sources de trafic** — Direct, Google, Facebook, Instagram, TikTok, etc.
-
-### Sources de trafic reconnues automatiquement
-
-```
-google · facebook · instagram · tiktok · twitter/x · youtube · bing → label normalisé
-utm_source présent → priorité sur le referrer
-Pas de referrer → "direct"
-```
-
-### Données importantes
-
-> La table `analytics_events` doit être créée dans Supabase avant de voir les données funnel/pages/trafic.
-> Exécuter `supabase/analytics_events.sql` dans l'éditeur SQL Supabase.
-
----
-
-## 📈 Évolutivité
-
-Green-mood est conçu comme une solution **clé en main**. Que vous vendiez des fleurs, des huiles, des cosmétiques ou des accessoires, l'architecture modulaire + les paramètres de configuration permettent une adaptation immédiate à l'écosystème du CBD et du bien-être.
+Voir le fichier [LICENSE](LICENSE) pour les conditions d'utilisation.
 
 ---
 
 <div align="center">
-  Propulsé par l'innovation de Maysson D • Green-mood © 2026
+
+**Green-mood** — Plateforme e-commerce AI-First | React 19 + Supabase + Gemini Live
+
 </div>
