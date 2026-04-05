@@ -29,6 +29,17 @@ export default function ProductHero({ product, quantity, onQuantityChange, onAdd
   const { settings } = useSettingsStore();
   const [selectedImg, setSelectedImg] = useState(0);
 
+  // States for the image zoom feature
+  const [isZooming, setIsZooming] = useState(false);
+  const [zoomPos, setZoomPos] = useState({ x: 50, y: 50 });
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const { left, top, width, height } = e.currentTarget.getBoundingClientRect();
+    const x = ((e.clientX - left) / width) * 100;
+    const y = ((e.clientY - top) / height) * 100;
+    setZoomPos({ x, y });
+  };
+
   const images = [getProductImageSrc(product.image_url)];
   const inStock = (product as any).stock_quantity > 0 && (product as any).is_available !== false;
   const avgRating: number | null = (product as any).avg_rating ?? null;
@@ -46,12 +57,18 @@ export default function ProductHero({ product, quantity, onQuantityChange, onAdd
           <div className="space-y-4">
             {/* Image Container */}
             <motion.div
-              className="group relative aspect-square overflow-hidden rounded-2xl border border-[color:var(--color-border)] bg-[color:var(--color-card)]/30 shadow-lg backdrop-blur-sm"
+              className="group relative aspect-square overflow-hidden rounded-2xl border border-[color:var(--color-border)] bg-[color:var(--color-card)]/30 shadow-lg backdrop-blur-sm cursor-crosshair"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
+              onMouseEnter={() => setIsZooming(true)}
+              onMouseLeave={() => {
+                setIsZooming(false);
+                setTimeout(() => setZoomPos({ x: 50, y: 50 }), 300); // resets gently after transition
+              }}
+              onMouseMove={handleMouseMove}
             >
               {/* Featured & Stock Badges */}
-              <div className="absolute top-3 left-3 z-10 flex flex-col gap-2">
+              <div className="absolute top-3 left-3 z-10 flex flex-col gap-2 pointer-events-none">
                 {(product as any).is_featured && (
                   <div className="flex items-center gap-1.5 rounded-full bg-[color:var(--color-bg-elevated)] border border-amber-500/30 px-2 py-0.5 backdrop-blur-md">
                     <Star className="w-2.5 h-2.5 fill-amber-500 text-amber-500" />
@@ -71,7 +88,11 @@ export default function ProductHero({ product, quantity, onQuantityChange, onAdd
                 key={selectedImg}
                 src={images[selectedImg]}
                 alt={product.name}
-                className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+                className={`h-full w-full object-cover pointer-events-none ${isZooming ? 'scale-[2.5]' : 'scale-100 group-hover:scale-105'}`}
+                style={{
+                  transformOrigin: `${zoomPos.x}% ${zoomPos.y}%`,
+                  transition: isZooming ? 'transform 0.15s ease-out' : 'transform 0.5s ease-out, transform-origin 0.5s ease-out',
+                }}
                 onError={applyProductImageFallback}
               />
             </motion.div>
