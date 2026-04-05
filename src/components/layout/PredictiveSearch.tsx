@@ -125,7 +125,7 @@ export default function PredictiveSearch({ isOpen, setIsOpen }: PredictiveSearch
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 z-[9999] bg-slate-950/80 backdrop-blur-2xl flex items-start justify-center pt-12 sm:pt-20 px-4"
+        className="fixed inset-0 z-[9999] bg-[color:var(--color-bg)]/80 backdrop-blur-2xl flex items-start justify-center pt-12 sm:pt-20 px-4"
         onClick={(e) => e.target === e.currentTarget && setIsOpen(false)}
       >
         <motion.div
@@ -133,32 +133,32 @@ export default function PredictiveSearch({ isOpen, setIsOpen }: PredictiveSearch
           animate={{ scale: 1, y: 0, opacity: 1 }}
           exit={{ scale: 0.95, y: 10, opacity: 0 }}
           transition={{ type: "spring", damping: 25, stiffness: 300 }}
-          className="w-full max-w-4xl bg-slate-900/60 border border-white/10 rounded-[2.5rem] shadow-[0_32px_128px_-16px_rgba(0,0,0,0.5)] overflow-hidden backdrop-blur-xl relative"
+          className="w-full max-w-4xl bg-[color:var(--color-card)]/90 border border-[color:var(--color-border)] rounded-[2.5rem] shadow-2xl overflow-hidden backdrop-blur-xl relative"
         >
           {/* Top Glow */}
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-[1px] bg-gradient-to-r from-transparent via-emerald-500/50 to-transparent" />
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-[1px] bg-gradient-to-r from-transparent via-[color:var(--color-primary)]/50 to-transparent" />
           
           <div className="p-6 sm:p-10 space-y-8">
             <div className="relative group">
-              <Search className={`absolute left-7 top-1/2 -translate-y-1/2 w-6 h-6 transition-all duration-500 ${isSearching ? "text-emerald-400 scale-110" : "text-slate-500 group-focus-within:text-emerald-400"}`} />
+              <Search className={`absolute left-7 top-1/2 -translate-y-1/2 w-6 h-6 transition-all duration-500 ${isSearching ? "text-[color:var(--color-primary)] scale-110" : "text-[color:var(--color-text-muted)] group-focus-within:text-[color:var(--color-primary)]"}`} />
               <input
                 autoFocus
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Rechercher un produit, une collection..."
-                className="w-full bg-white/5 border border-white/10 rounded-[1.5rem] pl-16 pr-20 py-6 text-xl text-white placeholder:text-slate-500 focus:outline-none focus:border-emerald-500/40 focus:bg-white/10 transition-all font-sans font-medium"
+                className="w-full bg-[color:var(--color-bg-elevated)] border border-[color:var(--color-border)] rounded-[1.5rem] pl-16 pr-20 py-6 text-xl text-[color:var(--color-text)] placeholder-[color:var(--color-text-muted)] focus:outline-none focus:border-[color:var(--color-primary)]/40 focus:bg-[color:var(--color-bg)] transition-all font-sans font-medium"
               />
               <div className="absolute right-6 top-1/2 -translate-y-1/2 flex items-center gap-3">
                 {searchQuery && (
                   <button
                     onClick={() => setSearchQuery("")}
-                    className="p-2 text-slate-500 hover:text-white transition-colors"
+                    className="p-2 text-[color:var(--color-text-muted)] hover:text-[color:var(--color-text)] transition-colors"
                   >
                     <X className="w-5 h-5" />
                   </button>
                 )}
-                <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[color:var(--color-bg-muted)] border border-[color:var(--color-border)] text-[10px] font-black text-[color:var(--color-text-muted)] uppercase tracking-widest">
                   ESC
                 </div>
               </div>
@@ -172,10 +172,10 @@ export default function PredictiveSearch({ isOpen, setIsOpen }: PredictiveSearch
                   {searchResults.categories.length > 0 && (
                     <div className="space-y-5">
                       <div className="flex items-center gap-4">
-                        <h3 className="text-[11px] font-black uppercase tracking-[0.3em] text-emerald-500/70">
+                        <h3 className="text-[11px] font-black uppercase tracking-[0.3em] text-[color:var(--color-primary)]/70">
                           Collections
                         </h3>
-                        <div className="flex-1 h-[1px] bg-gradient-to-r from-emerald-500/20 to-transparent" />
+                        <div className="flex-1 h-[1px] bg-gradient-to-r from-[color:var(--color-primary)]/20 to-transparent" />
                       </div>
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                         {searchResults.categories.map((cat) => (
@@ -183,12 +183,12 @@ export default function PredictiveSearch({ isOpen, setIsOpen }: PredictiveSearch
                             key={cat.id}
                             to={`/catalogue?category=${cat.id}`}
                             onClick={() => setIsOpen(false)}
-                            className="group relative overflow-hidden p-5 bg-white/5 border border-white/5 rounded-2xl hover:border-emerald-500/30 transition-all"
+                            className="group relative overflow-hidden p-5 bg-[color:var(--color-bg-elevated)] border border-[color:var(--color-border)] rounded-2xl hover:border-[color:var(--color-primary)]/30 transition-all shadow-sm hover:shadow-md"
                           >
-                            <div className="absolute inset-0 bg-emerald-500/0 group-hover:bg-emerald-500/5 transition-colors" />
+                            <div className="absolute inset-0 bg-[color:var(--color-primary)]/0 group-hover:bg-[color:var(--color-primary)]/5 transition-colors" />
                             <div className="relative flex items-center justify-between">
-                              <span className="text-sm font-bold text-white group-hover:text-emerald-400 transition-colors truncate">{cat.name}</span>
-                              <ChevronRight className="w-4 h-4 text-slate-600 group-hover:text-emerald-400 transition-all group-hover:translate-x-1" />
+                              <span className="text-sm font-bold text-[color:var(--color-text)] group-hover:text-[color:var(--color-primary)] transition-colors truncate">{cat.name}</span>
+                              <ChevronRight className="w-4 h-4 text-[color:var(--color-text-muted)] group-hover:text-[color:var(--color-primary)] transition-all group-hover:translate-x-1" />
                             </div>
                           </Link>
                         ))}
@@ -200,10 +200,10 @@ export default function PredictiveSearch({ isOpen, setIsOpen }: PredictiveSearch
                   {searchResults.products.length > 0 ? (
                     <div className="space-y-5">
                       <div className="flex items-center gap-4">
-                        <h3 className="text-[11px] font-black uppercase tracking-[0.3em] text-emerald-500/70">
+                        <h3 className="text-[11px] font-black uppercase tracking-[0.3em] text-[color:var(--color-primary)]/70">
                           Produits Suggerés
                         </h3>
-                        <div className="flex-1 h-[1px] bg-gradient-to-r from-emerald-500/20 to-transparent" />
+                        <div className="flex-1 h-[1px] bg-gradient-to-r from-[color:var(--color-primary)]/20 to-transparent" />
                       </div>
                       <div className="grid gap-3">
                         {searchResults.products.map((prod) => (
@@ -211,9 +211,9 @@ export default function PredictiveSearch({ isOpen, setIsOpen }: PredictiveSearch
                             key={prod.id}
                             to={`/catalogue/${prod.slug}`}
                             onClick={() => setIsOpen(false)}
-                            className="group relative flex items-center gap-5 p-4 bg-white/5 border border-white/5 rounded-2xl hover:border-emerald-500/30 hover:bg-white/10 transition-all"
+                            className="group relative flex items-center gap-5 p-4 bg-[color:var(--color-bg-elevated)] border border-[color:var(--color-border)] rounded-2xl hover:border-[color:var(--color-primary)]/30 hover:bg-[color:var(--color-bg)] transition-all shadow-sm hover:shadow-md"
                           >
-                            <div className="relative w-20 h-20 shrink-0 rounded-xl overflow-hidden bg-slate-800/50 border border-white/5 group-hover:border-emerald-500/20 transition-colors p-3">
+                            <div className="relative w-20 h-20 shrink-0 rounded-xl overflow-hidden bg-[color:var(--color-bg)] border border-[color:var(--color-border)] group-hover:border-[color:var(--color-primary)]/20 transition-colors p-3">
                               <img 
                                 src={getProductImageSrc(prod.image_url)} 
                                 alt={prod.name} 
@@ -225,34 +225,34 @@ export default function PredictiveSearch({ isOpen, setIsOpen }: PredictiveSearch
                             <div className="flex-1 min-w-0 py-1">
                               <div className="flex items-start justify-between gap-4 mb-2">
                                 <div>
-                                  <p className="text-base font-bold text-white group-hover:text-emerald-400 transition-colors truncate">{prod.name}</p>
-                                  <p className="text-[10px] text-emerald-500/60 font-black uppercase tracking-[0.1em] mt-0.5">{prod.category?.name}</p>
+                                  <p className="text-base font-bold text-[color:var(--color-text)] group-hover:text-[color:var(--color-primary)] transition-colors truncate">{prod.name}</p>
+                                  <p className="text-[10px] text-[color:var(--color-primary)]/70 font-black uppercase tracking-[0.1em] mt-0.5">{prod.category?.name}</p>
                                 </div>
                                 <div className="text-right">
-                                  <p className="text-base font-black text-white">{prod.price.toFixed(2)}€</p>
+                                  <p className="text-base font-black text-[color:var(--color-text)]">{prod.price.toFixed(2)}€</p>
                                   {prod.original_value && prod.original_value > prod.price && (
-                                    <p className="text-xs text-slate-500 line-through">{(prod.original_value).toFixed(2)}€</p>
+                                    <p className="text-xs text-[color:var(--color-text-muted)] line-through">{(prod.original_value).toFixed(2)}€</p>
                                   )}
                                 </div>
                               </div>
 
                               <div className="flex items-center justify-between">
                                 <div className="flex flex-wrap gap-2">
-                                  {prod.avg_rating && prod.avg_rating > 0 && (
-                                    <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-emerald-500/5 border border-emerald-500/10 scale-90 origin-left">
+                                  {prod.avg_rating && prod.avg_rating > 0 ? (
+                                    <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-[color:var(--color-primary)]/5 border border-[color:var(--color-primary)]/10 scale-90 origin-left">
                                       <StarRating rating={prod.avg_rating} size="sm" showCount={false} />
-                                      <span className="text-[10px] text-emerald-400 font-bold">{prod.avg_rating.toFixed(1)}</span>
+                                      <span className="text-[10px] text-[color:var(--color-primary)] font-bold">{prod.avg_rating.toFixed(1)}</span>
                                     </div>
-                                  )}
+                                  ) : null}
                                   {prod.attributes?.aromas?.slice(0, 1).map((aroma: string, i: number) => (
-                                    <div key={i} className="flex items-center gap-1 px-2 py-1 rounded-lg bg-white/5 text-[10px] text-slate-400 font-bold uppercase tracking-wider">
-                                      <Leaf className="w-3 h-3 text-emerald-400/40" />
+                                    <div key={i} className="flex items-center gap-1 px-2 py-1 rounded-lg bg-[color:var(--color-bg-muted)] text-[10px] text-[color:var(--color-text-subtle)] font-bold uppercase tracking-wider">
+                                      <Leaf className="w-3 h-3 opacity-50" />
                                       {aroma}
                                     </div>
                                   ))}
                                 </div>
                                 <div className="opacity-0 group-hover:opacity-100 transition-all translate-x-4 group-hover:translate-x-0">
-                                  <div className="w-8 h-8 rounded-full bg-emerald-500 text-slate-950 flex items-center justify-center">
+                                  <div className="w-8 h-8 rounded-full bg-[color:var(--color-primary)] text-[color:var(--color-primary-contrast)] flex items-center justify-center shadow-lg">
                                     <ArrowRight className="w-4 h-4" />
                                   </div>
                                 </div>
@@ -265,11 +265,11 @@ export default function PredictiveSearch({ isOpen, setIsOpen }: PredictiveSearch
                   ) : (
                     !isSearching && (
                       <div className="flex flex-col items-center justify-center py-20 text-center">
-                        <div className="w-16 h-16 rounded-3xl bg-white/5 flex items-center justify-center mb-4">
-                          <Search className="w-8 h-8 text-slate-700" />
+                        <div className="w-16 h-16 rounded-3xl bg-[color:var(--color-bg-elevated)] flex items-center justify-center mb-4">
+                          <Search className="w-8 h-8 text-[color:var(--color-text-muted)]" />
                         </div>
-                        <p className="text-white font-bold text-lg">Aucun résultat</p>
-                        <p className="text-slate-500 text-sm mt-1 max-w-[280px]">Nous n'avons rien trouvé pour "{searchQuery}". Essayez d'autres mots-clés.</p>
+                        <p className="text-[color:var(--color-text)] font-bold text-lg">Aucun résultat</p>
+                        <p className="text-[color:var(--color-text-muted)] text-sm mt-1 max-w-[280px]">Nous n'avons rien trouvé pour "{searchQuery}". Essayez d'autres mots-clés.</p>
                       </div>
                     )
                   )}
@@ -278,17 +278,17 @@ export default function PredictiveSearch({ isOpen, setIsOpen }: PredictiveSearch
                 <div className="py-10 space-y-12">
                   <div className="space-y-6">
                     <div className="flex items-center gap-4">
-                      <h3 className="text-[11px] font-black uppercase tracking-[0.3em] text-slate-500">
+                      <h3 className="text-[11px] font-black uppercase tracking-[0.3em] text-[color:var(--color-text-muted)]">
                         Explorer par catégories
                       </h3>
-                      <div className="flex-1 h-[1px] bg-gradient-to-r from-white/5 to-transparent" />
+                      <div className="flex-1 h-[1px] bg-gradient-to-r from-[color:var(--color-border)] to-transparent" />
                     </div>
                     <div className="flex flex-wrap gap-3">
                       {["En Promo", "Nouveautés", "Fleurs", "Résines", "Vapes"].map((term) => (
                         <button
                           key={term}
                           onClick={() => setSearchQuery(term)}
-                          className="px-6 py-3 bg-white/5 border border-white/5 rounded-2xl text-xs font-bold text-slate-400 hover:text-white hover:border-emerald-500/30 hover:bg-emerald-500/5 transition-all"
+                          className="px-6 py-3 bg-[color:var(--color-bg-elevated)] border border-[color:var(--color-border)] rounded-2xl text-xs font-bold text-[color:var(--color-text-muted)] hover:text-[color:var(--color-text)] hover:border-[color:var(--color-primary)]/30 hover:bg-[color:var(--color-primary)]/5 transition-all shadow-sm"
                         >
                           {term}
                         </button>
@@ -298,27 +298,27 @@ export default function PredictiveSearch({ isOpen, setIsOpen }: PredictiveSearch
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
                     <div className="space-y-4">
-                      <h4 className="text-[10px] font-black uppercase tracking-widest text-emerald-400/60 flex items-center gap-2">
+                      <h4 className="text-[10px] font-black uppercase tracking-widest text-[color:var(--color-primary)]/70 flex items-center gap-2">
                         <Sparkles className="w-3 h-3" /> Tendances
                       </h4>
                       <div className="space-y-1">
-                        {["Amnesia Haze", "Super Skunk", "CDB Premium"].map((trend) => (
+                        {["Amnesia Haze", "Super Skunk", "CBD Premium"].map((trend) => (
                           <button 
                             key={trend}
                             onClick={() => setSearchQuery(trend)}
-                            className="block w-full text-left py-2 text-sm text-slate-500 hover:text-white transition-colors"
+                            className="block w-full text-left py-2 text-sm text-[color:var(--color-text-muted)] hover:text-[color:var(--color-text)] transition-colors"
                           >
                             • {trend}
                           </button>
                         ))}
                       </div>
                     </div>
-                    <div className="bg-emerald-500/5 border border-emerald-500/10 rounded-3xl p-6 flex flex-col justify-between">
+                    <div className="bg-[color:var(--color-primary)]/5 border border-[color:var(--color-primary)]/10 rounded-3xl p-6 flex flex-col justify-between">
                       <div>
-                        <p className="text-sm font-bold text-white mb-2">Besoin d'aide ?</p>
-                        <p className="text-xs text-slate-500 leading-relaxed">Notre assistant BudTender peut vous aider à trouver le produit idéal pour vos besoins.</p>
+                        <p className="text-sm font-bold text-[color:var(--color-text)] mb-2">Besoin d'aide ?</p>
+                        <p className="text-xs text-[color:var(--color-text-muted)] leading-relaxed">Notre assistant BudTender peut vous aider à trouver le produit idéal pour vos besoins.</p>
                       </div>
-                      <Link to="/assistant" className="mt-4 text-[10px] font-black uppercase tracking-widest text-emerald-400 hover:text-emerald-300 flex items-center gap-2">
+                      <Link to="/assistant" onClick={() => setIsOpen(false)} className="mt-4 text-[10px] font-black uppercase tracking-widest text-[color:var(--color-primary)] hover:opacity-80 flex items-center gap-2 transition-opacity">
                         Lancer l'assistant <ArrowRight className="w-3 h-3" />
                       </Link>
                     </div>
@@ -330,7 +330,6 @@ export default function PredictiveSearch({ isOpen, setIsOpen }: PredictiveSearch
         </motion.div>
       </motion.div>
     </AnimatePresence>
-
   );
 
   if (!isMounted || typeof document === 'undefined') {

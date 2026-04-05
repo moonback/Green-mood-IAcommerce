@@ -98,7 +98,7 @@ export default function Footer() {
               <img
                 src={logoUrl}
                 alt={settings.store_name}
-                className="h-10 w-auto object-contain transition-all duration-500 group-hover:glow-logo"
+                className="h-30 w-auto object-contain transition-all duration-500 group-hover:glow-logo"
               />
             </Link>
             <p className="text-[color:var(--color-text-muted)] text-sm leading-relaxed max-w-sm">
@@ -206,36 +206,6 @@ export default function Footer() {
           </div>
         </div>
 
-        {/* Contact Info Row */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 py-8 border-t border-[color:var(--color-border)] text-sm text-[color:var(--color-text-muted)]">
-          <div className="flex items-center gap-4 group">
-            <div className="w-10 h-10 rounded-full bg-[color:var(--color-bg-elevated)] flex items-center justify-center text-[color:var(--color-primary)] group-hover:scale-110 transition-transform">
-              <MapPin className="w-4 h-4" />
-            </div>
-            <div>
-              <p className="font-bold text-[color:var(--color-text)]">Siège Social</p>
-              <p>{settings.store_address}</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-4 group">
-            <div className="w-10 h-10 rounded-full bg-[color:var(--color-bg-elevated)] flex items-center justify-center text-[color:var(--color-primary)] group-hover:scale-110 transition-transform">
-              <Phone className="w-4 h-4" />
-            </div>
-            <div>
-              <p className="font-bold text-[color:var(--color-text)]">Téléphone</p>
-              <p>{settings.store_phone}</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-4 group">
-            <div className="w-10 h-10 rounded-full bg-[color:var(--color-bg-elevated)] flex items-center justify-center text-[color:var(--color-primary)] group-hover:scale-110 transition-transform">
-              <Mail className="w-4 h-4" />
-            </div>
-            <div>
-              <p className="font-bold text-[color:var(--color-text)]">Email Support</p>
-              <p>contact@{settings.store_name?.toLowerCase().replace(/\s+/g, '') || 'neurocart'}.fr</p>
-            </div>
-          </div>
-        </div>
 
         {/* Bottom Bar: Copyright & Payments */}
         <div className="mt-12 pt-8 border-t border-[color:var(--color-border)] flex flex-col md:flex-row justify-between items-center gap-8">

@@ -173,7 +173,7 @@ export default function Catalog() {
   // ─── Ads ───
   const ads = useAds(selectedCategory);
 
-  const PRODUCTS_PER_PAGE = 8;
+  const PRODUCTS_PER_PAGE = 16;
 
   useEffect(() => {
     async function loadMetadata() {

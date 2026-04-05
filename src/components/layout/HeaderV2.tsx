@@ -13,6 +13,7 @@ import React, { memo, useState, useEffect, useCallback } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
   ShoppingCart,
+  Search,
   User,
   ChevronDown,
   Menu,
@@ -33,7 +34,7 @@ import { useWishlistStore } from '../../store/wishlistStore';
 import { useAuthStore } from '../../store/authStore';
 import { useSettingsStore } from '../../store/settingsStore';
 import { supabase } from '../../lib/supabase';
-import { SearchBar } from './SearchBar';
+// Removed SearchBar import
 import TopBanner from './TopBanner';
 import { useTheme } from '../ThemeProvider';
 
@@ -263,15 +264,23 @@ const HeaderV2: React.FC<HeaderV2Props> = ({ setIsSearchOpen, setIsLoyaltyModalO
                 />
               </Link>
 
-              {/* Search bar */}
-              <div className="flex-1 hidden md:flex min-w-0">
-                <SearchBar
-                  categories={categories
-                    .slice(1)
-                    .filter((n) => n.slug && n.slug !== 'nouveautes' && n.slug !== 'promotions')
-                    .map((n) => ({ slug: n.slug, name: n.label }))}
-                  placeholder={`Rechercher sur ${settings.store_name || 'NeuroCart'}…`}
-                />
+              {/* Desktop Search Bar (Triggers Predictive Search Modal) */}
+              <div className="hidden md:flex flex-1 max-w-xl mx-4 lg:mx-8">
+                <button
+                  type="button"
+                  onClick={() => setIsSearchOpen(true)}
+                  className="group relative flex w-full items-center gap-3 rounded-2xl border border-[color:var(--color-border)] bg-[color:var(--color-bg-elevated)] px-4 py-2.5 transition-all duration-300 hover:border-[color:var(--color-primary)]/40 hover:bg-[color:var(--color-bg)] hover:shadow-[0_0_15px_rgba(var(--color-primary-rgb),0.1)] focus:outline-none"
+                  aria-label="Rechercher"
+                >
+                  <Search className="h-4.5 w-4.5 text-[color:var(--color-text-muted)] group-hover:text-[color:var(--color-primary)] transition-colors" />
+                  <span className="text-sm font-medium text-[color:var(--color-text-muted)] group-hover:text-[color:var(--color-text-subtle)] transition-colors">
+                    Rechercher un produit, une collection...
+                  </span>
+                  <div className="ml-auto hidden items-center gap-1 rounded-lg border border-[color:var(--color-border)] bg-[color:var(--color-bg-muted)]/50 px-2.5 py-1 text-[10px] font-black text-[color:var(--color-text-muted)] lg:flex transition-colors group-hover:border-[color:var(--color-border-strong)]">
+                    <span className="uppercase tracking-widest leading-none">CTRL</span>
+                    <span className="uppercase tracking-widest leading-none">K</span>
+                  </div>
+                </button>
               </div>
 
               {/* Actions row */}
@@ -433,7 +442,18 @@ const HeaderV2: React.FC<HeaderV2Props> = ({ setIsSearchOpen, setIsLoyaltyModalO
 
             {/* Mobile search row */}
             <div className="md:hidden mt-2 pb-1">
-              <SearchBar placeholder="Rechercher un produit…" className="w-full" />
+              <button
+                type="button"
+                onClick={() => setIsSearchOpen(true)}
+                className="group w-full flex items-center justify-between rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-bg-elevated)] px-4 py-2.5 transition-all active:scale-95 text-left"
+              >
+                <div className="flex items-center gap-3">
+                  <Search className="h-4.5 w-4.5 text-[color:var(--color-text-muted)] transition-colors" />
+                  <span className="text-[13px] font-medium text-[color:var(--color-text-subtle)]">
+                    Que recherchez-vous ?
+                  </span>
+                </div>
+              </button>
             </div>
           </div>
         </div>
