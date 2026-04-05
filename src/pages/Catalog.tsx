@@ -814,7 +814,7 @@ export default function Catalog() {
   const gridItems = useMemo(() => injectAdsIntoGrid(products, ads), [products, ads]);
 
   return (
-    <div className="min-h-screen bg-[color:var(--color-bg)] text-[color:var(--color-text)] overflow-x-hidden transition-colors duration-300">
+    <div className="min-h-screen bg-[color:var(--color-bg)] text-[color:var(--color-text)] overflow-clip transition-colors duration-300">
       <SEO
         title={`Catalogue CBD | ${settings.store_name}`}
         description={`Découvrez notre sélection de CBD premium : fleurs, huiles, résines & infusions. THC < 0.3%, analysés en laboratoire, livraison discrète. Trouvez votre CBD idéal avec notre conseiller IA.`}
@@ -866,7 +866,7 @@ export default function Catalog() {
 
           {/* ── DESKTOP SIDEBAR ── */}
           <aside className="hidden lg:block w-[260px] xl:w-[280px] flex-shrink-0 group/sidebar">
-            <div className="sticky top-[204px] transition-all duration-700 group-hover/sidebar:top-[198px]">
+            <div className="sticky top-[100px] transition-all duration-700 group-hover/sidebar:top-[94px]">
               <div className="relative rounded-[2.5rem] border border-[color:var(--color-border)]/40 bg-[color:var(--color-card)]/60 p-7 shadow-[var(--shadow-card)] backdrop-blur-3xl transition-all duration-700 hover:shadow-[0_32px_80px_rgba(0,0,0,0.6)] hover:border-green-neon/30 overflow-hidden">
 
                 {/* Subtle background glow effect on hover */}
