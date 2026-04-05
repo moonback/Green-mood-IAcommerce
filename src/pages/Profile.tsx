@@ -482,20 +482,28 @@ export default function Profile() {
                         <div className="flex flex-wrap gap-4">
                           {Object.entries(prefs)
                             .filter(([k, v]) => v !== undefined && v !== null && !['id', 'user_id', 'updated_at', 'preferences'].includes(k))
-                            .map(([key, value]) => (
-                              <div
-                                key={key}
-                                className="bg-[color:var(--color-card)]/80 border border-purple-500/20 rounded-[2rem] px-8 py-5 shadow-sm hover:border-purple-500/40 transition-all duration-500 group"
-                              >
-                                <div className="text-[9px] font-black uppercase tracking-[0.2em] text-purple-500/70 mb-2 flex items-center gap-2">
-                                  <span className="w-1.5 h-1.5 rounded-full bg-purple-500" />
-                                  {key.replace(/_/g, ' ')}
+                            .map(([key, value]) => {
+                              const vStr = Array.isArray(value) 
+                                ? value.join(', ') 
+                                : typeof value === 'object' && value !== null
+                                  ? Object.entries(value as object).map(([ik, iv]) => `${ik.replace(/_/g, ' ')}: ${iv}`).join('; ')
+                                  : String(value);
+
+                              return (
+                                <div
+                                  key={key}
+                                  className="bg-[color:var(--color-card)]/80 border border-purple-500/20 rounded-[2rem] px-8 py-5 shadow-sm hover:border-purple-500/40 transition-all duration-500 group"
+                                >
+                                  <div className="text-[9px] font-black uppercase tracking-[0.2em] text-purple-500/70 mb-2 flex items-center gap-2">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-purple-500" />
+                                    {key.replace(/_/g, ' ')}
+                                  </div>
+                                  <div className="text-xs font-black uppercase tracking-tight text-[color:var(--color-text)]">
+                                    {vStr}
+                                  </div>
                                 </div>
-                                <div className="text-xs font-black uppercase tracking-tight text-[color:var(--color-text)]">
-                                  {Array.isArray(value) ? value.join(', ') : String(value)}
-                                </div>
-                              </div>
-                            ))}
+                              );
+                            })}
                         </div>
                       ) : (
                         <div className="p-8 border border-dashed border-[color:var(--color-border)] rounded-[2.5rem] bg-[color:var(--color-card)]/30 text-center">

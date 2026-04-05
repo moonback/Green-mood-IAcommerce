@@ -248,19 +248,38 @@ const _buildClientContext = (
   }
 
   if (savedPrefs) {
+    const renderValue = (val: any): string => {
+      if (Array.isArray(val)) return val.join(', ');
+      if (typeof val === 'object' && val !== null) {
+        return Object.entries(val).map(([k, v]) => `${k.replace(/_/g, ' ')}: ${String(v)}`).join('; ');
+      }
+      return String(val);
+    };
+
     const entries = Object.entries(savedPrefs)
-      .filter(([k, v]) => v && k !== 'id' && k !== 'user_id' && k !== 'updated_at')
-      .map(([k, v]) => `${k}: ${Array.isArray(v) ? (v as any[]).join(', ') : v}`);
+      .filter(([k, v]) => v && k !== 'id' && k !== 'user_id' && k !== 'updated_at' && k !== 'preferences')
+      .map(([k, v]) => `${k.replace(/_/g, ' ')}: ${renderValue(v)}`);
+    
     if (entries.length > 0) {
-      ctx += `- PROFIL DYNAMIQUE : ${entries.join(' | ')}. `;
-      const exp = savedPrefs.experience_level?.toLowerCase();
-      if (exp === 'pro' || exp === 'expert') {
-        ctx += `Client expert — privilégie les performances, specs et compatibilité matérielle.\n`;
-      } else {
-        ctx += `Ton enthousiaste et pédagogue.\n`;
+      ctx += `- PROFIL ÉVOLUTIF ACTUEL (BudTender) : ${entries.join(' | ')}. `;
+      const exp = (savedPrefs.expertise || savedPrefs.experience_level)?.toLowerCase();
+      if (exp) {
+        if (exp.includes('debutant')) ctx += `Le client est débutant, vulgarise au maximum. `;
+        if (exp.includes('expert')) ctx += `Le client est expert (terpènes, spectre complet...), sois technique. `;
       }
     }
   }
+
+  ctx += `\n## PROTOCOLE DE MISE À JOUR DU PROFIL (L'IA ÉVOLUE EN TEMPS RÉEL)
+Tu dois enrichir ce profil EN TEMPS RÉEL. À chaque fois que tu captes une information stable, tu appelles IMMEDIATEMENT 'save_preferences' pour faire grandir ton savoir.
+
+CHAMPS CLÉS À DÉTECTER ET METTRE À JOUR :
+- 'expertise' : Débutant, Intermédiaire, Passionné, Expert.
+- 'preference_gout' : Boisé, Fruité, Terreux, Sucre, Mentholé, etc.
+- 'objectif_bien_etre' : Focus, Détente, Sommeil profond, Énergie, Récupération.
+- 'mode_favori' : Fleur, Vapotage, Huile, Infusion.
+
+Règle : Sois proactif. Dès qu'il dit "J'adore le goût terreux", tu enregistres 'preference_gout': 'Terreux'.`;
 
   if (cartItems && cartItems.length > 0) {
     const cartStr = cartItems.map((item: any) => `${item.product.name} ×${item.quantity}`).join(', ');

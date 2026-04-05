@@ -775,6 +775,32 @@ export function useGeminiLiveVoice({
     }
   }, [activeProduct, queueClientMessage]);
 
+  // Sync AI preferences (Profil Évolutif) mid-session
+  const prevSavedPrefsRef = useRef(savedPrefs);
+  useEffect(() => {
+    if (!sessionRef.current || isManualCloseRef.current || !savedPrefs) return;
+    const isDifferent = JSON.stringify(savedPrefs) !== JSON.stringify(prevSavedPrefsRef.current);
+    if (isDifferent) {
+      const renderValue = (val: any): string => {
+        if (Array.isArray(val)) return val.join(', ');
+        if (typeof val === 'object' && val !== null) {
+          return Object.entries(val).map(([k, v]) => `${k}: ${v}`).join('; ');
+        }
+        return String(val);
+      };
+      
+      const entries = Object.entries(savedPrefs)
+        .filter(([k, v]) => v && k !== 'id' && k !== 'user_id' && k !== 'updated_at' && k !== 'preferences')
+        .map(([k, v]) => `${k.replace(/_/g, ' ')}: ${renderValue(v)}`);
+
+      if (entries.length > 0) {
+        const syncText = `[SYSTÈME] Ton savoir sur le client vient d'évoluer. Voici son PROFIL ÉVOLUTIF à jour : ${entries.join(' | ')}. Prends-en compte immédiatement pour la suite.`;
+        queueClientMessage(syncText);
+      }
+      prevSavedPrefsRef.current = savedPrefs;
+    }
+  }, [savedPrefs, queueClientMessage]);
+
   // Global unhandledrejection suppressor for SDK's internal uncatchable fire-and-forget WS throws.
   // When the WS enters CLOSING state (readyState 2) before onclose fires, the SDK synchronously throws 
   // via an unreturned Promise. We cannot wrap it. We must intercept the global error event.
@@ -1706,11 +1732,25 @@ export function useGeminiLiveVoice({
 
                 if (c.name === 'save_preferences') {
                   if (onSavePrefsRef.current) {
-                    const toSave = args.new_prefs || args;
-                    onSavePrefsRef.current(toSave);
-                    return { name: c.name, id: c.id, response: { result: 'OK — Préférences enregistrées et synchronisées.' } };
+                    // Supporting multiple hallucination formats
+                    const toSave = args.new_prefs || args.new_pref || (args.prefs ? args.prefs : args);
+                    
+                    // If toSave is a string (hallucination), try to parse it
+                    let finalPrefs = toSave;
+                    if (typeof toSave === 'string') {
+                       try {
+                         // Attempt to handle "key: value" or other formats if possible
+                         if (toSave.includes(':')) {
+                            const [k, v] = toSave.split(':').map(s => s.trim());
+                            finalPrefs = { [k]: v };
+                         }
+                       } catch { /* ignore */ }
+                    }
+
+                    onSavePrefsRef.current(finalPrefs);
+                    return { name: c.name, id: c.id, response: { result: 'OK — Profil mis à jour en temps réel.' } };
                   }
-                  return { name: c.name, id: c.id, response: { error: 'Erreur de synchronisation des préférences.' } };
+                  return { name: c.name, id: c.id, response: { error: 'Erreur de synchronisation des préférences AI.' } };
                 }
 
                 if (c.name === 'open_product_modal') {
