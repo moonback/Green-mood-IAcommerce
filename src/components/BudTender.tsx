@@ -12,6 +12,7 @@ import { useBudtenderStore } from "../store/budtenderStore";
 // UI Components
 import { BudTenderWidget } from "./budtender-ui";
 import VoiceAdvisor from "./VoiceAdvisor";
+import ProductCompareModal from "./ProductCompareModal";
 
 export default function BudTender() {
   const navigate = useNavigate();
@@ -43,6 +44,7 @@ export default function BudTender() {
 
   const [products, setProducts] = useState<Product[]>([]);
   const [settings, setSettings] = useState<BudTenderSettings | null>(null);
+  const [compareProducts, setCompareProducts] = useState<Product[]>([]);
 
   const memory = useBudTenderMemory();
 
@@ -114,8 +116,16 @@ export default function BudTender() {
           window.dispatchEvent(new CustomEvent('cortex-open-modal', { detail: modalName }));
         }}
         onSavePrefs={memory.updatePrefs}
+        onCompareProducts={(pA, pB) => setCompareProducts([pA, pB])}
         showUI={true}
       />
+
+      {compareProducts.length >= 2 && (
+        <ProductCompareModal
+          products={compareProducts}
+          onClose={() => setCompareProducts([])}
+        />
+      )}
     </>
   );
 }

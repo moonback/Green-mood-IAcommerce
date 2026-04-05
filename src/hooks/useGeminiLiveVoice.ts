@@ -7,7 +7,7 @@ import { generateEmbedding } from '../lib/embeddings';
 import { isMatchProductsRpcAvailable, matchProductsRpc } from '../lib/matchProductsRpc';
 import { supabase, SUPABASE_URL, SUPABASE_ANON_KEY } from '../lib/supabase';
 import { getRelevantKnowledge } from '../lib/budtenderKnowledge';
-import { getVoicePrompt } from '../lib/budtenderPrompts';
+import { getVoicePrompt, getVoiceContextMessage } from '../lib/budtenderPrompts';
 import { searchCannabisKnowledge } from '../lib/cannabisKnowledgeService';
 import { useSettingsStore } from '../store/settingsStore';
 import { useRecentlyViewedStore } from '../store/recentlyViewedStore';
@@ -163,6 +163,7 @@ interface Options {
   wishlistItems?: string[];
   onToggleFavorite?: (productId: string) => void;
   onApplyPromo?: (code: string) => Promise<{ success: boolean; discount?: number; message?: string }>;
+  onCompareProducts?: (productA: Product, productB: Product) => void;
   onVolumeLevel?: (rms: number) => void; // Am3: reactive waveform
   proactiveGreeting?: string;            // Am6: used when voice is triggered proactively
 }
@@ -241,6 +242,7 @@ export function useGeminiLiveVoice({
   wishlistItems = [],
   onToggleFavorite,
   onApplyPromo,
+  onCompareProducts,
   onVolumeLevel,
   proactiveGreeting,
 }: Options) {
@@ -284,6 +286,8 @@ export function useGeminiLiveVoice({
   onToggleFavoriteRef.current = onToggleFavorite;
   const onApplyPromoRef = useRef(onApplyPromo);
   onApplyPromoRef.current = onApplyPromo;
+  const onCompareProductsRef = useRef(onCompareProducts);
+  onCompareProductsRef.current = onCompareProducts;
   const onVolumeLevelRef = useRef(onVolumeLevel);       // Am3
   onVolumeLevelRef.current = onVolumeLevel;
   const cartItemsRef = useRef(cartItems);
@@ -445,19 +449,37 @@ export function useGeminiLiveVoice({
     return typeof WebSocket === 'undefined' || ws.readyState === WebSocket.OPEN;
   }, []);
 
+  // Short static system prompt (~600 chars) — persona + rules only.
+  // Dynamic data (catalog, cart, client) is injected via buildContextMessage.
   const buildSystemPrompt = useCallback((): string => {
     const effectiveCustomPrompt = [globalSettings.budtender_base_prompt?.trim(), customPrompt?.trim()].filter(Boolean).join('\n\n');
     const prompt = getVoicePrompt(
-      productsRef.current, savedPrefs, userName, pastProducts, pastOrders,
-      deliveryFee, deliveryFreeThreshold, cartItems, effectiveCustomPrompt,
-      loyaltyPoints, globalSettings.budtender_name || 'BudTender',
-      globalSettings.loyalty_tiers || [], allowCloseSession, recentlyViewed,
-      globalSettings.store_name || 'Eco CBD', globalSettings.loyalty_currency_name || 'CARATS',
-      activeProduct
+      globalSettings.budtender_name || 'BudTender',
+      globalSettings.store_name || 'Eco CBD',
+      effectiveCustomPrompt || undefined,
+      allowCloseSession,
     );
-    console.info('[Voice][Prompt] System instruction generated (length:', prompt.length, ')');
+    console.info('[Voice][Prompt] System instruction (length:', prompt.length, ')');
     return prompt;
-  }, [userName, deliveryFee, deliveryFreeThreshold, savedPrefs, pastProducts, pastOrders, cartItems, customPrompt, loyaltyPoints, globalSettings.budtender_name, globalSettings.loyalty_tiers, allowCloseSession, recentlyViewed, globalSettings.store_name, globalSettings.budtender_base_prompt, globalSettings.loyalty_currency_name, activeProduct]);
+  }, [globalSettings.budtender_name, globalSettings.store_name, globalSettings.budtender_base_prompt, customPrompt, allowCloseSession]);
+
+  // Dynamic context sent as the first session message — NOT in systemInstruction.
+  const buildContextMessage = useCallback((): string => {
+    return getVoiceContextMessage(
+      productsRef.current,
+      userName,
+      loyaltyPoints,
+      globalSettings.loyalty_currency_name || 'CARATS',
+      pastOrders,
+      pastProducts,
+      cartItems,
+      activeProduct,
+      deliveryFee,
+      deliveryFreeThreshold,
+      savedPrefs,
+      recentlyViewed,
+    );
+  }, [userName, loyaltyPoints, globalSettings.loyalty_currency_name, pastOrders, pastProducts, cartItems, activeProduct, deliveryFee, deliveryFreeThreshold, savedPrefs, recentlyViewed]);
 
   const fetchEphemeralToken = useCallback(async (forceRefresh: boolean = false): Promise<{ token: string }> => {
     const now = Date.now();
@@ -1005,12 +1027,13 @@ export function useGeminiLiveVoice({
                 const ws = wsRef.current ?? (sessionRef.current as any)?._ws;
                 if (ws && ws.readyState !== WebSocket.OPEN) return;
 
+                const contextBlock = buildContextMessage();
                 const greetingTrigger = userName
                   ? `[START SESSION] Accueille le client par son prénom (${userName}) et demande-lui comment tu peux l'aider aujourd'hui.`
                   : "[START SESSION] Accueille chaleureusement le client et demande-lui comment tu peux l'aider aujourd'hui.";
 
                 sessionRef.current?.sendClientContent({
-                  turns: [{ role: 'user', parts: [{ text: greetingTrigger }] }],
+                  turns: [{ role: 'user', parts: [{ text: `${contextBlock}\n\n${greetingTrigger}` }] }],
                   turnComplete: true
                 });
               }
@@ -1718,6 +1741,7 @@ export function useGeminiLiveVoice({
                   const pB = await findProduct(nameB);
                   if (!pA) return { name: c.name, id: c.id, response: { error: `Produit "${nameA}" introuvable dans le catalogue.` } };
                   if (!pB) return { name: c.name, id: c.id, response: { error: `Produit "${nameB}" introuvable dans le catalogue.` } };
+                  onCompareProductsRef.current?.(pA, pB);
                   const diff = pB.price - pA.price;
                   const priceLine = diff === 0
                     ? `Même prix (${pA.price}€).`

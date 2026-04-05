@@ -1,16 +1,17 @@
-import { Product, Review as BaseReview } from '../lib/types';
-import { Product as PremiumProduct, Review as PremiumReview } from '../types/premiumProduct';
+import { Product } from '../lib/types';
 import { QuizStep } from './budtenderSettings';
 
-// Charge les fichiers .md de manière dynamique via Vite
+// Charge les fichiers .md de manière dynamique via Vite (used by chat prompt only)
 const skillsFiles = import.meta.glob('../skills/*.md', { query: '?raw', eager: true, import: 'default' });
 
-const _buildSkillsContext = () => {
+// mode: 'chat' — skips skill.md and vocal_actions.md
+const _buildSkillsContext = (mode: 'chat' | 'default' = 'default') => {
   const filePaths = Object.keys(skillsFiles);
   if (filePaths.length === 0) return '';
 
-  // skill.md (définitions des outils) doit toujours être injecté EN PREMIER
-  // pour que les autres skills puissent y référer sans ambiguïté.
+  // In chat mode: skip skill.md (voice-only tool defs) and vocal_actions.md
+  const SKIP_FOR_CHAT = new Set(['skill.md', 'vocal_actions.md']);
+
   const sorted = [...filePaths].sort((a, b) => {
     const fa = a.split('/').pop() || '';
     const fb = b.split('/').pop() || '';
@@ -19,12 +20,14 @@ const _buildSkillsContext = () => {
     return fa.localeCompare(fb);
   });
 
-  let context = '## COMPÉTENCES SPÉCIALISÉES (SKILLS)\nTu possèdes les instructions et les compétences supplémentaires suivantes :\n\n';
+  let context = '## COMPÉTENCES (SKILLS)\n\n';
 
   for (const path of sorted) {
     const fileName = path.split('/').pop() || '';
-    const skillName = fileName.replace('.md', '');
 
+    if (mode === 'chat' && SKIP_FOR_CHAT.has(fileName)) continue;
+
+    const skillName = fileName.replace('.md', '');
     let content = skillsFiles[path] as string;
 
     // Minification pour la voix : supprime le markdown que le TTS lirait mot à mot
@@ -171,248 +174,114 @@ Réponds UNIQUEMENT en JSON.
 
 
 
-// ─── VOICE FORMAT RULES — constante réutilisable ─────────────────────────────
-const VOICE_FORMAT_RULES = `## RÈGLES FORMAT AUDIO — OBLIGATOIRE
+/**
+ * System prompt for Gemini Live Voice — intentionally short (~600 chars).
+ * Persona + rules only. NO dynamic data (catalog, cart, client) — those go in
+ * getVoiceContextMessage() which is injected as the first session message.
+ */
+export const getVoicePrompt = (
+  budtenderName: string = 'Assistant',
+  storeName: string = 'My Store',
+  customPrompt?: string,
+  allowCloseSession: boolean = true,
+) => {
+  const parts = [
+`Tu es ${budtenderName}, expert CBD chez ${storeName}. Tu conseilles avec chaleur, expertise et concision.
 
-Tu t'exprimes UNIQUEMENT à l'oral. 
+RÈGLES VOCALES :
+- 1 à 2 phrases max par réponse
+- Jamais de markdown, listes, emojis, astérisques
+- Une seule question courte à la fois
+- Appelle search_catalog avant de recommander un produit
+- Appelle think pour planifier toute action complexe
+- Prix en toutes lettres : "vingt euros", "dix neuf euros cinquante"
+- Français par défaut — adapte-toi si autre langue détectée
 
-INTERDIT ABSOLU dans toutes tes réponses vocales :
-- Markdown : étoiles, dièses, tirets en liste, tableaux, guillemets de code
-- Emojis (lus mot à mot par le TTS — catastrophique)
-- Parenthèses techniques, crochets, URLs, références SKU, codes produit
-- Formules de clôture : "au revoir", "bonne journée", "à bientôt", "bonne continuation", "n'hésitez pas à revenir"
-- Listes à puces ou numérotées — utilise toujours la forme orale
+FAMILLES : fleurs (effet immédiat), huiles (action longue), résines (concentration élevée).
+Tu n'es pas là pour vendre — tu offres une consultation sincère et apaisante.`
+  ];
 
-OBLIGATOIRE pour sonner naturel et humain :
-- Phrases courtes : 10 à 18 mots maximum par phrase
-- Deux ou trois phrases par réponse — jamais plus
-- Prix et chiffres en toutes lettres : "vingt euros", "trois articles", "cinquante pour cent"
-- Listes orales fluides : "tu as d'abord... ensuite... et pour finir..."
-- Ponctuation naturelle : virgules pour les micro-pauses, points pour les vraies pauses
-- Connecteurs de conversation vivants : "Salut,", "Franchement,", "Tu sais ce qui est top ?", "Entre nous,"
-- Contractions naturelles à l'oral : "c'est" pas "cela est", "t'as" (si approprié au ton), "y'a"
-- Intonation suggérée via structure : phrase affirmative courte → pause → question ouverte
+  if (allowCloseSession) {
+    parts.push('Si le client veut terminer, clos la session chaleureusement.');
+  }
+  if (customPrompt?.trim()) {
+    parts.push(customPrompt.trim());
+  }
 
-  Bon : "Ce qui me plaît vraiment ici, c'est l'autonomie. Et le design, c'est un vrai plus."
-
-// Feedback vocal des actions moved to skills/vocal_actions.md
-`;
-
-// ─── MODULES PRIVÉS ──────────────────────────────────────────────────────────
-
-const _buildIdentity = (budtenderName: string, storeName: string) =>
-  `## RÔLE ET POSTURE — ${budtenderName}, BudTender Expert
-  
-Tu es ${budtenderName}, le BudTender vocal de ${storeName}. Tu es un passionné de botanique avec des années d'expérience en herboristerie moderne et en cannabiculture. Tu connais chaque terpène et chaque génétique sur le bout des doigts.
-
-Ta mission profonde : tu n'es pas là pour faire une vente, mais pour offrir une consultation sérieuse et apaisante. Tu aides les gens à trouver la solution naturelle idéale pour leur équilibre quotidien.
-
-Personnalité :
-- Chaud et direct — tu vas droit au but sans jamais être brusque
-- Enthousiaste mais crédible — ton énergie est contagieuse, pas commerciale
-- Expert pédagogue — tu vulgarises sans condescendance
-- Ami de confiance — tu donnes le conseil que tu donnerais à ton meilleur ami
-
-Marqueurs de langage naturels pour la voix :
-- "C'est exactement la variété qu'il te faut."
-- "Entre nous, c'est l'un de mes favoris pour la détente."
-- Jamais de jargon commercial creux ("optimal", "parfait pour vos besoins").
-- Utilise un ton de "sommelier du chanvre".
-
-Langue : français par défaut. Adapte-toi naturellement si le client parle une autre langue.`;
-
-const _buildAnalysisProtocol = () => {
-  return `## PROTOCOLE D'ANALYSE — RÉFLEXION SILENCIEUSE AVANT CHAQUE RÉPONSE
-
-Avant de prononcer le moindre mot, exécute ce protocole en silence :
-
-1. DÉCODAGE D'INTENTION : Que veut VRAIMENT le client ? À quelle étape du FIL DE CONVERSATION sommes-nous (1. Découverte, 2. Affinage, ou 3. Décision) ?
-2. LECTURE ÉMOTIONNELLE : il est enthousiaste ? hésitant ? pressé ? distrait ? frustré ?
-3. CONTEXTE COMPLET : profil, panier actif, produit à l'écran, historique d'achats, fidélité
-4. STRATÉGIE OPTIMALE : parler directement / poser une question précise pour avancer dans le fil / appeler un outil / gérer une objection ?
-5. ANGLE D'ATTAQUE : quelle accroche va créer de l'intérêt et de la confiance immédiatement ?
-
-Ce processus n'est JAMAIS verbalisé. Tu agis, tu ne commentes pas ta méthode.
-
-Règle d'or de discrétion : Utilise les données du profil client en SOUS-TEXTE uniquement. Tu ne dis jamais "d'après ton profil", "tes préférences indiquent", "je vois que tu aimes". Tu agis comme un ami perspicace qui a de la mémoire — sans jamais le montrer ouvertement.
-
-// Séquence d'exécution obligatoire moved to skills/vocal_actions.md`;
+  return parts.join('\n\n');
 };
 
-const _buildClientContext = (
-  userName: string | null | undefined,
-  loyaltyPoints: number | undefined,
-  loyaltyTiers: any[],
-  currencyName: string,
-  pastOrders: any[],
-  pastProducts: any[],
-  recentlyViewed: any[],
-  savedPrefs: any,
-  cartItems: any[],
-  activeProduct: any,
+/**
+ * Dynamic context injected as the first user message of the session (NOT in systemInstruction).
+ * Keeps systemInstruction short while giving the model full situational awareness.
+ */
+export const getVoiceContextMessage = (
+  products: Product[],
+  userName?: string | null,
+  loyaltyPoints?: number,
+  currencyName: string = 'points',
+  pastOrders: any[] = [],
+  pastProducts: any[] = [],
+  cartItems: any[] = [],
+  activeProduct?: any,
   deliveryFee: number = 0,
-  deliveryFreeThreshold: number = 0
+  deliveryFreeThreshold: number = 0,
+  savedPrefs?: any,
+  recentlyViewed: any[] = [],
 ) => {
-  let ctx = '';
+  const lines: string[] = ['[CONTEXTE SESSION — NE PAS LIRE À VOIX HAUTE]'];
 
-  if (userName) {
-    ctx += `- PRÉNOM CLIENT : ${userName} — utilise son prénom naturellement, sans en abuser.\n`;
-  }
+  lines.push(`Client : ${userName || 'invité'}`);
 
   if (loyaltyPoints !== undefined) {
-    const currentTier = loyaltyTiers.find(t => loyaltyPoints >= t.min_points);
-    const nextTier = loyaltyTiers.find(t => loyaltyPoints < t.min_points);
-    ctx += `- FIDÉLITÉ : ${loyaltyPoints} ${currencyName}`;
-    if (currentTier) ctx += ` — palier ${currentTier.name} (×${currentTier.multiplier} sur chaque achat)`;
-    if (nextTier) ctx += ` — encore ${nextTier.min_points - loyaltyPoints} ${currencyName} pour atteindre le palier ${nextTier.name}`;
-    ctx += `. Valeur : 100 ${currencyName} = 1€ de réduction.\n`;
-  } else if (loyaltyTiers && loyaltyTiers.length > 0) {
-    const tiersStr = loyaltyTiers.map(t => `${t.name} (≥${t.min_points} ${currencyName}, ×${t.multiplier})`).join(', ');
-    ctx += `- PROGRAMME FIDÉLITÉ : ${tiersStr}. Valeur : 100 ${currencyName} = 1€.\n`;
+    lines.push(`Fidélité : ${loyaltyPoints} ${currencyName}`);
   }
 
-  if (pastOrders && pastOrders.length > 0) {
-    const ordersStr = pastOrders
-      .slice(0, 3)
-      .map(o => `[ID: ${o.id}] Date: ${new Date(o.date).toLocaleDateString('fr-FR')} | Statut: ${o.status} | Total: ${o.total}€ | Articles: ${o.items.map((i: any) => `${i.quantity}x ${i.product_name}`).join(', ')}`)
-      .join(' || ');
-    ctx += `- HISTORIQUE COMMANDES (3 dernières) : ${ordersStr}. Tu as accès à ces commandes pour aider sans demander le numéro de commande.\n`;
-  } else if (pastProducts && pastProducts.length > 0) {
-    const lastProds = pastProducts.slice(0, 4).map((p: any) => p.product_name || p.name).join(', ');
-    ctx += `- HISTORIQUE ACHATS : ${lastProds}.\n`;
+  if (cartItems.length > 0) {
+    const cartStr = cartItems.map((i: any) => `${i.product.name} ×${i.quantity}`).join(', ');
+    const total = cartItems.reduce((acc: number, i: any) => acc + i.product.price * i.quantity, 0);
+    lines.push(`Panier : ${cartStr} — ${total.toFixed(2)}€`);
+    if (deliveryFee > 0) {
+      lines.push(total >= deliveryFreeThreshold && deliveryFreeThreshold > 0
+        ? 'Livraison : offerte'
+        : `Livraison : ${deliveryFee}€${deliveryFreeThreshold > 0 ? ` (offerte dès ${deliveryFreeThreshold}€)` : ''}`);
+    }
+  } else {
+    lines.push('Panier : vide');
   }
 
-  if (recentlyViewed && recentlyViewed.length > 0) {
-    const viewedStr = recentlyViewed.slice(0, 4).map((p: any) => p.name).join(', ');
-    ctx += `- NAVIGATION RÉCENTE : ${viewedStr} — utilise cet intérêt pour orienter tes suggestions.\n`;
+  if (pastOrders.length > 0) {
+    const recent = pastOrders.slice(0, 2)
+      .map((o: any) => `[${o.id?.slice(0, 8)}] ${new Date(o.date).toLocaleDateString('fr-FR')} ${o.total}€`)
+      .join(' | ');
+    lines.push(`Commandes récentes : ${recent}`);
+  } else if (pastProducts.length > 0) {
+    lines.push(`Achats passés : ${pastProducts.slice(0, 3).map((p: any) => p.product_name || p.name).join(', ')}`);
   }
 
   if (savedPrefs) {
-    const entries = Object.entries(savedPrefs)
-      .filter(([k, v]) => v && k !== 'id' && k !== 'user_id' && k !== 'updated_at')
-      .map(([k, v]) => `${k}: ${Array.isArray(v) ? (v as any[]).join(', ') : v}`);
-    if (entries.length > 0) {
-      ctx += `- PROFIL DYNAMIQUE : ${entries.join(' | ')}. `;
-      const exp = savedPrefs.experience_level?.toLowerCase();
-      if (exp === 'pro' || exp === 'expert') {
-        ctx += `Client expert — privilégie les performances, specs et compatibilité matérielle.\n`;
-      } else {
-        ctx += `Ton enthousiaste et pédagogue.\n`;
-      }
-    }
+    const prefs = Object.entries(savedPrefs)
+      .filter(([k, v]) => v && !['id', 'user_id', 'updated_at'].includes(k))
+      .map(([k, v]) => `${k}: ${Array.isArray(v) ? (v as any[]).join(', ') : v}`)
+      .slice(0, 5)
+      .join(', ');
+    if (prefs) lines.push(`Préférences : ${prefs}`);
   }
 
-  if (cartItems && cartItems.length > 0) {
-    const cartStr = cartItems.map((item: any) => `${item.product.name} ×${item.quantity}`).join(', ');
-    const total = cartItems.reduce((acc: number, item: any) => acc + (item.product.price * item.quantity), 0);
-    ctx += `- [PANIER RÉEL] : ${cartStr} — total ${total.toFixed(2)}€. Considère cette liste comme l'état définitif du panier. Réponds aux questions sur le panier uniquement sur cette base.\n`;
-    
-    if (deliveryFee > 0) {
-      if (deliveryFreeThreshold > 0 && total >= deliveryFreeThreshold) {
-        ctx += `- LIVRAISON : Offerte ! (Seuil de ${deliveryFreeThreshold}€ atteint).\n`;
-      } else {
-        ctx += `- LIVRAISON : ${deliveryFee}€.`;
-        if (deliveryFreeThreshold > 0) {
-          ctx += ` Encore ${(deliveryFreeThreshold - total).toFixed(2)}€ pour la livraison gratuite.`;
-        }
-        ctx += '\n';
-      }
-    }
-  } else {
-    ctx += `- [PANIER RÉEL] : Vide.\n`;
-    if (deliveryFee > 0) {
-      ctx += `- LIVRAISON : ${deliveryFee}€ standard.`;
-      if (deliveryFreeThreshold > 0) {
-        ctx += ` Offerte dès ${deliveryFreeThreshold}€ d'achat.`;
-      }
-      ctx += '\n';
-    }
+  if (recentlyViewed.length > 0) {
+    lines.push(`Vus récemment : ${recentlyViewed.slice(0, 3).map((p: any) => p.name).join(', ')}`);
   }
 
   if (activeProduct) {
-    ctx += `\nPRODUIT ACTUELLEMENT À L'ÉCRAN : ${activeProduct.name}\n`;
-    ctx += `- Description : ${activeProduct.shortDescription || activeProduct.description}\n`;
-
-    if (activeProduct.machineSpecs && activeProduct.machineSpecs.length > 0) {
-      const specs = activeProduct.machineSpecs.map((s: any) => `${s.name}: ${s.description}`).join(' | ');
-      ctx += `- Spécifications : ${specs}\n`;
-    }
-
-    if (activeProduct.machineMetrics) {
-      const metrics = Object.entries(activeProduct.machineMetrics).map(([k, v]) => `${k}: ${v}/10`).join(', ');
-      ctx += `- Profil de performance : ${metrics}\n`;
-    }
-
-    if (activeProduct.reviews && activeProduct.reviews.length > 0) {
-      const reviewsStr = activeProduct.reviews.slice(0, 3).map((r: any) => `"${r.comment}" (${r.rating}/5 par ${r.author})`).join(' | ');
-      ctx += `- Avis clients : ${reviewsStr}\n`;
-    }
-
-    if (activeProduct.relatedProducts && activeProduct.relatedProducts.length > 0) {
-      const relatedStr = activeProduct.relatedProducts.map((p: any) => `${p.name} (${p.price}€)`).join(', ');
-      ctx += `- Produits associés : ${relatedStr}\n`;
-    }
-
-    ctx += `Utilise ces informations précises pour répondre aux questions sur ce produit sans recherche supplémentaire.\n`;
+    lines.push(`Produit à l'écran : ${activeProduct.name} (${activeProduct.price}€)`);
   }
 
-  return ctx;
-};
+  const catalog = products.slice(0, 8)
+    .map((p: Product) => `${p.name} (${p.category?.name || '?'}, ${p.price}€)`)
+    .join(', ');
+  lines.push(`Catalogue : ${catalog}`);
 
-const _buildCatalog = (products: Product[], limit = 25) =>
-  products
-    .slice(0, limit)
-    .map(p => `${p.name}${p.category?.name ? ` (${p.category.name})` : ''} — ${p.price}€`)
-    .join('\n');
-
-/**
- * Prompt pour Gemini Live Voice (Audio)
- */
-export const getVoicePrompt = (
-  products: Product[],
-  savedPrefs: any,
-  userName?: string | null,
-  pastProducts: any[] = [],
-  pastOrders: any[] = [],
-  deliveryFee: number = 0,
-  deliveryFreeThreshold: number = 0,
-  cartItems: any[] = [],
-  customPrompt?: string,
-  loyaltyPoints?: number,
-  budtenderName: string = 'Assistant',
-  loyaltyTiers: any[] = [],
-  allowCloseSession: boolean = true,
-  recentlyViewed: any[] = [],
-  storeName: string = 'My Store',
-  currencyName: string = 'Credit',
-  activeProduct?: (PremiumProduct & { reviews: PremiumReview[]; relatedProducts?: Product[] }) | null
-) => {
-  const clientContext = _buildClientContext(
-    userName, loyaltyPoints, loyaltyTiers, currencyName,
-    pastOrders, pastProducts, recentlyViewed, savedPrefs, cartItems, activeProduct,
-    deliveryFee, deliveryFreeThreshold
-  );
-  const now = new Date();
-  const timeStr = now.toLocaleString('fr-FR', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  });
-
-  return [
-    _buildIdentity(budtenderName, storeName),
-    VOICE_FORMAT_RULES,
-    `## RÉFÉRENCE TEMPORELLE (TEMPS RÉEL)\nNous sommes le : ${timeStr}`,
-    _buildAnalysisProtocol(),
-    _buildSkillsContext(),
-    `## CONTEXTE CLIENT\n${clientContext}`,
-    `## CATALOGUE DISPONIBLE (RÉSUMÉ)\n${_buildCatalog(products)}`,
-    allowCloseSession ? "## FIN DE SESSION\nSi le client exprime explicitement le souhait de partir ou s'il n'a plus besoin d'aide, tu peux clore la session chaleureusement." : "",
-    customPrompt?.trim() ? `## INSTRUCTIONS SPÉCIFIQUES\n${customPrompt.trim()}` : '',
-  ].filter(Boolean).join('\n\n');
+  return lines.join('\n');
 };
 
 export const getBirthdayGiftPrompt = (
