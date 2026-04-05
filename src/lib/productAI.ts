@@ -48,20 +48,25 @@ export async function generateProductInfo(productName: string, categoryName?: st
     - Vérifie toujours la présence des guillemets ouvrants ET fermants pour chaque mot.
     - Utilise des balises HTML standards (uniquement <p>, <strong>, <ul>, <li>) exclusivement à l'intérieur de la valeur du champ 'description'. N'utilise pas de guillemets doubles à l'intérieur de ces balises HTML.
 
+    CONTEXTE LÉGAL (OBLIGATOIRE) :
+    - Produits à base de chanvre / CBD conformes au cadre européen : THC toujours inférieur ou égal à 0,3 %.
+    - Ne promets jamais d'effet psychoactif, de défonce ni de propriétés thérapeutiques : bien-être, détente sensorielle, routine quotidienne uniquement.
+    - Le champ 'Puissance' dans 'productMetrics' signifie l'intensité perçue du profil cannabinoïde (richesse en CBD, corps de la fleur ou de l'extrait), pas une montée euphorisante.
+
     INFOS À GÉNÉRER :
-    1. 'headline' : Accroche courte et percutante en texte pur.
-    2. 'description' : Texte immersif décrivant l'arôme, le goût et l'expérience (autorise <p>, pas de guillemets doubles).
-    3. 'seo' : Titre et meta-description optimisés pour le CBD. (PAS DE BALISES HTML ICI, texte pur uniquement).
+    1. 'headline' : Accroche courte et percutante en texte pur, ancrée CBD / chanvre légal.
+    2. 'description' : Texte immersif sur arômes, goût, origine et usage du CBD (autorise <p>, pas de guillemets doubles).
+    3. 'seo' : Titre et meta-description optimisés pour la recherche CBD / chanvre légal en France. (PAS DE BALISES HTML ICI, texte pur uniquement).
     4. 'attributes' : 
        - 'brand': Fabricant original ou 'Production Exclusive'.
-       - 'cbd_percentage': Valeur numérique entre 5 et 90 (ex: 22.5).
-       - 'thc_max': Valeur numérique <= 0.3 (ex: 0.18).
-       - 'techFeatures': 3-5 tags (ex: ["Indoor", "Bio-Organique", "Grown in Italy", "Full Spectrum"]).
-       - 'productMetrics': { "Détente": 8, "Saveur": 9, "Arôme": 9, "Puissance": 7 } (scores sur 10).
+       - 'cbd_percentage': Pourcentage de CBD plausible pour la catégorie (fleurs souvent 5–25 %, huiles/concentrés peuvent monter plus haut ; reste cohérent avec le nom du produit).
+       - 'thc_max': Valeur numérique <= 0.3 (ex: 0.18), conformité légale explicite dans les textes si pertinent.
+       - 'techFeatures': 3-5 tags CBD (ex: ["Indoor", "Bio", "Full Spectrum", "Sans pesticides", "UE"]).
+       - 'productMetrics': { "Détente": 8, "Saveur": 9, "Arôme": 9, "Puissance": 7 } (scores sur 10 ; Puissance = intensité du profil CBD / matière, pas effet psychotrope).
        - 'productSpecs': Liste d'objets { "name", "description", "category", "intensity" } pour : 
          * 'Profil de Terpènes' (Détails avec intensité %), 
          * 'Méthode de Culture' (Indoor/Outdoor avec détails techniques), 
-         * 'Concentration' (Détaille CBD, CBG, CBN, THC < 0.3%),
+         * 'Cannabinoïdes' (CBD dominant, autres cannabinoïdes mineurs si pertinent, THC < 0,3 %),
          * 'Certifications' (Analyses labo, absence de pesticides).
 
     Exemple de structure ATTENDUE :

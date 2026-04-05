@@ -111,7 +111,7 @@ function computeEffects(
   const r = 40 + cbd * 1.5;
   return {
     source: 'fallback',
-    contributors: ['Ratio Cannabinoïdes'],
+    contributors: ['Profil CBD estimé'],
     scores: {
       Détente:       Math.min(90, Math.round(r)),
       Sommeil:       Math.min(80, Math.round(r * 0.75)),
@@ -201,10 +201,10 @@ export default function TerpeneEffectsChart({ specs, productMetrics, cbdPercenta
               className="text-2xl sm:text-3xl text-white mb-1"
               style={{ fontFamily: "'DM Serif Display', serif" }}
             >
-              Phénotype & Effets
+              Profil terpènes & CBD
             </h3>
             <p className="text-[11px] text-white/40 font-medium uppercase tracking-[0.1em]">
-               Analyse cognitive des terpènes et cannabinoïdes
+               Lecture bien-être des terpènes et du spectre cannabinoïde (chanvre légal)
             </p>
           </div>
 
@@ -268,7 +268,7 @@ export default function TerpeneEffectsChart({ specs, productMetrics, cbdPercenta
                 ))}
               </div>
               <p className="mt-3 text-[10px] text-white/30 italic leading-snug">
-                Ces molécules interagissent par effet d'entourage pour définir le profil d'action unique de la variété.
+                Effet d'entourage entre terpènes et cannabinoïdes : illustration indicative du ressenti, sans effet psychoactif au sens du THC.
               </p>
             </div>
           </div>
@@ -306,11 +306,11 @@ export default function TerpeneEffectsChart({ specs, productMetrics, cbdPercenta
               
               <div className="flex justify-between mt-2.5">
                 <div className="flex flex-col">
-                  <span className="text-[9px] font-black uppercase text-[#10b981]/60">Physiotropique</span>
+                  <span className="text-[9px] font-black uppercase text-[#10b981]/60">Apaisant</span>
                   <span className="text-xs font-black text-[#10b981]">{relaxAvg}%</span>
                 </div>
                 <div className="flex flex-col items-end">
-                  <span className="text-[9px] font-black uppercase text-[#f59e0b]/60">Psychotropique</span>
+                  <span className="text-[9px] font-black uppercase text-[#f59e0b]/60">Tonique / éveil</span>
                   <span className="text-xs font-black text-[#f59e0b]">{stimAvg}%</span>
                 </div>
               </div>

@@ -15,7 +15,7 @@ const effectConfig: {
     { key: 'Détente', label: 'Relaxation', sublabel: 'Effet apaisant & calme', icon: '🧘', color: 'from-[#10b981] to-[#34d399]', bg: 'bg-[#10b981]/10' },
     { key: 'Saveur', label: 'Goût', sublabel: 'Profil en bouche', icon: '👅', color: 'from-amber-500 to-amber-400', bg: 'bg-amber-50' },
     { key: 'Arôme', label: 'Parfum', sublabel: 'Expérience olfactive', icon: '👃', color: 'from-purple-500 to-purple-400', bg: 'bg-purple-50' },
-    { key: 'Puissance', label: 'Intensité', sublabel: 'Ressenti des effets', icon: '⚡', color: 'from-[#ef4444] to-[#f87171]', bg: 'bg-[#ef4444]/10' },
+    { key: 'Puissance', label: 'Profil CBD', sublabel: 'Richesse cannabinoïde (sans effet psychoactif)', icon: '⚡', color: 'from-[#059669] to-[#34d399]', bg: 'bg-[#059669]/10' },
   ];
 
 export default function EffectVisualization({ metrics = {} as any }: Props) {
@@ -23,9 +23,11 @@ export default function EffectVisualization({ metrics = {} as any }: Props) {
     <section className="relative border-y border-[color:var(--color-border)] bg-[color:var(--color-bg-elevated)]/50">
       <div className="mx-auto max-w-[1200px] px-4 py-16 sm:px-6 lg:px-8">
         <div className="mb-10">
-          <p className="text-[10px] font-black uppercase tracking-[0.35em] text-[color:var(--color-primary)] mb-2">Analyse produit</p>
-          <h3 className="text-3xl text-[color:var(--color-text)]" style={{ fontFamily: "'DM Serif Display', Georgia, serif" }}>Évaluation Complète</h3>
-          <p className="mt-2 text-sm text-[color:var(--color-text-muted)] font-medium">Score sur 10 basé sur la qualité globale, le design et le rapport qualité/prix.</p>
+          <p className="text-[10px] font-black uppercase tracking-[0.35em] text-[color:var(--color-primary)] mb-2">Profil CBD & sensoriel</p>
+          <h3 className="text-3xl text-[color:var(--color-text)]" style={{ fontFamily: "'DM Serif Display', Georgia, serif" }}>Évaluation bien-être</h3>
+          <p className="mt-2 text-sm text-[color:var(--color-text-muted)] font-medium">
+            Notes sur 10 pour la détente ressentie, le goût, les arômes et la présence du profil cannabinoïde (CBD légal, THC maximal 0,3 %).
+          </p>
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -68,4 +70,4 @@ export default function EffectVisualization({ metrics = {} as any }: Props) {
       </div>
     </section>
   );
-}
+}

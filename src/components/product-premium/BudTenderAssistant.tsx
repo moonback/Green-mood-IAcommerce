@@ -14,14 +14,14 @@ export default function BudTenderAssistant({ product }: Props) {
     () => ({
       effects: `${product.name} offre un score de détente de ${product.productMetrics?.Détente ?? 0}/10 et une puissance de ${product.productMetrics?.Puissance ?? 0}/10.`,
       flavor: `Profil aromatique : ${product.productMetrics?.Arôme ?? 0}/10 pour l'arôme et ${product.productMetrics?.Saveur ?? 0}/10 pour le goût. Un vrai délice !`,
-      usage: "Nous recommandons une utilisation progressive. Commencez par de petites quantités pour apprécier les effets de cette variété premium.",
+      usage: "Pour tout produit CBD légal, avancez par petites doses et observez votre ressenti. THC maximal 0,3 % : pas d'effet psychoactif attendu.",
     }),
     [product]
   );
 
   const ask = (text: string) => {
     const t = text.toLowerCase();
-    let a = "Je suis votre expert Budtender. Je peux vous renseigner sur les effets, les arômes ou les conseils d'utilisation de cette variété.";
+    let a = "Je suis votre conseiller CBD. Posez-moi des questions sur le bien-être, les arômes, le dosage ou l'utilisation de ce produit chanvre / CBD légal.";
     if (t.includes('effet') || t.includes('détente') || t.includes('puissance') || t.includes('relax')) a = quickAnswers.effects;
     else if (t.includes('goût') || t.includes('saveur') || t.includes('arôme') || t.includes('parfum')) a = quickAnswers.flavor;
     else if (t.includes('usage') || t.includes('conseil') || t.includes('utiliser') || t.includes('consommer')) a = quickAnswers.usage;

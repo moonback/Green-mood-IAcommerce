@@ -147,6 +147,16 @@ export default function ProductHero({ product, quantity, onQuantityChange, onAdd
                     {product.category.name}
                   </span>
                 )}
+                {(product.cbd_percentage != null && product.cbd_percentage > 0) && (
+                  <span className="rounded-md border border-[color:var(--color-border)] bg-[color:var(--color-card)]/60 px-2 py-0.5 text-[9px] font-black uppercase tracking-widest text-[color:var(--color-text-muted)]">
+                    CBD {Number(product.cbd_percentage).toFixed(1)}%
+                  </span>
+                )}
+                {(product.thc_max != null) && (
+                  <span className="rounded-md border border-[color:var(--color-border)] bg-[color:var(--color-card)]/60 px-2 py-0.5 text-[9px] font-black uppercase tracking-widest text-[color:var(--color-text-muted)]">
+                    THC ≤ {Number(product.thc_max).toFixed(2)}%
+                  </span>
+                )}
               </div>
             </div>
 

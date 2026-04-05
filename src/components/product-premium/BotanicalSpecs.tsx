@@ -42,7 +42,7 @@ export default function ProductSpecs({ specs }: Props) {
             </span>
           </h3> */}
           <p className="text-sm text-[color:var(--color-text-muted)] leading-relaxed max-w-xl font-medium">
-            Plongez au cœur de nos formulations. Chaque produit est testé rigoureusement en laboratoire indépendant pour garantir un profil terpénique exceptionnel et une pureté inégalée.
+            Transparence sur le CBD et les terpènes : chaque référence est contrôlée en laboratoire indépendant pour un profil cannabinoïde conforme (THC maximal 0,3 %) et une qualité botanique constante.
           </p>
         </div>
 

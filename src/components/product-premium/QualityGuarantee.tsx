@@ -3,10 +3,10 @@ import { ShieldCheck, Wrench, Truck, CreditCard, Headphones, Award } from 'lucid
 import { useSettingsStore } from '../../store/settingsStore';
 
 const badges = [
-  { icon: <Award className="w-5 h-5" />, label: 'Qualité Royale', desc: 'Sélection rigoureuse des meilleures fleurs et résines premium' },
-  { icon: <ShieldCheck className="w-5 h-5" />, label: 'Analyses Labo', desc: 'Tous nos produits sont testés pour garantir pureté et conformité THC < 0.3%' },
+  { icon: <Award className="w-5 h-5" />, label: 'Qualité Royale', desc: 'Sélection rigoureuse de fleurs, résines et extraits CBD premium issus du chanvre légal' },
+  { icon: <ShieldCheck className="w-5 h-5" />, label: 'Analyses Labo', desc: 'Contrôles indépendants : pureté, cannabinoïdes et THC conforme au cadre légal (max. 0,3 %)' },
   { icon: <Truck className="w-5 h-5" />, label: 'Livraison Discrète', desc: 'Expédition rapide sous 24h dans un emballage neutre et inodore' },
-  { icon: <Wrench className="w-5 h-5" />, label: 'Expertise Budtender', desc: 'Des conseils d\'experts pour trouver la variété adaptée à vos besoins' },
+  { icon: <Wrench className="w-5 h-5" />, label: 'Expertise CBD', desc: 'Conseils pour choisir le produit CBD et le format adaptés à votre routine' },
   { icon: <CreditCard className="w-5 h-5" />, label: 'Bien-être Suprême', desc: 'Détente, sommeil, récupération... le meilleur du CBD légal' },
   { icon: <Headphones className="w-5 h-5" />, label: 'Soutien Client', desc: 'Notre équipe est à votre écoute pour une expérience d\'exception' },
 ];
