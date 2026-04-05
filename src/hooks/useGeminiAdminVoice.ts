@@ -233,8 +233,16 @@ export function useGeminiAdminVoice({ adminName, storeName, onNavigate, onCloseS
       try {
         const down = downsampleBuffer(e.data, ctx.sampleRate, INPUT_SAMPLE_RATE);
         const pcm = float32ToInt16(down);
+        if (!pcm || pcm.length === 0) return;
+
+        // Log only the very first chunk to debug format
+        if (!window._firstAdminChunkLogged) {
+          console.log("[Voice][Admin] First audio chunk:", pcm.length, "bytes:", pcm.byteLength, pcm.slice(0, 5));
+          window._firstAdminChunkLogged = true;
+        }
+
         sessionRef.current?.sendRealtimeInput({
-          audio: { mimeType: 'audio/pcm;rate=16000', data: toBase64(new Uint8Array(pcm.buffer)) }
+          audio: { mimeType: 'audio/pcm', data: toBase64(new Uint8Array(pcm.buffer)) }
         });
       } catch (err: any) {
         const msg = String(err?.message ?? err).toLowerCase();

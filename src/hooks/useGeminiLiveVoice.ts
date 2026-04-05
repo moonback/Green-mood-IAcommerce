@@ -339,6 +339,7 @@ export function useGeminiLiveVoice({
   const messageQueueRef = useRef<string[]>([]);
   const silenceTimerRef = useRef<number | null>(null);
   const productCacheRef = useRef<Map<string, Product>>(new Map());
+  const firstChunkLoggedRef = useRef(false);
 
 
   const resetSilenceTimer = useCallback(() => {
@@ -600,7 +601,7 @@ export function useGeminiLiveVoice({
     if (options?.preserveViewedProducts) {
       preserveViewedProductsOnCleanupRef.current = true;
     }
-    
+
     // Calculate and log duration if session was active
     if (startTimeRef.current && interactionIdRef.current) {
       const durationSeconds = Math.round((Date.now() - startTimeRef.current) / 1000);
@@ -907,10 +908,18 @@ export function useGeminiLiveVoice({
         if (ws && ws.readyState !== 1) return; // 1 = OPEN
 
         try {
+          if (!pcm || pcm.length === 0 || pcm.byteLength < 512) return;
+
+          // Log only the very first chunk to debug format
+          if (!firstChunkLoggedRef.current) {
+            console.log("[Voice] First audio chunk:", pcm.length, "bytes:", pcm.byteLength, pcm.slice(0, 5));
+            firstChunkLoggedRef.current = true;
+          }
+
           sessionRef.current.sendRealtimeInput({
             audio: {
               mimeType: 'audio/pcm;rate=16000',
-              data: toBase64(new Uint8Array(pcm.buffer))
+              data: toBase64(new Uint8Array(pcm.buffer, pcm.byteOffset, pcm.byteLength))
             }
           });
         } catch (err) {
@@ -1234,16 +1243,16 @@ export function useGeminiLiveVoice({
                     }
                   };
                 }
-                
+
                 if (c.name === 'get_current_time') {
                   const now = new Date();
-                  const result = now.toLocaleString('fr-FR', { 
-                    weekday: 'long', 
-                    year: 'numeric', 
-                    month: 'long', 
-                    day: 'numeric', 
-                    hour: '2-digit', 
-                    minute: '2-digit' 
+                  const result = now.toLocaleString('fr-FR', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
                   });
                   return { name: c.name, id: c.id, response: { result } };
                 }
@@ -1319,13 +1328,13 @@ export function useGeminiLiveVoice({
                   const p = await findProduct(prodName);
                   if (p && onRemoveItemRef.current) {
                     onRemoveItemRef.current(p, qty);
-                    return { 
-                      name: c.name, 
-                      id: c.id, 
-                      response: { 
-                        result: `CONFIRMATION : ${p.name} a été retiré du panier. Vérification système : ACTION_SUCCESS. Le panier est à jour.`, 
-                        status: 'verified' 
-                      } 
+                    return {
+                      name: c.name,
+                      id: c.id,
+                      response: {
+                        result: `CONFIRMATION : ${p.name} a été retiré du panier. Vérification système : ACTION_SUCCESS. Le panier est à jour.`,
+                        status: 'verified'
+                      }
                     };
                   }
                   return { name: c.name, id: c.id, response: { error: `Produit "${prodName}" non trouvé dans le panier.` } };
@@ -1337,13 +1346,13 @@ export function useGeminiLiveVoice({
                   const p = await findProduct(prodName);
                   if (p && onUpdateQuantityRef.current) {
                     onUpdateQuantityRef.current(p, qty);
-                    return { 
-                      name: c.name, 
-                      id: c.id, 
-                      response: { 
-                        result: `CONFIRMATION : La quantité de ${p.name} a été mise à jour à ${qty}. Vérification système : ACTION_SUCCESS. Le panier est à jour.`, 
-                        status: 'verified' 
-                      } 
+                    return {
+                      name: c.name,
+                      id: c.id,
+                      response: {
+                        result: `CONFIRMATION : La quantité de ${p.name} a été mise à jour à ${qty}. Vérification système : ACTION_SUCCESS. Le panier est à jour.`,
+                        status: 'verified'
+                      }
                     };
                   }
                   return { name: c.name, id: c.id, response: { error: `Produit "${prodName}" non trouvé dans le panier.` } };
