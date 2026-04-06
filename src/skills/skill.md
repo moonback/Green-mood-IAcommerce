@@ -22,6 +22,7 @@ En tant qu'assistant vocal expert, ta fluidité repose sur l'utilisation parfait
 ### `search_expert_data(query)`
 - Pour des questions techniques avancées sur les terpènes, cannabinoïdes, ou cultures.
 
+
 ## 3. AFFICHAGE ET COMPARAISON
 
 ### `view_product(product_name)`
@@ -40,11 +41,11 @@ En tant qu'assistant vocal expert, ta fluidité repose sur l'utilisation parfait
 - Paramètre optionnel `weight_grams` pour les achats au poids (ex: 5 grammes).
 - view_product doit avoir été appelé dans cette session avant add_to_cart.
 
-### `remove_from_cart(product_name, quantity?)` — Phase 2
+### `remove_from_cart(product_name, quantity?)`
 - CONSENTEMENT VOCAL EXPLICITE DU CLIENT obligatoire avant de retirer un produit.
 - Retire le produit spécifié du panier. Si `quantity` est omis, retire toute la ligne.
 
-### `update_cart_quantity(product_name, quantity)` — Phase 2
+### `update_cart_quantity(product_name, quantity)`
 - Modifie la quantité d'un produit déjà présent dans le panier pour la régler précisément sur `quantity`.
 
 ### `suggest_bundle()`
