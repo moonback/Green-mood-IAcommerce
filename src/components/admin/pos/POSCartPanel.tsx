@@ -2,7 +2,6 @@ import { motion, AnimatePresence } from 'motion/react';
 import { ShoppingCart, Star, Trash2, X, Plus, Minus, Tag, Percent, Hash, CreditCard, UserPlus, FileText, Brain } from 'lucide-react';
 import { Product, Category, Profile, UserAIPreferences } from '../../../lib/types';
 import { CartLine, AppliedPromo } from './types';
-import { CATEGORY_SLUGS } from '../../../lib/constants';
 import { useSettingsStore } from '../../../store/settingsStore';
 
 interface POSCartPanelProps {

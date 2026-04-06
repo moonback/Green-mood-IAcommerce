@@ -23,8 +23,8 @@ export interface BudTenderSettings {
     recommendations_count: number;
     typing_speed: 'normal' | 'fast' | 'slow';
     memory_enabled: boolean;
-    threshold_arcade: number;
-    threshold_flippers: number;
+    threshold_fleurs: number;
+    threshold_resines: number;
     threshold_others: number;
     welcome_message: string;
     pulse_delay: number;
@@ -37,73 +37,43 @@ export interface BudTenderSettings {
 
 export const TECH_ADVISOR_DEFAULT_QUIZ: QuizStep[] = [
     {
-        id: 'tech_goal',
-        question: 'Quel est votre objectif principal ?',
+        id: 'effect_goal',
+        question: 'Quel est l\'effet recherché ?',
         options: [
-            { label: 'Gaming & Performance', value: 'gaming', emoji: '🎮' },
-            { label: 'Productivité & Bureau', value: 'work', emoji: '💻' },
-            { label: 'Création de contenu', value: 'creation', emoji: '🎨' },
-            { label: 'Maison Connectée', value: 'smart_home', emoji: '🏠' },
+            { label: 'Relaxation & Détente', value: 'relaxation', emoji: '🧘' },
+            { label: 'Sommeil Profond', value: 'sleep', emoji: '😴' },
+            { label: 'Soulagement (Douleurs/Stress)', value: 'relief', emoji: '🌿' },
+            { label: 'Énergie & Créativité', value: 'energy', emoji: '⚡' },
         ],
     },
     {
         id: 'experience_level',
-        question: 'Quel est votre niveau d\'expertise ?',
+        question: 'Quel est votre niveau de connaissance du CBD ?',
         options: [
-            { label: 'Débutant / Simple Curieux', value: 'beginner', emoji: '🌱' },
-            { label: 'Amateur Éclairé', value: 'enthusiast', emoji: '⚡' },
-            { label: 'Professionnel / Power User', value: 'pro', emoji: '🏗️' },
-            { label: 'Expert / Hardware Specialist', value: 'expert', emoji: '🛠️' },
+            { label: 'Débutant / Curieux', value: 'beginner', emoji: '🌱' },
+            { label: 'Consommateur occasionnel', value: 'casual', emoji: '🍃' },
+            { label: 'Habitué / Connaisseur', value: 'regular', emoji: '🌿' },
+            { label: 'Expert', value: 'expert', emoji: '🔬' },
         ],
     },
     {
-        id: 'budget_range',
-        question: 'Quelle est votre gamme de budget ?',
+        id: 'consumption_method',
+        question: 'Comment préférez-vous consommer ?',
         options: [
-            { label: 'Accessibles / Entrée de gamme', value: 'entry', emoji: '💶' },
-            { label: 'Balanced / Milieu de gamme', value: 'mid', emoji: '💳' },
-            { label: 'Premium / High-End', value: 'high', emoji: '💎' },
-            { label: 'Extreme / Enthusiast', value: 'ultra', emoji: '👑' },
+            { label: 'Infusion & Alimentaire', value: 'edibles', emoji: '🍵' },
+            { label: 'Vaporisation / E-cig', value: 'vaping', emoji: '💨' },
+            { label: 'Huile Sublinguale', value: 'oil', emoji: '💧' },
+            { label: 'Fleurs / Résines (Classique)', value: 'flower', emoji: '🍁' },
         ],
     },
     {
-        id: 'platform_preference',
-        question: 'Quelle plateforme préférez-vous ?',
+        id: 'flavor_profile',
+        question: 'Quelles sont vos préférences aromatiques ?',
         options: [
-            { label: 'Windows Ecosystem', value: 'windows', emoji: '🪟' },
-            { label: 'Apple / macOS', value: 'macos', emoji: '🍎' },
-            { label: 'Mobile / Android', value: 'android', emoji: '🤖' },
-            { label: 'Open Source / Linux', value: 'linux', emoji: '🐧' },
-        ],
-    },
-    {
-        id: 'priority_features',
-        question: 'Quelle est votre priorité absolue ?',
-        options: [
-            { label: 'Performance Max', value: 'performance', emoji: '🚀' },
-            { label: 'Autonomie & Portabilité', value: 'battery', emoji: '🔋' },
-            { label: 'Design & Esthétique', value: 'design', emoji: '✨' },
-            { label: 'Facilité d\'utilisation', value: 'ease', emoji: '👌' },
-        ],
-    },
-    {
-        id: 'interest',
-        question: 'Quel est votre centre d\'intérêt principal ?',
-        options: [
-            { label: 'High-Tech & Gadgets', value: 'tech', emoji: '🔌' },
-            { label: 'Mode & Lifestyle', value: 'lifestyle', emoji: '👕' },
-            { label: 'Maison & Déco', value: 'home', emoji: '🏠' },
-            { label: 'Bien-être & Santé', value: 'wellness', emoji: '🧘' },
-        ],
-    },
-    {
-        id: 'audience',
-        question: 'Pour qui cherchez-vous un produit ?',
-        options: [
-            { label: 'Pour moi-même', value: 'self', emoji: '🙋' },
-            { label: 'Un cadeau (Anniversaire/Noël)', value: 'gift', emoji: '🎁' },
-            { label: 'Un enfant / Ado', value: 'child', emoji: '👶' },
-            { label: 'Usage Professionnel', value: 'pro', emoji: '💼' },
+            { label: 'Fruité & Sucré', value: 'fruity', emoji: '🍓' },
+            { label: 'Terreux & Boisé', value: 'earthy', emoji: '🌲' },
+            { label: 'Citrus & Acidulé', value: 'citrus', emoji: '🍋' },
+            { label: 'Épicé & Floral', value: 'spicy', emoji: '🌶️' },
         ],
     },
 ];
@@ -117,14 +87,14 @@ export const TECH_ADVISOR_DEFAULTS: BudTenderSettings = {
     recommendations_count: 3,
     typing_speed: 'normal',
     memory_enabled: true,
-    threshold_arcade: 60,
-    threshold_flippers: 30,
-    threshold_others: 45,
-    welcome_message: "Bonjour ! Je suis votre conseiller high-tech. Comment puis-je vous aider à configurer votre setup idéal ?",
+    threshold_fleurs: 14,
+    threshold_resines: 20,
+    threshold_others: 30,
+    welcome_message: "Bonjour ! Je suis votre conseiller CBD. Comment puis-je vous aider aujourd'hui ?",
     pulse_delay: 3,
     quiz_steps: TECH_ADVISOR_DEFAULT_QUIZ,
     quiz_mode: 'dynamic',
-    custom_quiz_prompt: "Oriente toujours le client vers des composants compatibles entre eux. Si le client mentionne le gaming, demande-lui sa résolution cible (1080p, 1440p, 4K). Termine par un conseil expert sur l'entretien du matériel.",
+    custom_quiz_prompt: "Oriente toujours le client vers des produits CBD adaptés à ses besoins (sommeil, stress, douleurs). Si le client débute, propose des huiles ou des infusions en priorité. Termine toujours par un conseil bienveillant.",
     custom_chat_prompt: "",
     voice_close_session_enabled: true,
 };

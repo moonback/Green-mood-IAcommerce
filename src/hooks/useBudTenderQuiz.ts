@@ -148,10 +148,10 @@ export function useBudTenderQuiz({
 
         const prefs = memory.savedPrefs;
         const answersFromPrefs: Answers = {
-            tech_goal: prefs.tech_goal,
+            effect_goal: prefs.effect_goal,
             experience_level: prefs.experience_level,
-            budget_range: prefs.budget_range,
-            platform_preference: prefs.platform_preference,
+            consumption_method: prefs.consumption_method,
+            flavor_profile: prefs.flavor_profile,
         };
         setAnswers(answersFromPrefs);
         await generateRecommendations(answersFromPrefs);

@@ -72,16 +72,16 @@ interface OrderHistoryItem {
 // Maps a category slug to the matching BudTenderSettings threshold key.
 // Any slug not present falls back to 'restock_threshold_other'.
 const CATEGORY_THRESHOLD_KEYS: Partial<Record<string, keyof BudTenderSettings>> = {
-    [CATEGORY_SLUGS.ARCADE]: 'threshold_arcade',
-    [CATEGORY_SLUGS.FLIPPERS]: 'threshold_flippers',
-    [CATEGORY_SLUGS.SIMULATORS]: 'threshold_others',
+    [CATEGORY_SLUGS.FLEURS]: 'threshold_fleurs',
+    [CATEGORY_SLUGS.RESINES]: 'threshold_resines',
+    [CATEGORY_SLUGS.HUILES]: 'threshold_others',
 };
 
 // Fallback defaults if settings fail
 const FALLBACK_THRESHOLDS: Record<string, number> = {
-    [CATEGORY_SLUGS.ARCADE]: 60,
-    [CATEGORY_SLUGS.FLIPPERS]: 30,
-    [CATEGORY_SLUGS.SIMULATORS]: 45,
+    [CATEGORY_SLUGS.FLEURS]: 14,
+    [CATEGORY_SLUGS.RESINES]: 20,
+    [CATEGORY_SLUGS.HUILES]: 30,
 };
 const FALLBACK_DEFAULT = 45;
 

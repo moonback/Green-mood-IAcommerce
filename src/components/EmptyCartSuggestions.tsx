@@ -64,26 +64,37 @@ export default function EmptyCartSuggestions() {
         const desc = (product.description ?? '').toLowerCase();
 
         // Goal-based scoring
-        if (prefs.tech_goal === 'gaming') {
-            if (cat === CATEGORY_SLUGS.ARCADE || cat === CATEGORY_SLUGS.FLIPPERS || cat === CATEGORY_SLUGS.SIMULATORS) score += 5;
-            if (name.includes('jeu') || desc.includes('arcade') || desc.includes('score')) score += 3;
-        } else if (prefs.tech_goal === 'smart_home' || prefs.tech_goal === 'work') {
-            if (cat === CATEGORY_SLUGS.ACCESSORIES) score += 4;
+        const effectGoal = prefs.effect_goal?.value || prefs.effect_goal;
+        if (effectGoal === 'sleep') {
+            if (cat === CATEGORY_SLUGS.HUILES || cat === CATEGORY_SLUGS.GUMMIES) score += 5;
+            if (name.includes('sommeil') || desc.includes('nuit') || desc.includes('dormir')) score += 3;
+        } else if (effectGoal === 'relaxation') {
+            if (cat === CATEGORY_SLUGS.FLEURS || cat === CATEGORY_SLUGS.RESINES) score += 4;
+            if (name.includes('détente') || desc.includes('calme') || desc.includes('relax')) score += 3;
+        } else if (effectGoal === 'relief') {
+            if (cat === CATEGORY_SLUGS.HUILES) score += 5;
+            if (desc.includes('douleur') || desc.includes('articulation')) score += 3;
+        } else if (effectGoal === 'energy') {
+            if (name.includes('vitalité') || desc.includes('énergie') || desc.includes('jour')) score += 4;
         }
 
-        // Budget-based scoring
-        if (prefs.budget_range === 'entry') {
-            if (product.price < 500) score += 4;
-        } else if (prefs.budget_range === 'high' || prefs.budget_range === 'ultra') {
-            if (cat === CATEGORY_SLUGS.SIMULATORS || cat === CATEGORY_SLUGS.BILLARD) score += 4;
+        // Consumption method scoring
+        const method = prefs.consumption_method?.value || prefs.consumption_method;
+        if (method === 'edibles') {
+            if (cat === CATEGORY_SLUGS.GUMMIES || name.includes('infusion') || name.includes('thé')) score += 5;
+        } else if (method === 'vaping') {
+            if (cat === CATEGORY_SLUGS.VAPES) score += 5;
+        } else if (method === 'oil') {
+            if (cat === CATEGORY_SLUGS.HUILES) score += 5;
+        } else if (method === 'flower') {
+            if (cat === CATEGORY_SLUGS.FLEURS || cat === CATEGORY_SLUGS.RESINES) score += 5;
         }
 
-        // Feature-based scoring
-        if (prefs.priority_features === 'performance' && (cat === CATEGORY_SLUGS.SIMULATORS || cat === CATEGORY_SLUGS.ARCADE)) {
-            score += 3;
-        } else if (prefs.priority_features === 'design' && cat === CATEGORY_SLUGS.BILLARD) {
-            score += 3;
-        }
+        // Flavor scoring
+        const flavor = prefs.flavor_profile?.value || prefs.flavor_profile;
+        if (flavor === 'fruity' && (desc.includes('fruit') || desc.includes('fraise') || desc.includes('mangue'))) score += 3;
+        if (flavor === 'earthy' && (desc.includes('terre') || desc.includes('boisé') || desc.includes('pin'))) score += 3;
+        if (flavor === 'citrus' && (desc.includes('citron') || desc.includes('orange') || desc.includes('zeste'))) score += 3;
 
         if (product.is_featured) score += 2;
 

@@ -3,10 +3,11 @@
 // If a slug changes in the DB, update here only.
 
 export const CATEGORY_SLUGS = {
-  ARCADE: 'arcade',
-  FLIPPERS: 'flippers',
-  BILLARD: 'billard',
-  SIMULATORS: 'simulateurs',
+  FLEURS: 'fleurs',
+  RESINES: 'resines',
+  HUILES: 'huiles',
+  VAPES: 'vapes',
+  GUMMIES: 'gummies',
   ACCESSORIES: 'accessoires',
 } as const;
 

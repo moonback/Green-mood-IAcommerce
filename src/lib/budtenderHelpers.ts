@@ -5,29 +5,23 @@ import { CATEGORY_SLUGS } from './constants';
 import { supabase } from './supabase';
 import { useSettingsStore } from '../store/settingsStore';
 
-export interface TechChip {
+export interface CBDChip {
     label: string;
     emoji: string;
-    group: 'hardware' | 'style';
+    group: 'effect' | 'flavor';
 }
 
-export const TECH_CHIPS: TechChip[] = [
-    // Hardware Features
-    { label: 'Écran 4K', emoji: '🖥️', group: 'hardware' },
-    { label: 'Multijoueur', emoji: '👥', group: 'hardware' },
-    { label: 'Monnayeur', emoji: '🪙', group: 'hardware' },
-    { label: 'Rétro-éclairé', emoji: '🌈', group: 'hardware' },
-    { label: 'Wi-Fi / Connecté', emoji: '🌐', group: 'hardware' },
-    { label: 'Import Japon', emoji: '🇯🇵', group: 'hardware' },
-    { label: 'Force Feedback', emoji: '🏎️', group: 'hardware' },
-    { label: 'Stéréo Boost', emoji: '🔊', group: 'hardware' },
-    // Ambiance / Style
-    { label: 'Compétition', emoji: '🏆', group: 'style' },
-    { label: 'Vintage 80s', emoji: '🕹️', group: 'style' },
-    { label: 'Immersion', emoji: '🥽', group: 'style' },
-    { label: 'Convivialité', emoji: '🤝', group: 'style' },
-    { label: 'Performance', emoji: '🚀', group: 'style' },
-    { label: 'Showroom', emoji: '🏬', group: 'style' },
+export const CBD_CHIPS: CBDChip[] = [
+    // Effects
+    { label: 'Détente Profonde', emoji: '🧘', group: 'effect' },
+    { label: 'Aide au Sommeil', emoji: '😴', group: 'effect' },
+    { label: 'Apaisement', emoji: '🌿', group: 'effect' },
+    { label: 'Vitalité', emoji: '⚡', group: 'effect' },
+    // Flavors
+    { label: 'Fruité', emoji: '🍓', group: 'flavor' },
+    { label: 'Terreux', emoji: '🌲', group: 'flavor' },
+    { label: 'Agrumes', emoji: '🍋', group: 'flavor' },
+    { label: 'Épicé', emoji: '🌶️', group: 'flavor' },
 ];
 
 export type Answers = Record<string, string>;
@@ -38,44 +32,37 @@ export function scoreProduct(product: Product, answers: Answers): number {
     const name = product.name.toLowerCase();
     const desc = (product.description ?? '').toLowerCase();
 
-    // Mapping new tech goals
-    if (answers.tech_goal === 'gaming') {
-        if (name.includes('gaming') || desc.includes('rtx') || desc.includes('fps') || desc.includes('performance')) score += 5;
-        if (cat === 'gpu' || cat === 'pc-gaming' || cat === 'moniteurs') score += 3;
+    // Effect mapping
+    if (answers.effect_goal === 'relaxation') {
+        if (name.includes('relax') || desc.includes('détente') || desc.includes('calme')) score += 5;
+        if (cat === CATEGORY_SLUGS.FLEURS || cat === CATEGORY_SLUGS.RESINES) score += 3;
     }
-    if (answers.tech_goal === 'work') {
-        if (desc.includes('productivité') || desc.includes('ergonomique') || desc.includes('bureau') || desc.includes('autonomie')) score += 5;
-        if (cat === 'laptops' || cat === 'peripheriques') score += 3;
+    if (answers.effect_goal === 'sleep') {
+        if (desc.includes('sommeil') || desc.includes('nuit') || desc.includes('dormir')) score += 5;
+        if (cat === CATEGORY_SLUGS.HUILES || cat === CATEGORY_SLUGS.GUMMIES) score += 4;
     }
-    if (answers.tech_goal === 'creation') {
-        if (desc.includes('rendu') || desc.includes('couleur') || desc.includes('adobe') || desc.includes('photo')) score += 5;
-        if (cat === 'stations-de-travail' || cat === 'ecrans-pro') score += 4;
+    if (answers.effect_goal === 'relief') {
+        if (desc.includes('douleur') || desc.includes('soulagement') || desc.includes('stress')) score += 5;
+        if (cat === CATEGORY_SLUGS.HUILES) score += 4;
     }
-    if (answers.tech_goal === 'smart_home') {
-        if (desc.includes('connecté') || desc.includes('domotique') || desc.includes('wifi')) score += 5;
-        if (cat === 'iot' || cat === 'securite') score += 4;
+    if (answers.effect_goal === 'energy') {
+        if (desc.includes('énergie') || desc.includes('jour') || desc.includes('vitalité')) score += 5;
+        if (cat === CATEGORY_SLUGS.FLEURS) score += 3;
     }
 
-    // Experience Level Scoring
+    // Experience Level
     if (answers.experience_level === 'beginner') {
-        if (desc.includes('facile') || desc.includes('complet') || name.includes('pack')) score += 3;
-        if (product.is_bundle) score += 2;
+        if (cat === CATEGORY_SLUGS.HUILES || cat === CATEGORY_SLUGS.GUMMIES || desc.includes('doux') || desc.includes('facile')) score += 4;
     }
-    if (answers.experience_level === 'expert' || answers.experience_level === 'pro') {
-        if (desc.includes('overclock') || desc.includes('custom') || desc.includes('premium')) score += 4;
+    if (answers.experience_level === 'expert') {
+        if (cat === CATEGORY_SLUGS.RESINES || desc.includes('puissant') || desc.includes('intense')) score += 4;
     }
 
-    // Platform Preferences
-    if (answers.platform_preference === 'windows' && (desc.includes('windows') || desc.includes('pc'))) score += 4;
-    if (answers.platform_preference === 'macos' && (desc.includes('apple') || desc.includes('mac') || desc.includes('m1') || desc.includes('m2'))) score += 5;
-    if (answers.platform_preference === 'linux' && desc.includes('compatible linux')) score += 4;
-
-    // Budget Scoring
-    const price = product.price;
-    if (answers.budget_range === 'entry' && price < 500) score += 5;
-    if (answers.budget_range === 'mid' && price >= 500 && price <= 1500) score += 5;
-    if (answers.budget_range === 'high' && price > 1500 && price <= 3000) score += 5;
-    if (answers.budget_range === 'ultra' && price > 3000) score += 5;
+    // Consumption Method
+    if (answers.consumption_method === 'edibles' && (cat === CATEGORY_SLUGS.GUMMIES || name.includes('infusion'))) score += 5;
+    if (answers.consumption_method === 'vaping' && cat === CATEGORY_SLUGS.VAPES) score += 5;
+    if (answers.consumption_method === 'oil' && cat === CATEGORY_SLUGS.HUILES) score += 5;
+    if (answers.consumption_method === 'flower' && (cat === CATEGORY_SLUGS.FLEURS || cat === CATEGORY_SLUGS.RESINES)) score += 5;
 
     if (product.stock_quantity > 0) score += 1;
     if (product.is_featured) score += 2;
@@ -101,12 +88,12 @@ export function scoreTechFeatures(product: Product, selected: string[]): number 
 
 export function generateAdvice(answers: Answers, priorityFeatures: string[] = []): string {
     const lines: string[] = [];
-    if (answers.tech_goal === 'gaming') lines.push('Pour le gaming, priorisez un GPU performant et un écran à haut taux de rafraîchissement.');
-    if (answers.tech_goal === 'work') lines.push("Pour la productivité, privilégiez le confort ergonomique et une excellente autonomie.");
-    if (answers.tech_goal === 'creation') lines.push('Pour la création, la précision des couleurs et la puissance de calcul CPU/RAM sont essentielles.');
-    if (answers.tech_goal === 'smart_home') lines.push('Pour votre maison connectée, vérifiez la compatibilité avec votre écosystème actuel.');
-    if (answers.experience_level === 'beginner') lines.push("Nos solutions clés en main sont idéales pour débuter sans configuration complexe.");
-    if (priorityFeatures.length > 0) lines.push(`Vos critères prioritaires (${priorityFeatures.join(', ')}) nous guident vers les meilleurs composants.`);
+    if (answers.effect_goal === 'relaxation') lines.push('Pour la détente, nous vous conseillons des fleurs douces ou des résines classiques.');
+    if (answers.effect_goal === 'sleep') lines.push("Pour le sommeil, nos huiles de CBD enrichies en CBN sont particulièrement efficaces.");
+    if (answers.effect_goal === 'relief') lines.push('Pour le soulagement, privilégiez des huiles à spectre complet pour profiter de l\'effet d\'entourage.');
+    if (answers.effect_goal === 'energy') lines.push('Pour un coup de boost, orientez-vous vers des fleurs à dominance Sativa.');
+    if (answers.experience_level === 'beginner') lines.push("Si vous débutez, commencez par de faibles concentrations (huiles ou infusions).");
+    if (priorityFeatures.length > 0) lines.push(`Vos préférences (${priorityFeatures.join(', ')}) nous ont guidés dans notre sélection.`);
     return lines.join(' ');
 }
 
