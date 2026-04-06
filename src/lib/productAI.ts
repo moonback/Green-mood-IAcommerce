@@ -3,7 +3,7 @@ import { Product } from './types';
 import { useSettingsStore } from '../store/settingsStore';
 import { useToastStore } from '../store/toastStore';
 
-const AI_MODEL = 'liquid/lfm-2-24b-a2b:latest';
+const AI_MODEL = 'mistralai/mistral-small-creative';
 
 export interface GeneratedProductData {
     headline?: string;

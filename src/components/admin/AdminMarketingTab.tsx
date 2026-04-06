@@ -113,7 +113,7 @@ export default function AdminMarketingTab({ customers, products, onRefresh }: Ad
 
             const { data, error: fnError } = await supabase.functions.invoke('ai-chat', {
                 body: {
-                    model: "liquid/lfm-2-24b-a2b:latest",
+                    model: "mistralai/mistral-small-creative",
                     messages: [{ role: "user", content: prompt }],
                     x_title: `${settings.store_name || 'Eco CBD'} Admin Dashboard`,
                 },

@@ -43,8 +43,8 @@ const aiModels: AIModelMapping[] = [
   },
   {
     feature: 'Enrichissement Produits (IA)',
-    provider: 'OpenRouter / Liquid',
-    model: 'liquid/lfm-2-24b-a2b:latest',
+    provider: 'OpenRouter / Mistral',
+    model: 'mistralai/mistral-small-creative',
     role: 'Génération automatique de descriptions et caractéristiques techniques.',
     icon: Sparkles,
     status: 'active',
@@ -52,8 +52,8 @@ const aiModels: AIModelMapping[] = [
   },
   {
     feature: 'Génération SEO & Blog',
-    provider: 'OpenRouter / Liquid',
-    model: 'liquid/lfm-2-24b-a2b:latest',
+    provider: 'OpenRouter / Mistral',
+    model: 'mistralai/mistral-small-creative',
     role: 'Création d\'articles de blog et balises meta SEO basés sur le RAG.',
     icon: FileText,
     status: 'active',
