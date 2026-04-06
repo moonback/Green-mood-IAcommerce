@@ -32,17 +32,17 @@ export default function ProductStory({ title, text }: Props) {
         className="absolute inset-0 z-0"
       >
         <img
-          src="/premium_wellness_story_bg_1775484333607.png"
+          src="/images/cbd_hero_premium_dark.png"
           alt="Premium Background"
-          className="h-full w-full object-cover opacity-15 grayscale brightness-[0.9]"
+          className="h-full w-full object-cover opacity-80 grayscale brightness-[0.9]"
         />
-        <div className="absolute inset-0 bg-gradient-to-r from-[color:var(--color-bg)] via-[color:var(--color-bg)]/80 to-transparent" />
+        {/* <div className="absolute inset-0 bg-gradient-to-r from-[color:var(--color-bg)] via-[color:var(--color-bg)]/80 to-transparent" /> */}
         <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-[color:var(--color-bg)] to-transparent" />
       </motion.div>
 
       <div className="relative z-10 mx-auto max-w-7xl px-6">
         <div className="grid lg:grid-cols-[1.1fr_0.9fr] gap-12 lg:gap-20">
-          
+
           {/* Detailed Story Content */}
           <motion.div
             initial={{ opacity: 0, x: -20 }}
@@ -63,10 +63,10 @@ export default function ProductStory({ title, text }: Props) {
               </h2>
               <div className="relative max-w-xl">
                 <Quote className="absolute -top-8 -left-6 h-16 w-16 text-[color:var(--color-primary)]/10" />
-                <div 
+                <div
                   className="relative space-y-4 text-lg leading-relaxed text-[color:var(--color-text-muted)] font-medium"
-                  dangerouslySetInnerHTML={{ 
-                    __html: text.length > 500 ? text.slice(0, 500) + '...' : text 
+                  dangerouslySetInnerHTML={{
+                    __html: text.length > 500 ? text.slice(0, 500) + '...' : text
                   }}
                 />
               </div>
@@ -74,20 +74,20 @@ export default function ProductStory({ title, text }: Props) {
 
             {/* Interactive Quality Stamps */}
             <div className="flex gap-8 border-t border-[color:var(--color-border)]/50 pt-8 mt-4">
-               <div className="flex items-center gap-3">
-                 <ShieldCheck className="h-5 w-5 text-[color:var(--color-primary)]/60" />
-                 <div className="flex flex-col">
-                   <span className="text-[9px] font-black uppercase tracking-widest text-[color:var(--color-text)]">Certifié</span>
-                   <span className="text-[8px] text-[color:var(--color-text-subtle)] uppercase">Analyses Labo</span>
-                 </div>
-               </div>
-               <div className="flex items-center gap-3">
-                 <Wind className="h-5 w-5 text-cyan-500/60" />
-                 <div className="flex flex-col">
-                   <span className="text-[9px] font-black uppercase tracking-widest text-[color:var(--color-text)]">Terpènes</span>
-                   <span className="text-[8px] text-[color:var(--color-text-subtle)] uppercase">Sauvegardés</span>
-                 </div>
-               </div>
+              <div className="flex items-center gap-3">
+                <ShieldCheck className="h-5 w-5 text-[color:var(--color-primary)]/60" />
+                <div className="flex flex-col">
+                  <span className="text-[9px] font-black uppercase tracking-widest text-[color:var(--color-text)]">Certifié</span>
+                  <span className="text-[8px] text-[color:var(--color-text-subtle)] uppercase">Analyses Labo</span>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <Wind className="h-5 w-5 text-cyan-500/60" />
+                <div className="flex flex-col">
+                  <span className="text-[9px] font-black uppercase tracking-widest text-[color:var(--color-text)]">Terpènes</span>
+                  <span className="text-[8px] text-[color:var(--color-text-subtle)] uppercase">Sauvegardés</span>
+                </div>
+              </div>
             </div>
           </motion.div>
 
@@ -101,7 +101,7 @@ export default function ProductStory({ title, text }: Props) {
           >
             <div className="bg-white/[0.02] dark:bg-white/[0.04] border border-white/[0.08] rounded-[2.5rem] p-8 lg:p-10 backdrop-blur-3xl shadow-2xl relative overflow-hidden group">
               <div className="absolute top-0 right-0 w-32 h-32 bg-[color:var(--color-primary)]/10 blur-[60px] -z-10 group-hover:scale-150 transition-transform duration-1000" />
-              
+
               <div className="flex items-center gap-3 mb-8">
                 <Microscope className="h-5 w-5 text-[color:var(--color-primary)]" />
                 <h3 className="text-xs font-black uppercase tracking-[0.3em] text-[color:var(--color-text)]">Données Techniques</h3>
@@ -134,8 +134,8 @@ export default function ProductStory({ title, text }: Props) {
                   </div>
                 </div>
                 <div className="text-right">
-                   <span className="text-[10px] font-black uppercase text-[color:var(--color-text)]">Excellence</span>
-                   <p className="text-[8px] text-[color:var(--color-text-subtle)] uppercase">Botanique Approuvée</p>
+                  <span className="text-[10px] font-black uppercase text-[color:var(--color-text)]">Excellence</span>
+                  <p className="text-[8px] text-[color:var(--color-text-subtle)] uppercase">Botanique Approuvée</p>
                 </div>
               </div>
             </div>
