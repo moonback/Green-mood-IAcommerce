@@ -1,7 +1,7 @@
 <div align="center">
 <img src="public/header.png" alt="Green-mood — AI-First E-Commerce Platform" />
-
-# Green-mood
+<video src="public/video.mp4"></video>
+# Green-mood E-commerce IA
 
 **Plateforme e-commerce AI-First spécialisée CBD & bien-être.**
 *React 19 · TypeScript · Supabase · Gemini Live Voice · Vector Search · Stripe · POS*
