@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { useCartStore } from "../store/cartStore";
 import { useSettingsStore } from "../store/settingsStore";
 import { useBudTenderMemory } from "../hooks/useBudTenderMemory";
+import { useWishlistStore } from "../store/wishlistStore";
 import { getCachedProducts, getCachedSettings } from "../lib/budtenderCache";
 import { Product } from "../lib/types";
 import { BudTenderSettings } from "../lib/budtenderSettings";
@@ -17,6 +18,7 @@ import VoiceAdvisor from "./VoiceAdvisor";
 export default function BudTender() {
   const navigate = useNavigate();
   const { addItem, items: cartItems, openSidebar, closeSidebar } = useCartStore();
+  const { items: wishlistItems, toggleItem: toggleFavorite } = useWishlistStore();
   const autoCloseTimerRef = React.useRef<NodeJS.Timeout | null>(null);
   const [comparisonProducts, setComparisonProducts] = useState<Product[] | null>(null);
 
@@ -124,6 +126,8 @@ export default function BudTender() {
         }}
         onSavePrefs={memory.updatePrefs}
         onCompareProducts={(prods) => setComparisonProducts(prods)}
+        wishlistItems={wishlistItems}
+        onToggleFavorite={toggleFavorite}
         showUI={true}
       />
 

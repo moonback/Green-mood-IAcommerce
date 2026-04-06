@@ -425,7 +425,24 @@ export function useGeminiLiveVoice({
       productCacheRef.current.set(key, val);
     };
 
-    const allKnown = [...productsRef.current, ...searchResultsRef.current];
+    const allKnown = [
+      ...(activeProduct ? [activeProduct as Product] : []),
+      ...productsRef.current,
+      ...searchResultsRef.current,
+      ...recentlyViewed.map(v => ({
+        ...v,
+        category_id: (v as any).category_id || '',
+        description: (v as any).description || '',
+        stock_quantity: v.stock_quantity ?? 0,
+        is_available: v.is_available ?? true,
+        is_featured: v.is_featured ?? false,
+        is_active: true,
+        is_bundle: v.is_bundle ?? false,
+        is_subscribable: false,
+        attributes: (v as any).attributes || {},
+        created_at: (v as any).created_at || new Date().toISOString()
+      } as Product))
+    ];
 
     // L1 – exact
     let found = allKnown.find(i => normalizeStr(i.name) === q);
@@ -438,46 +455,97 @@ export function useGeminiLiveVoice({
     }
 
     // L3 – ALL words present
-    const words = q.split(/\s+/).filter(w => w.length > 1);
+    const cleanWords = (s: string) => normalizeStr(s).split(/\s+/).filter(w => w.length > 1);
+    const words = cleanWords(q);
+    
     if (words.length > 0) {
-      found = allKnown.find(i => words.every(w => normalizeStr(i.name).includes(w)));
+      found = allKnown.find(i => {
+        const itemWords = cleanWords(i.name);
+        return words.every(w => itemWords.some(iw => iw.includes(w) || w.includes(iw)));
+      });
       if (found) { addToCache(q, found); return found; }
 
-      // L3b – ANY word present
-      found = allKnown.find(i => words.some(w => normalizeStr(i.name).includes(w)));
+      // L3b – Jaccard-ish / Word Intersection (High overlap >= 60%)
+      found = allKnown.find(i => {
+        const itemWords = cleanWords(i.name);
+        const intersection = words.filter(w => itemWords.some(iw => iw.includes(w) || w.includes(iw)));
+        return (intersection.length / words.length) >= 0.6;
+      });
       if (found) { addToCache(q, found); return found; }
     }
 
-    // L3.5 – Fuzzy Match local (Levenshtein) sur les produits connus (max 300)
-    if (q.length > 4 && allKnown.length <= 300) {
+    // L3.5 – Fuzzy Match local (Levenshtein) sur les produits connus
+    if (q.length > 4) {
       for (const i of allKnown) {
         const normName = normalizeStr(i.name);
-        if (Math.abs(normName.length - q.length) <= 3 && levenshteinDistance(normName, q) <= 2) {
+        const limit = q.length > 12 ? 3 : 2;
+        if (Math.abs(normName.length - q.length) <= (limit + 1) && levenshteinDistance(normName, q) <= limit) {
           addToCache(q, i);
           return i;
         }
       }
     }
-
-    // L4 – Supabase Fuzzy Search RPC (pg_trgm)
-    try {
-      const { data, error } = await supabase.rpc('search_products_fuzzy', {
-        search_text: prodName,
-        match_threshold: 0.3,
-        match_count: 3
-      });
-      if (error) throw error;
-      if (data && data.length > 0) {
-        const best = data[0] as Product;
-        addToCache(q, best);
-        return best;
+    // L3.7 – Ultra Fallback: Best single keyword match in local products
+    // (similar to search_catalog but restricted to finding one clear winner)
+    if (words.length > 0) {
+      let bestMatch: Product | undefined = undefined;
+      let highestScore = 0;
+      for (const i of allKnown) {
+        const itemWords = cleanWords(i.name);
+        const score = words.filter(w => itemWords.some(iw => iw.includes(w) || w.includes(iw))).length;
+        if (score > highestScore && score >= 1) {
+          highestScore = score;
+          bestMatch = i;
+        }
       }
-    } catch (e) {
-      console.error('[Voice] Supabase fuzzy search RPC failed:', e);
+      // Only pick if it's a solid match (at least 50% of the AI words OR 2+ words)
+      if (bestMatch && (highestScore >= 2 || (highestScore / words.length) >= 0.5)) {
+        addToCache(q, bestMatch);
+        return bestMatch;
+      }
+    }
+
+    // L4 – Combined DB Fallback (Fuzzy & Semantic)
+    if (q.length >= 3 && semanticSearchAvailableRef.current) {
+      try {
+        // We try Fuzzy Trigram first as it's faster and often closer to the name
+        const { data: fuzzyData } = await supabase.rpc('search_products_fuzzy', {
+          search_text: prodName,
+          match_threshold: 0.25,
+          match_count: 3
+        });
+
+        if (fuzzyData && fuzzyData.length > 0) {
+          const match = fuzzyData[0] as Product;
+          addToCache(q, match);
+          return match;
+        }
+
+        // Deep fallback: Vector Search (Semantic)
+        if (isMatchProductsRpcAvailable()) {
+          const embedding = await generateEmbedding(prodName);
+          const { data: vectorData } = await matchProductsRpc<Product>({
+            embedding,
+            matchThreshold: 0.1,
+            matchCount: 3,
+          });
+
+          if (vectorData && vectorData.length > 0) {
+            const match = vectorData[0] as Product;
+            // Also store results in searchResultsRef to keep the session context rich
+            searchResultsRef.current = [...searchResultsRef.current, ...(vectorData as Product[])];
+            addToCache(q, match);
+            return match;
+          }
+        }
+      } catch (e) {
+        if (shouldDisableSemanticSearch(e)) semanticSearchAvailableRef.current = false;
+        console.warn('[Voice] findProduct deep fallback failed:', e);
+      }
     }
 
     return undefined;
-  }, []);
+  }, [activeProduct, recentlyViewed]);
 
   const canSendRealtimeInput = useCallback(() => {
     // Cheapest check first: isClosingRef is set synchronously in onclose/onerror before
@@ -1302,13 +1370,15 @@ export function useGeminiLiveVoice({
                 recentMap.set(dedupKey, now);
 
                 if (c.name === 'think') {
+                  const intent = (args.intent || 'non spécifié').trim();
+                  const nextAction = (args.next_action || 'répondre').trim();
                   return {
                     name: c.name,
                     id: c.id,
                     response: {
-                      result: 'ok',
+                      result: 'Raisonnement enregistré.',
                       status: 'verified',
-                      directive: 'Raisonnement enregistré. Si tu as annoncé une recherche vocalement (ex: "Je regarde..."), appelle l\'outil de recherche (search_catalog, search_knowledge, etc.) IMPÉRATIVEMENT dans ce même tour.'
+                      directive: `Intention : ${intent}. Action prévue : ${nextAction}. Exécute ton action (tool_call groupé) ou ta réponse vocale immédiatement dans ce MÊME tour sans attendre de confirmation.`
                     }
                   };
                 }
@@ -1370,35 +1440,6 @@ export function useGeminiLiveVoice({
                   let qty = Number(args.quantity) || 0;
 
                   let p = await findProduct(prodName);
-
-                  // Auto-search fallback: if Gemini skipped search_catalog and the product
-                  // isn't in the known set yet, do a semantic search now so the add succeeds
-                  // (prevents the AI saying "I added X" but the cart staying empty).
-                  if (!p && prodName.length >= 3) {
-                    if (!semanticSearchAvailableRef.current || !isMatchProductsRpcAvailable()) {
-                      semanticSearchAvailableRef.current = false;
-                      return { name: c.name, id: c.id, response: { error: `Produit "${prodName}" non trouvé dans le catalogue.` } };
-                    }
-
-                    try {
-                      const embedding = await generateEmbedding(prodName);
-                      const { data, error: rpcError } = await matchProductsRpc<Product>({
-                        embedding,
-                        matchThreshold: 0.1,
-                        matchCount: 5,
-                      });
-                      if (rpcError) throw rpcError;
-                      if (data && data.length > 0) {
-                        searchResultsRef.current = [...searchResultsRef.current, ...(data as Product[])];
-                        p = await findProduct(prodName); // retry with enriched pool
-                      }
-                    } catch (e) {
-                      if (shouldDisableSemanticSearch(e)) {
-                        semanticSearchAvailableRef.current = false;
-                      }
-                      console.warn('[Voice] add_to_cart auto-search fallback failed:', e);
-                    }
-                  }
 
                   if (p) {
                     if (!viewedProductIdsRef.current.has(p.id)) {
@@ -1805,21 +1846,82 @@ export function useGeminiLiveVoice({
                 }
 
                 if (c.name === 'toggle_favorite') {
-                  const prodName = (args.product_name || '').trim();
-                  const p = await findProduct(prodName);
-                  if (p && onToggleFavoriteRef.current) {
-                    onToggleFavoriteRef.current(p.id);
-                    const isNowFavorite = !wishlistItemsRef.current.includes(p.id);
-                    return {
-                      name: c.name,
-                      id: c.id,
-                      response: {
-                        result: `"${p.name}" a été ${isNowFavorite ? 'ajouté aux' : 'retiré des'} favoris.`,
-                        status: 'success'
-                      }
-                    };
+                  const candidateNames = [
+                    args.product_name,
+                    args.name,
+                    args.product,
+                    args.product_title,
+                    args.title,
+                    args.query,
+                  ];
+                  const prodName = candidateNames.find((v) => typeof v === 'string' && v.trim().length > 0)?.trim() || '';
+                  const candidateIds = [args.product_id, args.id, args.item_id];
+                  const prodId = candidateIds.find((v) => typeof v === 'string' && v.trim().length > 0)?.trim() || '';
+                  const allKnown = [
+                    ...(activeProduct ? [activeProduct as Product] : []),
+                    ...productsRef.current,
+                    ...searchResultsRef.current,
+                    ...recentlyViewed.map(v => ({
+                      ...v,
+                      category_id: (v as any).category_id || '',
+                      description: (v as any).description || '',
+                      stock_quantity: v.stock_quantity ?? 0,
+                      is_available: v.is_available ?? true,
+                      is_featured: v.is_featured ?? false,
+                      is_active: true,
+                      is_bundle: v.is_bundle ?? false,
+                      is_subscribable: false,
+                      attributes: (v as any).attributes || {},
+                      created_at: (v as any).created_at || new Date().toISOString()
+                    } as Product))
+                  ];
+
+                  let p =
+                    (prodId
+                      ? allKnown.find((item) => item.id === prodId)
+                      : undefined) ||
+                    (prodName ? await findProduct(prodName) : undefined);
+
+                  // Fallback: if the model says "ce produit", bind to the currently viewed product.
+                  if (!p && activeProduct) {
+                    const asked = normalizeStr(prodName);
+                    const current = normalizeStr(activeProduct.name || '');
+                    if (!asked || current.includes(asked) || asked.includes(current)) {
+                      p = activeProduct as Product;
+                    }
                   }
-                  return { name: c.name, id: c.id, response: { error: `Produit "${prodName}" non trouvé.` } };
+
+                  // Fallback: resolve from recently viewed history
+                  if (!p && prodName) {
+                    const asked = normalizeStr(prodName);
+                    const recentMatch = recentlyViewed.find((item) => {
+                      const n = normalizeStr(item.name || '');
+                      return n === asked || n.includes(asked) || asked.includes(n);
+                    });
+                    if (recentMatch) {
+                      p = allKnown.find((item) => item.id === recentMatch.id) || (recentMatch as unknown as Product);
+                    }
+                  }
+
+                  if (p) {
+                    if (onToggleFavoriteRef.current) {
+                      onToggleFavoriteRef.current(p.id);
+                      const isNowFavorite = !wishlistItemsRef.current.includes(p.id);
+                      return {
+                        name: c.name,
+                        id: c.id,
+                        response: {
+                          result: `"${p.name}" a été ${isNowFavorite ? 'ajouté aux' : 'retiré des'} favoris.`,
+                          status: 'success'
+                        }
+                      };
+                    } else {
+                      return { name: c.name, id: c.id, response: { error: "La gestion des favoris est temporairement indisponible dans cette interface." } };
+                    }
+                  }
+                  
+                  const missingLabel = prodName || prodId || 'inconnu';
+                  return { name: c.name, id: c.id, response: { error: `Produit "${missingLabel}" non trouvé.` } };
                 }
 
                 if (c.name === 'get_favorites') {
