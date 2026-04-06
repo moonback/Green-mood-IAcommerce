@@ -138,9 +138,10 @@ OBLIGATOIRE :
 - Phrases courtes (10-18 mots), 2-3 par réponse.
 - Chiffres en lettres ("vingt euros").
 - Ponctuation pour les pauses (virgules, points).
-- Connecteurs oraux ("Salut,", "Franchement,", "Tu sais,").
-- Contractions ("c'est", "y'a").
-- Intonation naturelle par la structure.`;
+- Connecteurs oraux ("Salut,", "Tu sais,","Bien sûr,","Absolument,","Parfait,","D'accord,","Compris,","Exactement,", etc).
+- Contractions ("c'est", "y'a", "j'ai", "j'suis", etc).
+- Varier légèrement l’intonation pour éviter un ton monotone.
+- Donner l’impression d’une conversation réelle, simple, claire et engageante.`;
 
 // ─── MODULES PRIVÉS ──────────────────────────────────────────────────────────
 
@@ -218,15 +219,15 @@ const _buildClientContext = (
         return true;
       })
       .map(([k, v]) => `${k.replace(/_/g, ' ')}: ${renderValue(v)}`);
-    
+
     if (entries.length > 0) {
       ctx += `- PROFIL ÉVOLUTIF ACTUEL (BudTender) : ${entries.join(' | ')}. `;
       const expertiseEntry = savedPrefs.expertise;
-      const expVal = (expertiseEntry && typeof expertiseEntry === 'object' && 'value' in expertiseEntry) 
-        ? expertiseEntry.value 
+      const expVal = (expertiseEntry && typeof expertiseEntry === 'object' && 'value' in expertiseEntry)
+        ? expertiseEntry.value
         : expertiseEntry;
       const exp = String(expVal || '').toLowerCase();
-      
+
       if (exp) {
         if (exp.includes('debutant')) ctx += `Le client est débutant, vulgarise au maximum. `;
         if (exp.includes('expert')) ctx += `Le client est expert (terpènes, spectre complet...), sois technique. `;
@@ -258,7 +259,7 @@ Si une information nouvelle contredit une information existante à haute confide
     const cartStr = cartItems.map((item: any) => `${item.product.name} ×${item.quantity}`).join(', ');
     const total = cartItems.reduce((acc: number, item: any) => acc + (item.product.price * item.quantity), 0);
     ctx += `- [PANIER RÉEL] : ${cartStr} — total ${total.toFixed(2)}€. Considère cette liste comme l'état définitif du panier. Réponds aux questions sur le panier uniquement sur cette base.\n`;
-    
+
     if (deliveryFee > 0) {
       if (deliveryFreeThreshold > 0 && total >= deliveryFreeThreshold) {
         ctx += `- LIVRAISON : Offerte ! (Seuil de ${deliveryFreeThreshold}€ atteint).\n`;
@@ -370,7 +371,7 @@ export const getVoicePrompt = (
   // Hard limit to 8000 characters to prevent WebSocket 1007 (Invalid Argument) error in Gemini Live.
   // We sanitize the string by removing potentially problematic non-printable characters or excessive whitespace.
   const sanitized = finalPrompt.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F-\u009F]/g, '').replace(/\s+/g, ' ').trim();
-  
+
   if (sanitized.length > 7990) {
     console.warn('[Voice][Prompt] Prompt too long (', sanitized.length, '), truncating to 7990 chars.');
     return sanitized.slice(0, 7990) + '... (truncated for stability)';
