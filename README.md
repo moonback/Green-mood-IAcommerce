@@ -13,7 +13,7 @@
   <img src="https://img.shields.io/badge/Supabase-PostgreSQL-3ECF8E?logo=supabase&logoColor=white" />
   <img src="https://img.shields.io/badge/TailwindCSS-v4-06B6D4?logo=tailwindcss&logoColor=white" />
   <img src="https://img.shields.io/badge/Gemini_Live-Voice_AI-EA4335?logo=google&logoColor=white" />
-  <img src="https://img.shields.io/badge/Tests-412%20passing-brightgreen?logo=vitest" alt="Tests 412 passing" />
+  <img src="https://img.shields.io/badge/Tests-368%20passing-brightgreen?logo=vitest" alt="Tests 368 passing" />
   <img src="https://img.shields.io/badge/Stripe-Payments-635BFF?logo=stripe&logoColor=white" />
   <img src="https://img.shields.io/badge/Tests-Vitest_%2B_Playwright-6E9F18?logo=vitest&logoColor=white" />
 </p>
@@ -639,10 +639,7 @@ Les skills sont des fichiers Markdown qui définissent le comportement de l'IA. 
 | `vocal_actions.md` | Vocal uniquement | Protocole feedback simultané, gestion délai, transitions |
 | `botanique_expert.md` | Vocal | Expertise terpènes, cannabinoïdes, effet d'entourage |
 | `cross_selling.md` | Vocal | Stratégie bundles, associations, upselling discret |
-| `objections.md` | Vocal | Levée de doutes : prix, qualité, hésitation, concurrence |
-| `fidelite.md` | Vocal | Programme Carats : paliers, conversion, parrainage |
-| `faq_boutique.md` | Vocal | Livraison, paiement, retours, support |
-| `legal_confidentialite.md` | Vocal | Disclaimers médicaux, THC < 0.3%, RGPD |
+
 
 **Règles de chargement** :
 - `skill.md` est toujours trié **en premier** (définitions tools avant règles d'usage)

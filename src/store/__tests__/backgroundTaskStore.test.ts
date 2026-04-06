@@ -18,6 +18,13 @@ const mockIsQuotaError = vi.fn();
 vi.mock('../../lib/utils', () => ({
   sleep: vi.fn().mockResolvedValue(undefined),
   isQuotaError: (err: any) => mockIsQuotaError(err),
+  chunk: (array: any[], size: number) => {
+    const chunked = [];
+    for (let i = 0; i < array.length; i += size) {
+      chunked.push(array.slice(i, i + size));
+    }
+    return chunked;
+  },
 }));
 
 const mockAddToast = vi.fn();

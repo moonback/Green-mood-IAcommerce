@@ -67,9 +67,9 @@ describe('getVoicePrompt (Gemini Live)', () => {
 
   it('builds identity and voice format rules', () => {
     const prompt = getVoicePrompt([], {});
-    expect(prompt).toContain('## RÔLE ET POSTURE');
-    expect(prompt).toContain('## RÈGLES FORMAT AUDIO');
-    expect(prompt).toContain('INTERDIT ABSOLU');
+    expect(prompt).toContain('## RÔLE :');
+    expect(prompt).toContain('## RÈGLES AUDIO — OBLIGATOIRE');
+    expect(prompt).toContain('INTERDIT :');
   });
 
   it('includes client loyalty and tier information', () => {
