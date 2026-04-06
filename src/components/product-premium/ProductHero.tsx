@@ -181,9 +181,14 @@ export default function ProductHero({ product, quantity, onQuantityChange, onAdd
                       <span className="text-[8px] font-black uppercase tracking-widest text-[color:var(--color-text-muted)] truncate mb-0.5">
                         {spec.name}
                       </span>
-                      <span className="text-[11px] font-bold text-[color:var(--color-text)] truncate">
-                        {spec.description?.split(':').pop()?.trim() || spec.description}
-                      </span>
+                      <span
+                        className="text-[11px] font-bold text-[color:var(--color-text)] block"
+                        dangerouslySetInnerHTML={{
+                          __html: spec.description?.includes(':')
+                            ? (spec.description.split(':').pop()?.trim() || '')
+                            : (spec.description || '')
+                        }}
+                      />
                     </div>
                   </div>
                 ))}
