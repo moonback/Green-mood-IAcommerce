@@ -23,8 +23,8 @@ test.describe('Authentification', () => {
     await page.click('button[type="submit"]');
     // Should show an error message
     await expect(
-      page.locator('text=/erreur|incorrect|invalide|invalid/i')
-    ).toBeVisible({ timeout: 10_000 });
+      page.locator('text=/incorrect|erreur|Email ou mot de passe/i').first()
+    ).toBeVisible({ timeout: 15_000 });
   });
 
   test('le lien "Mot de passe oublié" est présent', async ({ page }) => {

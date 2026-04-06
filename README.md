@@ -15,7 +15,7 @@
   <img src="https://img.shields.io/badge/Gemini_Live-Voice_AI-EA4335?logo=google&logoColor=white" />
   <img src="https://img.shields.io/badge/Tests-368%20passing-brightgreen?logo=vitest" alt="Tests 368 passing" />
   <img src="https://img.shields.io/badge/Stripe-Payments-635BFF?logo=stripe&logoColor=white" />
-  <img src="https://img.shields.io/badge/Tests-Vitest_%2B_Playwright-6E9F18?logo=vitest&logoColor=white" />
+  <img src="https://img.shields.io/badge/Playwright-21%2F21_Passed-28A745?logo=playwright&logoColor=white" />
 </p>
 
 [Présentation](#-présentation) · [Fonctionnalités](#-fonctionnalités) · [Architecture](#-architecture) · [Stack](#-stack-technique) · [Installation](#-installation) · [Variables d'environnement](#-variables-denvironnement) · [Structure](#-structure-du-projet) · [Système IA](#-système-ia) · [Base de données](#-base-de-données) · [Admin](#-administration) · [Déploiement](#-déploiement)
@@ -159,6 +159,7 @@ Le cœur différenciant du projet. Un conseiller expert CBD disponible 24h/24 di
 - **Webhook HMAC** : signature Stripe vérifiée via Web Crypto API (compatible Deno runtime)
 - **Rollback automatique** : stocks restaurés + commande annulée si paiement Stripe échoue
 - **Token éphémère Gemini** : clé API Gemini jamais exposée côté client
+- **Tests Qualité** : Suite exhaustive Vitest (368 tests passants) + Tests E2E Playwright (21/21 scénarios critiques réussis)
 
 ---
 

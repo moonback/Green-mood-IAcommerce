@@ -22,7 +22,7 @@ test.describe('Panier', () => {
 
   test('peut ajouter un produit au panier depuis le catalogue', async ({ page }) => {
     await page.goto('/catalogue');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
 
     // Click the first "Ajouter" button
     const addBtn = page.locator('button:has-text("Ajouter")').first();
@@ -41,16 +41,18 @@ test.describe('Panier', () => {
 
   test('la page panier est accessible', async ({ page }) => {
     await page.goto('/panier');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     await expect(page).toHaveURL(/panier/);
   });
 
   test('le résumé de commande affiche le total', async ({ page }) => {
     await page.goto('/panier');
-    await page.waitForLoadState('networkidle');
-    // Either empty cart message or total
-    const hasTotal = await page.locator('text=/total/i').count();
-    const hasEmpty = await page.locator('text=/vide|empty|vierge/i').count();
-    expect(hasTotal + hasEmpty).toBeGreaterThan(0);
+    await page.waitForLoadState('domcontentloaded');
+    
+    // Either empty cart message or total - wait for them or one of them to be visible
+    const total = page.locator('text=/total/i').first();
+    const empty = page.locator('text=/vide|empty|vierge/i').first();
+    
+    await expect(total.or(empty)).toBeVisible({ timeout: 10_000 });
   });
 });

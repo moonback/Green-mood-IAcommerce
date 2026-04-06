@@ -16,29 +16,24 @@ test.describe('Routes protégées', () => {
 
   test('/commande redirige vers /connexion si non connecté', async ({ page }) => {
     await page.goto('/commande');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     await expect(page).toHaveURL(/connexion/);
   });
 
   test('/compte redirige vers /connexion si non connecté', async ({ page }) => {
     await page.goto('/compte');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     await expect(page).toHaveURL(/connexion/);
   });
 
-  test('/admin redirige vers / si non connecté', async ({ page }) => {
+  test('/admin redirige vers / ou /connexion si non connecté', async ({ page }) => {
     await page.goto('/admin');
-    await page.waitForLoadState('networkidle');
-    // AdminRoute redirects to "/" — either home or connexion
-    const url = page.url();
-    expect(url).not.toContain('/admin');
+    await expect(page).not.toHaveURL(/admin/, { timeout: 10_000 });
   });
 
-  test('/pos redirige vers / si non connecté', async ({ page }) => {
+  test('/pos redirige vers / ou /connexion si non connecté', async ({ page }) => {
     await page.goto('/pos');
-    await page.waitForLoadState('networkidle');
-    const url = page.url();
-    expect(url).not.toContain('/pos');
+    await expect(page).not.toHaveURL(/pos/, { timeout: 10_000 });
   });
 
   test('la page de connexion est accessible publiquement', async ({ page }) => {

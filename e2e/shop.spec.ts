@@ -10,39 +10,36 @@ test.describe('Boutique / Catalogue', () => {
 
   test('la page catalogue se charge', async ({ page }) => {
     await page.goto('/catalogue');
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     await expect(page).toHaveURL(/catalogue/);
   });
 
   test('affiche des produits ou un message vide', async ({ page }) => {
     await page.goto('/catalogue');
-    await page.waitForLoadState('networkidle');
-    // Either product cards, empty state, or category bento
-    const hasProducts = await page.locator('[data-testid="product-card"], .product-card, article').count();
-    const hasEmpty = await page.locator('text=/aucun produit|pas de produit|empty/i').count();
-    const hasBento = await page.locator('text=/gammes|collections/i').count();
-    expect(hasProducts + hasEmpty + hasBento).toBeGreaterThan(0);
+    await page.waitForLoadState('domcontentloaded');
+    
+    const products = page.locator('[data-testid="product-card"], .product-card, article').first();
+    const emptyState = page.locator('text=/aucun produit|pas de produit|empty/i').first();
+    const bento = page.locator('text=/gammes|collections/i').first();
+    
+    await expect(products.or(emptyState).or(bento)).toBeVisible({ timeout: 10_000 });
   });
 
   test('les filtres de catégorie sont présents', async ({ page }) => {
     await page.goto('/catalogue');
-    await page.waitForLoadState('networkidle');
-    // Category filter buttons/links
-    const filters = page.locator('button, a').filter({ hasText: /fleurs|huiles|résines|infusions|CBD/i });
-    const count = await filters.count();
-    expect(count).toBeGreaterThan(0);
+    await page.waitForLoadState('domcontentloaded');
+    
+    const filters = page.locator('button, a').filter({ hasText: /fleurs|huiles|résines|infusions|CBD/i }).first();
+    await expect(filters).toBeVisible({ timeout: 10_000 });
   });
 
   test('la navigation vers un produit fonctionne', async ({ page }) => {
     await page.goto('/catalogue');
-    await page.waitForLoadState('networkidle');
-    // Click on the first product link
+    await page.waitForLoadState('domcontentloaded');
+    
     const productLink = page.locator('a[href*="/catalogue/"]').first();
-    const count = await productLink.count();
-    if (count > 0) {
-      await productLink.click();
-      await page.waitForLoadState('networkidle');
-      await expect(page).toHaveURL(/\/catalogue\//);
-    }
+    await expect(productLink).toBeVisible({ timeout: 10_000 });
+    await productLink.click();
+    await expect(page).toHaveURL(/\/catalogue\//, { timeout: 10_000 });
   });
 });

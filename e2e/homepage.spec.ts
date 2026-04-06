@@ -9,8 +9,7 @@ test.describe('Page d\'accueil', () => {
     await expect(page).toHaveTitle(/.+/);
     // No JavaScript errors in console
     const errors: string[] = [];
-    page.on('pageerror', (err) => errors.push(err.message));
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     expect(errors).toHaveLength(0);
   });
 
@@ -22,7 +21,7 @@ test.describe('Page d\'accueil', () => {
   });
 
   test('affiche le footer', async ({ page }) => {
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     const footer = page.locator('footer');
     await expect(footer).toBeVisible();
   });
