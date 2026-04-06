@@ -132,6 +132,104 @@ const MobileNavItem: React.FC<{
   );
 });
 
+// DesktopNavItem component (expanding hover menu v2)
+const DesktopNavItem: React.FC<{ item: NavCategory; location: any }> = memo(({ item, location }) => {
+  const [isHovered, setIsHovered] = useState(false);
+  const href = item.slug ? `/catalogue?category=${item.slug}` : '/catalogue';
+  const isActive = new URLSearchParams(location.search).get('category') === item.slug;
+  const hasChildren = item.children && item.children.length > 0;
+
+  return (
+    <li
+      className="shrink-0 relative group"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      <Link
+        to={href}
+        className={`relative flex items-center gap-1.5 px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wider whitespace-nowrap transition-all duration-150 ${
+          isActive || isHovered ? 'text-[color:var(--color-primary)]' : 'text-[color:var(--color-text-subtle)] hover:text-[color:var(--color-text)]'
+        }`}
+      >
+        {item.label}
+        {hasChildren && (
+          <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${isHovered ? 'rotate-180' : ''}`} />
+        )}
+        {isActive ? (
+          <motion.div
+            layoutId="category-underline"
+            className="absolute bottom-0 inset-x-2 h-[2px] bg-[color:var(--color-primary)] rounded-full shadow-[var(--shadow-glow)]"
+            transition={{ type: 'spring', stiffness: 350, damping: 35 }}
+          />
+        ) : (
+          <span className="absolute bottom-0 inset-x-4 h-[1px] bg-transparent group-hover:bg-[color:var(--color-border-strong)] transition-all duration-200 rounded-full" />
+        )}
+      </Link>
+
+      {hasChildren && (
+        <AnimatePresence>
+          {isHovered && (
+            <motion.div
+              initial={{ opacity: 0, y: 15, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 10, scale: 0.95 }}
+              transition={{ duration: 0.2, type: 'spring', stiffness: 300, damping: 25 }}
+              className="absolute top-[calc(100%-4px)] left-4 min-w-[240px] bg-[color:var(--color-card)]/95 backdrop-blur-3xl border border-[color:var(--color-border)] rounded-2xl shadow-xl overflow-hidden py-2 z-[70] flex flex-col"
+            >
+              {item.children.map((child) => {
+                const childHref = child.slug ? `/catalogue?category=${child.slug}` : '/catalogue';
+                const isChildActive = new URLSearchParams(location.search).get('category') === child.slug;
+                
+                return (
+                  <div key={child.id || child.slug} className="flex flex-col">
+                    <Link
+                      to={childHref}
+                      onClick={() => setIsHovered(false)}
+                      className={`px-4 py-2.5 text-sm transition-all flex items-center justify-between group/link mx-2 rounded-xl ${
+                        isChildActive
+                          ? 'text-[color:var(--color-primary)] bg-[color:var(--color-primary)]/10 font-bold'
+                          : 'text-[color:var(--color-text-muted)] hover:text-[color:var(--color-text)] hover:bg-[color:var(--color-bg-elevated)]'
+                      }`}
+                    >
+                      {child.label}
+                      {isChildActive && <span className="w-1.5 h-1.5 rounded-full bg-[color:var(--color-primary)] shadow-[var(--shadow-glow)]" />}
+                    </Link>
+                    
+                    {/* Render sub-children if they exist */}
+                    {child.children && child.children.length > 0 && (
+                      <div className="flex flex-col pl-6 pr-2 py-1 gap-0.5 border-l border-[color:var(--color-border)] ml-6 my-1">
+                        {child.children.map(subChild => {
+                           const subChildHref = subChild.slug ? `/catalogue?category=${subChild.slug}` : '/catalogue';
+                           const isSubChildActive = new URLSearchParams(location.search).get('category') === subChild.slug;
+                           return (
+                              <Link
+                                key={subChild.id || subChild.slug}
+                                to={subChildHref}
+                                onClick={() => setIsHovered(false)}
+                                className={`px-3 py-1.5 text-[13px] transition-all flex items-center justify-between group/sublink rounded-lg ${
+                                  isSubChildActive
+                                    ? 'text-[color:var(--color-primary)] font-bold'
+                                    : 'text-[color:var(--color-text-subtle)] hover:text-[color:var(--color-text)] hover:bg-[color:var(--color-bg-elevated)]'
+                                }`}
+                              >
+                                {subChild.label}
+                                {isSubChildActive && <span className="w-1 h-1 rounded-full bg-[color:var(--color-primary)]" />}
+                              </Link>
+                           );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      )}
+    </li>
+  );
+});
+
 // Main HeaderV2 component
 const HeaderV2: React.FC<HeaderV2Props> = ({ setIsSearchOpen, setIsLoyaltyModalOpen }) => {
   const { resolvedTheme } = useTheme();
@@ -466,31 +564,10 @@ const HeaderV2: React.FC<HeaderV2Props> = ({ setIsSearchOpen, setIsLoyaltyModalO
         {location.pathname !== '/catalogue' && (
           <nav aria-label="Catégories" className="hidden lg:block border-b border-[color:var(--color-border)] bg-[color:var(--color-bg-elevated)]/60 backdrop-blur-xl">
             <div className="max-w-screen-3xl mx-auto px-4 sm:px-6 lg:px-8">
-              <ul className="flex items-center overflow-x-auto scrollbar-none">
-                {categories.map((item) => {
-                  const href = item.slug ? `/catalogue?category=${item.slug}` : '/catalogue';
-                  const isActive = new URLSearchParams(location.search).get('category') === item.slug;
-                  return (
-                    <li key={item.id || item.slug} className="shrink-0">
-                      <Link
-                        to={href}
-                        className={`relative flex items-center px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wider whitespace-nowrap transition-all duration-150 group ${isActive ? 'text-[color:var(--color-primary)]' : 'text-[color:var(--color-text-subtle)] hover:text-[color:var(--color-text)]'
-                          }`}
-                      >
-                        {item.label}
-                        {isActive ? (
-                          <motion.div
-                            layoutId="category-underline"
-                            className="absolute bottom-0 inset-x-2 h-[2px] bg-[color:var(--color-primary)] rounded-full shadow-[var(--shadow-glow)]"
-                            transition={{ type: 'spring', stiffness: 350, damping: 35 }}
-                          />
-                        ) : (
-                          <span className="absolute bottom-0 inset-x-4 h-[1px] bg-transparent group-hover:bg-[color:var(--color-border-strong)] transition-all duration-200 rounded-full" />
-                        )}
-                      </Link>
-                    </li>
-                  );
-                })}
+              <ul className="flex items-center overflow-x-visible scrollbar-none flex-wrap gap-y-1">
+                {categories.map((item) => (
+                  <DesktopNavItem key={item.id || item.slug} item={item} location={location} />
+                ))}
               </ul>
             </div>
           </nav>
