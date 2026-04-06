@@ -29,7 +29,8 @@ export default function PremiumRelatedProducts({ products }: Props) {
 
         <div className="grid gap-5 md:grid-cols-3">
           {products.map((product, idx) => {
-            const avgRating = (product as any).avg_rating ?? 4.5;
+            const avgRating = (product as any).avg_rating || 0;
+            const reviewCount = (product as any).review_count || 0;
             return (
               <motion.div
                 key={product.id}
@@ -69,12 +70,19 @@ export default function PremiumRelatedProducts({ products }: Props) {
                     </h4>
 
                     <div className="flex items-center gap-2">
-                      <div className="flex">
-                        {Array.from({ length: 5 }).map((_, i) => (
-                          <Star key={i} className={`w-3.5 h-3.5 ${i < Math.round(avgRating) ? 'fill-amber-400 text-amber-400' : 'text-[color:var(--color-bg-muted)]'}`} />
-                        ))}
-                      </div>
-                      <span className="text-[11px] text-[color:var(--color-text-subtle)] font-black">{Number(avgRating).toFixed(1)}</span>
+                      {reviewCount > 0 ? (
+                        <>
+                          <div className="flex">
+                            {Array.from({ length: 5 }).map((_, i) => (
+                              <Star key={i} className={`w-3.5 h-3.5 ${i < Math.round(avgRating) ? 'fill-amber-400 text-amber-400' : 'text-[color:var(--color-bg-muted)] opacity-30'}`} />
+                            ))}
+                          </div>
+                          <span className="text-[11px] text-[color:var(--color-text-subtle)] font-black">{Number(avgRating).toFixed(1)}</span>
+                          <span className="text-[9px] text-[color:var(--color-text-muted)] opacity-60">({reviewCount})</span>
+                        </>
+                      ) : (
+                        <span className="text-[9px] font-black uppercase tracking-widest text-[color:var(--color-text-subtle)] opacity-50">Nouvelle sélection</span>
+                      )}
                     </div>
 
                     <div className="flex items-center justify-between pt-2 border-t border-[color:var(--color-border)]/50">

@@ -241,7 +241,7 @@ export default function ProductDetail() {
       const [{ data: reviewData }, { data: relatedData }, { data: catsData }] = await Promise.all([
         supabase.from('reviews').select('id, rating, comment, created_at, profile:profiles(full_name)')
           .eq('product_id', enhanced.id).eq('is_published', true).limit(8),
-        supabase.from('products').select('*').neq('id', enhanced.id).eq('is_active', true).eq('is_available', true).gt('stock_quantity', 0).limit(3),
+        supabase.from('products').select('*, ratings:product_ratings(avg_rating, review_count)').neq('id', enhanced.id).eq('is_active', true).eq('is_available', true).gt('stock_quantity', 0).limit(3),
         supabase.from('categories').select('id, parent_id, depth, name, slug').eq('is_active', true),
       ]);
 
@@ -259,7 +259,11 @@ export default function ProductDetail() {
       });
 
       setReviews(mappedReviews);
-      setRelated((relatedData as BaseProduct[] | null)?.map(enhanceProduct) ?? []);
+      setRelated((relatedData as any[] | null)?.map(p => ({
+        ...p,
+        avg_rating: p.ratings?.[0]?.avg_rating ?? null,
+        review_count: p.ratings?.[0]?.review_count ?? 0,
+      })).map(enhanceProduct) ?? []);
       
       // Update BudTender store for Cortex AI visibility
       setActiveProduct({

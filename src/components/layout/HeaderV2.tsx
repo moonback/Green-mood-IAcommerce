@@ -213,12 +213,16 @@ const HeaderV2: React.FC<HeaderV2Props> = ({ setIsSearchOpen, setIsLoyaltyModalO
     fetchCategories();
   }, []);
 
-  // Scroll effect
+  // Scroll effect with hysteresis
   useEffect(() => {
-    const onScroll = () => setIsScrolled(window.scrollY > 60);
+    const onScroll = () => {
+      const scrollPos = window.scrollY;
+      if (scrollPos > 60 && !isScrolled) setIsScrolled(true);
+      else if (scrollPos < 40 && isScrolled) setIsScrolled(false);
+    };
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
-  }, []);
+  }, [isScrolled]);
 
   // Close mobile menu on route change
   useEffect(() => {
@@ -245,21 +249,21 @@ const HeaderV2: React.FC<HeaderV2Props> = ({ setIsSearchOpen, setIsLoyaltyModalO
         tickerMessages={settings.ticker_messages}
       />
 
-      <header className={`sticky top-0 z-[60] w-full transition-all duration-300 ${isScrolled ? 'shadow-[0_8px_32px_rgba(0,0,0,0.8)]' : ''}`}>
+      <header className={`sticky top-0 z-[60] w-full transform-gpu transition-all duration-500 ease-in-out ${isScrolled ? 'shadow-[0_8px_32px_rgba(0,0,0,0.35)]' : ''}`}>
         {/* Row 1: Logo + Search + Actions */}
-        <div className={`border-b border-[color:var(--color-border)] bg-[color:var(--color-card)]/90 backdrop-blur-2xl transition-all duration-300 ${isScrolled ? 'py-2' : 'py-3'}`}>
+        <div className={`border-b border-[color:var(--color-border)] bg-[color:var(--color-card)]/90 backdrop-blur-3xl transition-all duration-500 ease-in-out ${isScrolled ? 'py-1.5' : 'py-3'}`}>
           <div className="max-w-screen-3xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center gap-3 lg:gap-5">
               {/* Logo */}
               <Link
                 to="/"
                 aria-label={`${settings.store_name} — Accueil`}
-                className={`relative shrink-0 flex items-center group z-[70] transition-all duration-300 ${isScrolled ? 'h-12 w-32' : 'h-16 w-52'}`}
+                className={`relative shrink-0 flex items-center group z-[70] transition-all duration-300 ${isScrolled ? 'h-10 w-28 md:w-32' : 'h-12 md:h-14 w-44 md:w-52'}`}
               >
                 <img
                   src={logoUrl}
                   alt={settings.store_name}
-                  className={`absolute left-0 object-contain transition-all duration-500 ${isScrolled ? 'h-32 -translate-y-2' : 'h-56 -translate-y-4'
+                  className={`absolute left-0 object-contain transition-all duration-500 max-w-none ${isScrolled ? 'h-24 -translate-y-1' : 'h-40 -translate-y-3'
                     } group-hover:scale-105 drop-shadow-[0_0_20px_rgba(255,255,255,0.15)]`}
                 />
               </Link>
