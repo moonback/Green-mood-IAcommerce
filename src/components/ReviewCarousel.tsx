@@ -80,9 +80,9 @@ export default function ReviewCarousel() {
     if (!loading && reviews.length === 0) return null;
 
     return (
-        <section className="py-24 md:py-32 relative overflow-hidden bg-slate-950 font-sans border-t border-white/5">
+        <section className="py-24 md:py-32 relative overflow-hidden bg-[color:var(--color-bg)] font-sans border-t border-[color:var(--color-border)]">
             {/* Decorative Glows */}
-            <div className="absolute top-0 left-1/4 w-96 h-96 bg-emerald-500/10 blur-[120px] rounded-full pointer-events-none" />
+            <div className="absolute top-0 left-1/4 w-96 h-96 bg-[color:var(--color-primary)]/10 blur-[120px] rounded-full pointer-events-none opacity-50 dark:opacity-100" />
             <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-blue-500/5 blur-[120px] rounded-full pointer-events-none" />
 
             <div className="max-w-7xl mx-auto px-5 mb-16">
@@ -92,7 +92,7 @@ export default function ReviewCarousel() {
                             initial={{ opacity: 0, x: -20 }}
                             whileInView={{ opacity: 1, x: 0 }}
                             viewport={{ once: true }}
-                            className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-bold uppercase tracking-[0.2em]"
+                            className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[color:var(--color-primary)]/10 border border-[color:var(--color-primary)]/20 text-[color:var(--color-primary)] text-[10px] font-bold uppercase tracking-[0.2em]"
                         >
                             <Sparkles className="w-3 h-3" />
                             Retours d'expérience
@@ -101,33 +101,33 @@ export default function ReviewCarousel() {
                             initial={{ opacity: 0, y: 20 }}
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true }}
-                            className="text-4xl md:text-6xl font-serif font-black text-white leading-tight uppercase"
+                            className="text-4xl md:text-6xl font-serif font-black text-[color:var(--color-text)] leading-tight uppercase"
                         >
                             Ce que pensent <br />
-                            <span className="text-emerald-400 italic font-serif lowercase">nos clients.</span>
+                            <span className="text-[color:var(--color-primary)] italic font-serif lowercase">nos clients.</span>
                         </motion.h2>
                         <motion.p
                             initial={{ opacity: 0, y: 20 }}
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: true }}
                             transition={{ delay: 0.1 }}
-                            className="text-slate-400 text-lg font-light leading-relaxed max-w-xl"
+                            className="text-[color:var(--color-text-muted)] text-lg font-light leading-relaxed max-w-xl"
                         >
-                            Des centaines de clients font confiance à nos machines de loisirs pour dynamiser leurs espaces. Découvrez leurs expériences et pourquoi ils recommandent notre expertise.
+                            Des centaines de clients font confiance à notre expertise pour dynamiser leurs espaces de bien-être. Découvrez leurs expériences.
                         </motion.p>
                     </div>
 
                     <div className="flex gap-4">
                         <button
                             onClick={() => scroll('left')}
-                            className="w-14 h-14 rounded-2xl border border-white/10 bg-white/5 flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 hover:border-emerald-500/30 transition-all group backdrop-blur-md"
+                            className="w-14 h-14 rounded-2xl border border-[color:var(--color-border)] bg-[color:var(--color-card)]/50 flex items-center justify-center text-[color:var(--color-text-muted)] hover:text-[color:var(--color-text)] hover:bg-[color:var(--color-card)] hover:border-[color:var(--color-primary)]/30 transition-all group backdrop-blur-md"
                             disabled={loading}
                         >
                             <ChevronLeft className="w-6 h-6 group-hover:-translate-x-1 transition-transform" />
                         </button>
                         <button
                             onClick={() => scroll('right')}
-                            className="w-14 h-14 rounded-2xl border border-white/10 bg-white/5 flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 hover:border-emerald-500/30 transition-all group backdrop-blur-md"
+                            className="w-14 h-14 rounded-2xl border border-[color:var(--color-border)] bg-[color:var(--color-card)]/50 flex items-center justify-center text-[color:var(--color-text-muted)] hover:text-[color:var(--color-text)] hover:bg-[color:var(--color-card)] hover:border-[color:var(--color-primary)]/30 transition-all group backdrop-blur-md"
                             disabled={loading}
                         >
                             <ChevronRight className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
@@ -145,17 +145,10 @@ export default function ReviewCarousel() {
                 {loading ? (
                     // Skeleton State
                     Array.from({ length: 4 }).map((_, i) => (
-                        <div key={i} className="min-w-[320px] md:min-w-[420px] max-w-[420px] h-[450px] bg-white/5 border border-white/5 rounded-[2.5rem] p-10 animate-pulse">
-                            <div className="w-12 h-12 bg-white/10 rounded-2xl mb-8" />
-                            <div className="h-6 bg-white/10 rounded-lg w-3/4 mb-4" />
-                            <div className="h-6 bg-white/10 rounded-lg w-1/2 mb-8" />
-                            <div className="pt-8 border-t border-white/5 flex gap-4 mt-auto">
-                                <div className="w-10 h-10 rounded-full bg-white/10" />
-                                <div className="flex-1 space-y-2">
-                                    <div className="h-3 bg-white/10 rounded w-1/3" />
-                                    <div className="h-2 bg-white/10 rounded w-1/4" />
-                                </div>
-                            </div>
+                        <div key={i} className="min-w-[320px] md:min-w-[420px] max-w-[420px] h-[450px] bg-[color:var(--color-card)]/50 border border-[color:var(--color-border)] rounded-[2.5rem] p-10 animate-pulse">
+                            <div className="w-12 h-12 bg-[color:var(--color-bg-muted)] rounded-2xl mb-8" />
+                            <div className="h-6 bg-[color:var(--color-bg-muted)] rounded-lg w-3/4 mb-4" />
+                            <div className="h-6 bg-[color:var(--color-bg-muted)] rounded-lg w-1/2 mb-8" />
                         </div>
                     ))
                 ) : (
@@ -168,13 +161,13 @@ export default function ReviewCarousel() {
                             transition={{ delay: i * 0.1, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
                             className="snap-start min-w-[320px] md:min-w-[420px] max-w-[420px]"
                         >
-                            <div className="h-full bg-slate-900/60 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-8 md:p-10 relative overflow-hidden group hover:border-emerald-500/30 transition-all duration-500 shadow-2xl">
+                            <div className="h-full bg-[color:var(--color-card)]/60 backdrop-blur-xl border border-[color:var(--color-border)] rounded-[2.5rem] p-8 md:p-10 relative overflow-hidden group hover:border-[color:var(--color-primary)]/30 transition-all duration-500 shadow-[var(--shadow-card)]">
                                 {/* Card Background Glow */}
-                                <div className="absolute -top-24 -right-24 w-48 h-48 bg-emerald-500/5 blur-[60px] rounded-full group-hover:bg-emerald-500/10 transition-colors" />
+                                <div className="absolute -top-24 -right-24 w-48 h-48 bg-[color:var(--color-primary)]/5 blur-[60px] rounded-full group-hover:bg-[color:var(--color-primary)]/10 transition-colors" />
 
                                 <div className="relative z-10 space-y-8 flex flex-col h-full">
                                     {/* Quote Icon */}
-                                    <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center text-emerald-400 border border-white/10">
+                                    <div className="w-12 h-12 rounded-2xl bg-[color:var(--color-surface)] flex items-center justify-center text-[color:var(--color-primary)] border border-[color:var(--color-border)] shadow-sm">
                                         <Quote className="w-6 h-6" />
                                     </div>
 
@@ -184,26 +177,26 @@ export default function ReviewCarousel() {
                                             {[...Array(5)].map((_, idx) => (
                                                 <Star
                                                     key={idx}
-                                                    className={`w-4 h-4 ${idx < review.rating ? 'text-emerald-400 fill-emerald-400' : 'text-slate-700'}`}
+                                                    className={`w-4 h-4 ${idx < review.rating ? 'text-[color:var(--color-primary)] fill-[color:var(--color-primary)]' : 'text-[color:var(--color-text-subtle)]/30'}`}
                                                 />
                                             ))}
                                         </div>
-                                        <p className="text-xl md:text-2xl text-slate-100 font-light leading-relaxed italic line-clamp-4">
+                                        <p className="text-xl md:text-2xl text-[color:var(--color-text)] font-light leading-relaxed italic line-clamp-4">
                                             "{review.comment}"
                                         </p>
                                     </div>
 
                                     {/* User & Product Info */}
-                                    <div className="pt-8 border-t border-white/5 flex items-center justify-between gap-4">
+                                    <div className="pt-8 border-t border-[color:var(--color-border)] flex items-center justify-between gap-4">
                                         <div className="flex items-center gap-4">
-                                            <div className="w-10 h-10 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 border border-white/10 font-bold uppercase text-[10px]">
+                                            <div className="w-10 h-10 rounded-full bg-[color:var(--color-surface)] flex items-center justify-center text-[color:var(--color-text-muted)] border border-[color:var(--color-border)] font-bold uppercase text-[10px] shadow-sm">
                                                 {review.profile?.full_name?.charAt(0) || 'G'}
                                             </div>
                                             <div>
-                                                <p className="text-white font-black text-xs tracking-wide uppercase">
+                                                <p className="text-[color:var(--color-text)] font-black text-xs tracking-wide uppercase">
                                                     {(review.profile?.full_name ?? `Client ${settings.store_name}`).split(' ')[0]}
                                                 </p>
-                                                <p className="text-slate-500 text-[9px] uppercase tracking-widest">Achat vérifié</p>
+                                                <p className="text-[color:var(--color-text-subtle)] text-[9px] uppercase tracking-widest">Achat vérifié</p>
                                             </div>
                                         </div>
                                     </div>
@@ -211,9 +204,9 @@ export default function ReviewCarousel() {
                                     {/* Linked Product - Premium UI */}
                                     <Link
                                         to={`/catalogue/${review.product.slug}`}
-                                        className="mt-4 flex items-center gap-4 p-4 rounded-2xl bg-white/[0.03] border border-white/5 group-hover:bg-white/[0.05] group-hover:border-emerald-500/20 transition-all"
+                                        className="mt-4 flex items-center gap-4 p-4 rounded-2xl bg-[color:var(--color-surface)]/40 border border-[color:var(--color-border)] group-hover:bg-[color:var(--color-surface)]/60 group-hover:border-[color:var(--color-primary)]/20 transition-all shadow-sm"
                                     >
-                                        <div className="w-16 h-16 rounded-xl overflow-hidden bg-slate-800 shrink-0 border border-white/5">
+                                        <div className="w-16 h-16 rounded-xl overflow-hidden bg-[color:var(--color-surface)] shrink-0 border border-[color:var(--color-border)]">
                                             <img
                                                 src={review.product.image_url || '/images/N10.png'}
                                                 alt={review.product.name}
@@ -221,8 +214,8 @@ export default function ReviewCarousel() {
                                             />
                                         </div>
                                         <div className="flex-1 min-w-0">
-                                            <h4 className="text-white font-black text-xs uppercase truncate mb-1">{review.product.name}</h4>
-                                            <span className="text-emerald-400 text-[9px] font-bold uppercase tracking-widest flex items-center gap-1.5">
+                                            <h4 className="text-[color:var(--color-text)] font-black text-xs uppercase truncate mb-1">{review.product.name}</h4>
+                                            <span className="text-[color:var(--color-primary)] text-[9px] font-bold uppercase tracking-widest flex items-center gap-1.5">
                                                 <ShoppingBag className="w-3 h-3" />
                                                 Voir le produit
                                             </span>
@@ -239,9 +232,9 @@ export default function ReviewCarousel() {
             <div className="max-w-7xl mx-auto px-5 mt-8 flex justify-center">
                 <Link
                     to="/catalogue"
-                    className="group inline-flex items-center gap-3 px-8 py-3 rounded-full border border-white/10 bg-white/5 text-slate-400 hover:text-white hover:border-emerald-500/30 transition-all font-bold uppercase tracking-[0.2em] text-[10px] backdrop-blur-md"
+                    className="group inline-flex items-center gap-3 px-8 py-3 rounded-full border border-[color:var(--color-border)] bg-[color:var(--color-card)] text-[color:var(--color-text-muted)] hover:text-[color:var(--color-text)] hover:border-[color:var(--color-primary)]/30 transition-all font-bold uppercase tracking-[0.2em] text-[10px] backdrop-blur-md shadow-sm"
                 >
-                    Découvrir toutes nos machines
+                    Découvrir tous nos produits
                     <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </Link>
             </div>

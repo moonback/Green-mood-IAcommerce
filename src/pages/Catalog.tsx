@@ -741,7 +741,7 @@ export default function Catalog() {
           {/* ── DESKTOP SIDEBAR ── */}
           <aside className="hidden lg:block w-[260px] xl:w-[280px] flex-shrink-0 group/sidebar">
             <div className="sticky top-[100px] transition-all duration-700 group-hover/sidebar:top-[94px]">
-              <div className="relative rounded-[2.5rem] border border-[color:var(--color-border)]/40 bg-[color:var(--color-card)]/60 p-7 shadow-[var(--shadow-card)] backdrop-blur-3xl transition-all duration-700 hover:shadow-[0_32px_80px_rgba(0,0,0,0.6)] hover:border-green-neon/30 overflow-hidden">
+              <div className="relative rounded-[2.5rem] border border-[color:var(--color-border)]/40 bg-[color:var(--color-card)]/60 p-7 shadow-[var(--shadow-card)] backdrop-blur-3xl transition-all duration-700 hover:shadow-[0_32px_80px_rgba(15,28,22,0.1)] hover:border-green-neon/30 overflow-hidden">
 
                 {/* Subtle background glow effect on hover */}
                 <div className="absolute -top-24 -right-24 w-48 h-48 bg-green-neon/5 blur-[80px] rounded-full opacity-0 group-hover/sidebar:opacity-100 transition-opacity duration-700 pointer-events-none" />

@@ -225,16 +225,16 @@ export const DEFAULT_SETTINGS: StoreSettings = {
     ai_max_tokens: 1000,
     pos_background_url: '/images/hero-bg-shop.png',
     // White-label fields
-    store_tagline: 'Leader Français du Loisir Récréatif',
-    store_description: 'Spécialiste de l\'importation et distribution de machines de loisirs, jeux d\'arcade, flippers et simulateurs en France.',
-    store_sector: 'Loisirs & Jeux',
-    store_brand_range: 'Pro Series',
+    store_tagline: 'Leader Français du CBD & Bien-être',
+    store_description: 'Spécialiste de l\'importation et distribution de fleurs, résines, huiles et accessoires CBD en France.',
+    store_sector: 'CBD & Bien-être',
+    store_brand_range: 'Premium Series',
     store_city: 'Paris',
     home_categories: [
-        { id: 'arcade', name: 'Jeux d\'Arcade', icon: 'Gamepad2', tag: 'Populaire', emoji: '🕹️' },
-        { id: 'flippers', name: 'Flippers', icon: 'Zap', tag: 'Bestseller', emoji: '🎯' },
-        { id: 'simulateurs', name: 'Simulateurs', icon: 'MonitorPlay', tag: 'Premium', emoji: '🏎️' },
-        { id: 'billard', name: 'Billard & Bar', icon: 'Circle', tag: 'Nouveau', emoji: '🎱' },
+        { id: 'cbd', name: 'CBD', icon: 'Gamepad2', tag: 'Populaire', emoji: '🕹️' },
+        { id: 'vapes', name: 'Vapes', icon: 'Zap', tag: 'Bestseller', emoji: '🎯' },
+        { id: 'accessories', name: 'Accessories', icon: 'MonitorPlay', tag: 'Premium', emoji: '🏎️' },
+        { id: 'edibles', name: 'Edibles', icon: 'Circle', tag: 'Nouveau', emoji: '🎱' },
     ],
     invoice_tax_rate: 20,
     invoice_legal_text: "Produits conformes aux normes CE et aux réglementations de sécurité en vigueur.\nGarantie constructeur 2 ans — Support technique 24/7.",
@@ -254,9 +254,9 @@ export const DEFAULT_SETTINGS: StoreSettings = {
     stripe_test_mode: true,
 
     // Theme Colors
-    theme_color_neon: '#a36cbe',
+    theme_color_neon: '#6edf11',
     theme_color_dark: '#020408',
-    theme_color_primary: '#10B981',
+    theme_color_primary: '#6edf11',
 
     // Typography
     font_heading: 'Inter',

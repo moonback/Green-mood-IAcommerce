@@ -34,9 +34,9 @@ export default function ProductStory({ title, text }: Props) {
         <img
           src="/images/cbd_hero_premium_dark.png"
           alt="Premium Background"
-          className="h-full w-full object-cover opacity-80 grayscale brightness-[0.9]"
+          className="h-full w-full object-cover opacity-15 grayscale brightness-[0.9] dark:opacity-80"
         />
-        {/* <div className="absolute inset-0 bg-gradient-to-r from-[color:var(--color-bg)] via-[color:var(--color-bg)]/80 to-transparent" /> */}
+        <div className="absolute inset-0 bg-gradient-to-r from-[color:var(--color-bg)] via-[color:var(--color-bg)]/90 to-transparent" />
         <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-[color:var(--color-bg)] to-transparent" />
       </motion.div>
 
@@ -91,7 +91,7 @@ export default function ProductStory({ title, text }: Props) {
             </div>
           </motion.div>
 
-          {/* Technical Detail Grid (Detailed side) */}
+      {/* Technical Detail Grid (Detailed side) */}
           <motion.div
             ref={cardRef}
             initial={{ opacity: 0, scale: 0.95 }}
@@ -99,7 +99,7 @@ export default function ProductStory({ title, text }: Props) {
             transition={{ duration: 1, delay: 0.2 }}
             className="flex flex-col justify-center"
           >
-            <div className="bg-white/[0.02] dark:bg-white/[0.04] border border-white/[0.08] rounded-[2.5rem] p-8 lg:p-10 backdrop-blur-3xl shadow-2xl relative overflow-hidden group">
+            <div className="bg-[color:var(--color-card)]/40 border border-[color:var(--color-border)] rounded-[2.5rem] p-8 lg:p-10 backdrop-blur-3xl shadow-[var(--shadow-card)] relative overflow-hidden group">
               <div className="absolute top-0 right-0 w-32 h-32 bg-[color:var(--color-primary)]/10 blur-[60px] -z-10 group-hover:scale-150 transition-transform duration-1000" />
 
               <div className="flex items-center gap-3 mb-8">
@@ -124,7 +124,7 @@ export default function ProductStory({ title, text }: Props) {
                 ))}
               </div>
 
-              <div className="mt-10 p-5 rounded-2xl bg-white/[0.02] border border-white/[0.05] flex items-center justify-between gap-4">
+              <div className="mt-10 p-5 rounded-2xl bg-[color:var(--color-card)]/60 border border-[color:var(--color-border)] flex items-center justify-between gap-4">
                 <div className="space-y-1">
                   <span className="text-[8px] font-black uppercase text-green-neon">Score BudTender</span>
                   <div className="flex gap-0.5">
