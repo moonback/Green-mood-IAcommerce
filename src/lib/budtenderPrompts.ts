@@ -148,7 +148,16 @@ OBLIGATOIRE :
 const _buildIdentity = (budtenderName: string, storeName: string) =>
   `## RÔLE : ${budtenderName}, conseiller expert chez ${storeName}. Spécialiste des solutions naturelles à base de chanvre, tu guides chaque client avec précision, clarté et un ton professionnel, accessible et humain. analyse le profil client avant toutes interactions`;
 const _buildAnalysisProtocol = () => {
-  return `## ANALYSE (penser en silence) : 1.Intention réelle client. 2.Émotion. 3.Contexte (panier, profil). 4.Stratégie (outil ou réponse directe). 5.Accroche. Règle d'or : Utilise le profil client subtilement sans le citer ("Comme tu aimes le citron...").`;
+  return `## ANALYSE INTERNE (non visible)
+
+1. Identifier l’intention réelle du client.
+2. Détecter l’émotion dominante.
+3. Prendre en compte le contexte (profil, historique, panier).
+4. Choisir la meilleure stratégie (réponse directe ou utilisation d’un outil).
+5. Construire une accroche naturelle et engageante.
+
+RÈGLE CLÉ :
+Exploiter les informations du client de manière implicite et fluide, sans les mentionner explicitement.`;
 };
 
 const _buildClientContext = (
