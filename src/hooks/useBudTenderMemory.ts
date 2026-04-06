@@ -7,8 +7,14 @@ import { CATEGORY_SLUGS } from '../lib/constants';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
+export interface PrefValue {
+    value: any;
+    confidence?: number;
+    updated_at: string;
+}
+
 export interface SavedPrefs {
-    [key: string]: any;
+    [key: string]: PrefValue | any;
 }
 
 export interface ChatMessage {
@@ -235,10 +241,32 @@ export function useBudTenderMemory() {
 
     const updatePrefs = async (newPrefs: Partial<SavedPrefs>) => {
         try {
-            let merged = { ...(savedPrefs || {}), ...newPrefs };
+            const now = new Date().toISOString();
+            const structuredNewPrefs: SavedPrefs = {};
+
+            Object.entries(newPrefs).forEach(([key, val]) => {
+                // If it's already a structured PrefValue object, use it
+                if (val && typeof val === 'object' && 'updated_at' in val && 'value' in val) {
+                    structuredNewPrefs[key] = val;
+                } else if (val && typeof val === 'object' && 'value' in val) {
+                    // AI sent value/confidence but no timestamp
+                    structuredNewPrefs[key] = {
+                        ...val,
+                        updated_at: now
+                    };
+                } else {
+                    // AI or UI sent raw value
+                    structuredNewPrefs[key] = {
+                        value: val,
+                        confidence: 1.0,
+                        updated_at: now
+                    };
+                }
+            });
+
+            let merged = { ...(savedPrefs || {}), ...structuredNewPrefs };
 
             if (user) {
-                // Fetch latest from DB to prevent race conditions & overriding
                 const { data } = await supabase
                     .from('user_ai_preferences')
                     .select('preferences')
@@ -246,13 +274,24 @@ export function useBudTenderMemory() {
                     .maybeSingle();
 
                 if (data?.preferences) {
-                    merged = { ...data.preferences, ...newPrefs };
+                    merged = { ...data.preferences, ...structuredNewPrefs };
                 }
             }
 
             await savePrefs(merged);
         } catch (err) {
             if (import.meta.env.DEV) console.error('[BudTenderMemory] Error updating prefs:', err);
+        }
+    };
+
+    const removePref = async (key: string) => {
+        try {
+            if (!savedPrefs) return;
+            const updated = { ...savedPrefs };
+            delete updated[key];
+            await savePrefs(updated);
+        } catch (err) {
+            if (import.meta.env.DEV) console.error('[BudTenderMemory] Error removing pref:', err);
         }
     };
 
@@ -469,6 +508,7 @@ export function useBudTenderMemory() {
         isLoading,
         savePrefs,
         updatePrefs,
+        removePref,
         saveChatHistory,
         fetchAllSessions,
         deleteSession,

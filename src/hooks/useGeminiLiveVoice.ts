@@ -1815,18 +1815,19 @@ export function useGeminiLiveVoice({
 
                 if (c.name === 'save_preferences') {
                   if (onSavePrefsRef.current) {
-                    // Supporting multiple hallucination formats
-                    const toSave = args.new_prefs || args.new_pref || (args.prefs ? args.prefs : args);
+                    const raw = args.new_prefs || args.new_pref || (args.prefs ? args.prefs : args);
                     
-                    // If toSave is a string (hallucination), try to parse it
-                    let finalPrefs = toSave;
-                    if (typeof toSave === 'string') {
+                    // The raw data from AI might be { expertise: "Débutant" } 
+                    // or { expertise: { value: "Débutant", confidence: 0.9 } }
+                    // We want to pass it to onSavePrefs which will then be handled by useBudTenderMemory.updatePrefs
+                    
+                    let finalPrefs = raw;
+                    if (typeof raw === 'string') {
                        try {
-                         // Attempt to handle "key: value" or other formats if possible
-                         if (toSave.includes(':')) {
-                            const [k, v] = toSave.split(':').map(s => s.trim());
-                            finalPrefs = { [k]: v };
-                         }
+                          if (raw.includes(':')) {
+                             const [k, v] = raw.split(':').map(s => s.trim());
+                             finalPrefs = { [k]: v };
+                          }
                        } catch { /* ignore */ }
                     }
 

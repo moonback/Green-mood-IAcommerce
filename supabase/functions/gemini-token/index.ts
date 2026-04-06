@@ -130,14 +130,20 @@ const BUDTENDER_TOOLS = [{
     },
     {
       name: 'save_preferences',
-      description: "Sauvegarder de nouveaux traits ou préférences identifiés chez le client (ex: passion, budget, style, expertise).",
+      description: "Sauvegarder de nouveaux traits ou préférences identifiés chez le client (ex: goût, objectif, expertise). Utilisez des clés standardisées : 'expertise', 'goût', 'objectif', 'format', 'budget'.",
       parameters: {
         type: 'OBJECT',
         properties: {
           new_prefs: { 
             type: 'OBJECT', 
-            description: "Un objet JSON contenant les nouveaux traits. Exemple: { passion: 'rétrogaming', budget: 'premium' }",
-            properties: {} // Allows any field
+            description: "Objet contenant les traits. Chaque trait peut être un objet { value: string, confidence: number }.",
+            properties: {
+              expertise: { type: 'OBJECT', properties: { value: { type: 'STRING' }, confidence: { type: 'NUMBER' } } },
+              goût: { type: 'OBJECT', properties: { value: { type: 'STRING' }, confidence: { type: 'NUMBER' } } },
+              objectif: { type: 'OBJECT', properties: { value: { type: 'STRING' }, confidence: { type: 'NUMBER' } } },
+              format: { type: 'OBJECT', properties: { value: { type: 'STRING' }, confidence: { type: 'NUMBER' } } },
+              budget: { type: 'OBJECT', properties: { value: { type: 'STRING' }, confidence: { type: 'NUMBER' } } },
+            }
           },
         },
         required: ['new_prefs'],

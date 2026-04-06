@@ -34,6 +34,9 @@ import {
   SmartphoneNfc,
   Cpu,
   Trash2,
+  X,
+  Filter,
+  Clock,
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuthStore, getDeviceId } from '../store/authStore';
@@ -41,12 +44,25 @@ import { useBudTenderMemory, SavedPrefs } from '../hooks/useBudTenderMemory';
 import { TECH_ADVISOR_DEFAULT_QUIZ, QuizStep, fetchBudTenderSettings } from '../lib/budtenderSettings';
 import { useSettingsStore } from '../store/settingsStore';
 import AccountPageLayout from '../components/AccountPageLayout';
+import { useNavigate } from 'react-router-dom';
+
+function timeAgo(date: string) {
+  if (!date) return '';
+  const seconds = Math.floor((new Date().getTime() - new Date(date).getTime()) / 1000);
+  if (seconds < 60) return "à l'instant";
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `il y a ${minutes} min`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `il y a ${hours} h`;
+  return `il y a ${Math.floor(hours / 24)} j`;
+}
 
 type TabType = 'identity' | 'security' | 'ai';
 
 export default function Profile() {
+  const navigate = useNavigate();
   const { user, profile, setProfile } = useAuthStore();
-  const { savedPrefs, savePrefs, clearPrefs, isLoading: isPrefsLoading } = useBudTenderMemory();
+  const { savedPrefs, savePrefs, removePref, clearPrefs, isLoading: isPrefsLoading } = useBudTenderMemory();
   const settings = useSettingsStore((s) => s.settings);
   const budtenderName = settings.budtender_name || 'BudTender';
 
@@ -482,25 +498,75 @@ export default function Profile() {
                         <div className="flex flex-wrap gap-4">
                           {Object.entries(prefs)
                             .filter(([k, v]) => v !== undefined && v !== null && !['id', 'user_id', 'updated_at', 'preferences'].includes(k))
-                            .map(([key, value]) => {
+                            .map(([key, meta]) => {
+                              const value = (meta && typeof meta === 'object' && 'value' in meta) ? meta.value : meta;
+                              const confidence = (meta && typeof meta === 'object' && 'confidence' in meta) ? meta.confidence : 1.0;
+                              const updatedAt = (meta && typeof meta === 'object' && 'updated_at' in meta) ? meta.updated_at : null;
+
                               const vStr = Array.isArray(value) 
                                 ? value.join(', ') 
                                 : typeof value === 'object' && value !== null
                                   ? Object.entries(value as object).map(([ik, iv]) => `${ik.replace(/_/g, ' ')}: ${iv}`).join('; ')
                                   : String(value);
 
+                              // Don't show legacy or hidden traits if confidence is too low
+                              if (confidence < 0.7) return null;
+
                               return (
                                 <div
                                   key={key}
-                                  className="bg-[color:var(--color-card)]/80 border border-purple-500/20 rounded-[2rem] px-8 py-5 shadow-sm hover:border-purple-500/40 transition-all duration-500 group"
+                                  className="bg-[color:var(--color-card)]/80 border border-purple-500/20 rounded-[2rem] px-6 py-4 shadow-sm hover:border-purple-500/40 transition-all duration-500 group relative"
                                 >
-                                  <div className="text-[9px] font-black uppercase tracking-[0.2em] text-purple-500/70 mb-2 flex items-center gap-2">
-                                    <span className="w-1.5 h-1.5 rounded-full bg-purple-500" />
-                                    {key.replace(/_/g, ' ')}
+                                  <div className="text-[9px] font-black uppercase tracking-[0.2em] text-purple-500/70 mb-2 flex items-center justify-between gap-4">
+                                    <div className="flex items-center gap-2">
+                                      <span className="w-1.5 h-1.5 rounded-full bg-purple-500" />
+                                      {key.replace(/_/g, ' ')}
+                                    </div>
+                                    <button 
+                                      onClick={() => removePref(key)}
+                                      className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-500/10 rounded-full text-red-500 transition-all"
+                                      title="Supprimer ce trait"
+                                    >
+                                      <X className="w-3 h-3" />
+                                    </button>
                                   </div>
-                                  <div className="text-xs font-black uppercase tracking-tight text-[color:var(--color-text)]">
-                                    {vStr}
+                                  
+                                  <div className="flex items-end justify-between gap-4">
+                                    <div className="text-xs font-black uppercase tracking-tight text-[color:var(--color-text)]">
+                                      {vStr}
+                                    </div>
+                                    
+                                    <button
+                                      onClick={() => navigate(`/catalogue?search=${encodeURIComponent(vStr)}`)}
+                                      className="p-2 rounded-xl bg-purple-500/10 text-purple-500 hover:bg-purple-500/20 transition-all flex items-center gap-1.5"
+                                      title="Voir les produits correspondants"
+                                    >
+                                      <Filter className="w-3 h-3" />
+                                      <span className="text-[8px] font-black uppercase">Filtrer</span>
+                                    </button>
                                   </div>
+
+                                  {(updatedAt || confidence < 1) && (
+                                    <div className="mt-3 pt-2 border-t border-purple-500/5 flex items-center justify-between gap-4">
+                                      {updatedAt && (
+                                        <div className="flex items-center gap-1 text-purple-500/40">
+                                          <Clock className="w-2.5 h-2.5" />
+                                          <span className="text-[8px] font-black uppercase">{timeAgo(updatedAt)}</span>
+                                        </div>
+                                      )}
+                                      {confidence < 1 && (
+                                        <div className="flex items-center gap-1">
+                                          <div className="w-12 h-1 bg-purple-500/10 rounded-full overflow-hidden">
+                                            <div 
+                                              className="h-full bg-purple-500/40" 
+                                              style={{ width: `${confidence * 100}%` }}
+                                            />
+                                          </div>
+                                          <span className="text-[8px] font-black uppercase text-purple-500/40">{Math.round(confidence * 100)}%</span>
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
                                 </div>
                               );
                             })}

@@ -247,6 +247,7 @@ export default function Catalog() {
     setSelectedCategory(searchParams.get('category'));
     setSelectedBenefit(searchParams.get('benefit') || searchParams.get('feature'));
     setSelectedAroma(searchParams.get('aroma') || searchParams.get('attribute'));
+    setSearchQuery(searchParams.get('search') || searchParams.get('q') || '');
     setSortBy((searchParams.get('sort') as typeof sortBy) || 'featured');
     setSelectedMinRating(searchParams.get('rating') ? Number(searchParams.get('rating')) : null);
     setInStockOnly(searchParams.get('stock') === '1');

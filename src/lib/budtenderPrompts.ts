@@ -251,18 +251,30 @@ const _buildClientContext = (
     const renderValue = (val: any): string => {
       if (Array.isArray(val)) return val.join(', ');
       if (typeof val === 'object' && val !== null) {
+        if ('value' in val) return String(val.value);
         return Object.entries(val).map(([k, v]) => `${k.replace(/_/g, ' ')}: ${String(v)}`).join('; ');
       }
       return String(val);
     };
 
     const entries = Object.entries(savedPrefs)
-      .filter(([k, v]) => v && k !== 'id' && k !== 'user_id' && k !== 'updated_at' && k !== 'preferences')
+      .filter(([k, v]) => {
+        if (!v || ['id', 'user_id', 'updated_at', 'preferences'].includes(k)) return false;
+        if (typeof v === 'object' && v !== null && 'confidence' in v) {
+          return (v.confidence as number) >= 0.8;
+        }
+        return true;
+      })
       .map(([k, v]) => `${k.replace(/_/g, ' ')}: ${renderValue(v)}`);
     
     if (entries.length > 0) {
       ctx += `- PROFIL ÉVOLUTIF ACTUEL (BudTender) : ${entries.join(' | ')}. `;
-      const exp = (savedPrefs.expertise || savedPrefs.experience_level)?.toLowerCase();
+      const expertiseEntry = savedPrefs.expertise;
+      const expVal = (expertiseEntry && typeof expertiseEntry === 'object' && 'value' in expertiseEntry) 
+        ? expertiseEntry.value 
+        : expertiseEntry;
+      const exp = String(expVal || '').toLowerCase();
+      
       if (exp) {
         if (exp.includes('debutant')) ctx += `Le client est débutant, vulgarise au maximum. `;
         if (exp.includes('expert')) ctx += `Le client est expert (terpènes, spectre complet...), sois technique. `;
@@ -270,16 +282,25 @@ const _buildClientContext = (
     }
   }
 
-  ctx += `\n## PROTOCOLE DE MISE À JOUR DU PROFIL (L'IA ÉVOLUE EN TEMPS RÉEL)
-Tu dois enrichir ce profil EN TEMPS RÉEL. À chaque fois que tu captes une information stable, tu appelles IMMEDIATEMENT 'save_preferences' pour faire grandir ton savoir.
+  ctx += `\n## PROTOCOLE DE MISE À JOUR DU PROFIL (IA ÉVOLUTIVE)
+Tu dois enrichir ce profil EN TEMPS RÉEL dès que tu captes une information STABLE et FIABLE.
 
-CHAMPS CLÉS À DÉTECTER ET METTRE À JOUR :
+CLÉS STANDARDISÉES :
 - 'expertise' : Débutant, Intermédiaire, Passionné, Expert.
-- 'preference_gout' : Boisé, Fruité, Terreux, Sucre, Mentholé, etc.
-- 'objectif_bien_etre' : Focus, Détente, Sommeil profond, Énergie, Récupération.
-- 'mode_favori' : Fleur, Vapotage, Huile, Infusion.
+- 'goût' : Boisé, Fruité, Terreux, Sucre, Mentholé, Agrumes, etc.
+- 'objectif' : Focus, Détente, Sommeil profond, Énergie, Récupération, Créativité.
+- 'format' : Fleurs, Vapotage, Huile, Infusion, Bonbons.
+- 'budget' : Économique, Standard, Premium.
 
-Règle : Sois proactif. Dès qu'il dit "J'adore le goût terreux", tu enregistres 'preference_gout': 'Terreux'.`;
+FORMAT DE L'APPEL 'save_preferences' :
+Passe un objet { value: string, confidence: number } pour chaque clé.
+Exemple : { "new_prefs": { "goût": { "value": "Fruité", "confidence": 0.95 } } }
+
+PROTOCOLE DE GESTION DES CONFLITS :
+Si une information nouvelle contredit une information existante à haute confidence :
+1. NE DÉCLENCHE PAS l'outil immédiatement.
+2. Pose une question de validation subtile : "T'es plutôt un connaisseur ou tu découvres vraiment ?"
+3. Ne mets à jour que si le client confirme son changement de statut.`;
 
   if (cartItems && cartItems.length > 0) {
     const cartStr = cartItems.map((item: any) => `${item.product.name} ×${item.quantity}`).join(', ');
