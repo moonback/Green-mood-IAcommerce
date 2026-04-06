@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { Product } from '../lib/types';
 import { autoFillProductSync, autoCategorizeProduct } from '../lib/productAI';
-import { sleep, isQuotaError } from '../lib/utils';
+import { sleep, isQuotaError, chunk } from '../lib/utils';
 import { useToastStore } from './toastStore';
 import { generateEmbedding } from '../lib/embeddings';
 import { supabase } from '../lib/supabase';
@@ -55,24 +55,46 @@ export const useBackgroundTaskStore = create<BackgroundTaskState>((set, get) => 
         let successCount = 0;
         let failedCount = 0;
 
-        for (let i = 0; i < products.length; i++) {
-            const product = products[i];
+        const retry = async (fn: () => Promise<boolean>, retries = 3): Promise<boolean> => {
             try {
-                const success = await autoFillProductSync(product, force);
-                if (success) {
-                    successCount++;
-                    if (onRefresh) onRefresh();
-                } else {
-                    failedCount++;
+                return await fn();
+            } catch (e: any) {
+                if (retries === 0 || (typeof e === 'object' && e?.code === 'WORKER_LIMIT')) {
+                    console.error('[Background AI] Retries exhausted or Worker Limit hit:', e);
+                    return false;
                 }
-            } catch (err) {
-                console.error('[Background AI] Mass Fill Error:', err);
-                failedCount++;
-            } finally {
-                set({ aiSyncProgress: { done: i + 1, total: products.length } });
+                const delay = isQuotaError(e) ? 2000 : 800;
+                await sleep(delay);
+                return retry(fn, retries - 1);
             }
-            // Small delay to avoid rate limits
-            await sleep(400);
+        };
+
+        const batches = chunk(products, 5);
+        let processedCount = 0;
+
+        for (const batch of batches) {
+            await Promise.all(batch.map(async (product) => {
+                try {
+                    const success = await retry(() => autoFillProductSync(product, force));
+                    if (success) {
+                        successCount++;
+                        if (onRefresh) onRefresh();
+                    } else {
+                        failedCount++;
+                    }
+                } catch (err) {
+                    console.error('[Background AI] Mass Fill Error:', err);
+                    failedCount++;
+                } finally {
+                    processedCount++;
+                    set({ aiSyncProgress: { done: processedCount, total: products.length } });
+                }
+            }));
+            
+            // Sequential delay between batches to respect rate limits and avoid edge function worker saturation
+            if (processedCount < products.length) {
+                await sleep(1500);
+            }
         }
 
         set({

@@ -21,3 +21,11 @@ export const stripHtml = (html: string | null | undefined): string => {
     if (!html) return '';
     return html.replace(/<[^>]*>?/gm, ' ').replace(/\s+/g, ' ').trim();
 };
+
+export function chunk<T>(array: T[], size: number): T[][] {
+    const chunked: T[][] = [];
+    for (let i = 0; i < array.length; i += size) {
+        chunked.push(array.slice(i, i + size));
+    }
+    return chunked;
+}

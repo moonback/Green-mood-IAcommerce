@@ -224,7 +224,7 @@ Contraintes:
     try {
       const { data, error: aiError } = await supabase.functions.invoke('ai-chat', {
         body: {
-          model: 'liquid/lfm-2-24b-a2b:latest',
+          model: 'mistralai/mistral-small-creative',
           messages: [{ role: 'user', content: prompt }]
         }
       });

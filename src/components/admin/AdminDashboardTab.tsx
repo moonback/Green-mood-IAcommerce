@@ -233,7 +233,7 @@ export default function AdminDashboardTab({
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-5">
         <AdminCard title="Revenu des commandes récentes" subtitle="Tendance de performance" className="xl:col-span-3">
           <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="100%" height={256}>
               <AreaChart data={revenueSeries} margin={{ top: 12, right: 12, left: 0, bottom: 0 }}>
                 <defs>
                   <linearGradient id="revGradient" x1="0" y1="0" x2="0" y2="1">

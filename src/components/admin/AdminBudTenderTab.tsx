@@ -1042,7 +1042,7 @@ export default function AdminBudTenderTab() {
                             <Section icon={ThumbsUp} title="Feedback de Recommandation" description="Comment les clients perçoivent les conseils générés">
                                 <div className="flex items-center gap-10">
                                     <div className="h-40 w-40">
-                                        <ResponsiveContainer width="100%" height="100%">
+                                        <ResponsiveContainer width="100%" height={160}>
                                             <PieChart>
                                                 <Pie
                                                     data={[

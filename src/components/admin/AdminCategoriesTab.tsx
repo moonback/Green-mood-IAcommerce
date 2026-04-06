@@ -65,11 +65,29 @@ export default function AdminCategoriesTab({ categories, onRefresh }: AdminCateg
 
     useEffect(() => {
         const checkVectors = async () => {
-            const { data } = await supabase.from('products').select('category_id, embedding, description, attributes');
-            if (data) {
+            try {
+                // Fetch basic product metadata to check for AI content
+                // We EXCLUDE the 'embedding' column as it's too large (3072 dims) 
+                // and causes 500 errors when many products are fetched.
+                const { data: productsData, error: productsError } = await supabase
+                    .from('products')
+                    .select('id, category_id, description, attributes');
+
+                if (productsError) throw productsError;
+
+                // Fetch IDs of products that ARE vectorised separately (lightweight)
+                const { data: vectorizedIds, error: vectorError } = await supabase
+                    .from('products')
+                    .select('id, category_id')
+                    .not('embedding', 'is', null);
+
+                if (vectorError) throw vectorError;
+
+                const vectorSet = new Set(vectorizedIds?.map(v => v.id) || []);
                 const vStats: Record<string, { missing: number, total: number }> = {};
                 const aiStats: Record<string, { missing: number, total: number }> = {};
-                data.forEach(p => {
+                
+                productsData?.forEach(p => {
                     if (p.category_id) {
                         if (!vStats[p.category_id]) vStats[p.category_id] = { missing: 0, total: 0 };
                         if (!aiStats[p.category_id]) aiStats[p.category_id] = { missing: 0, total: 0 };
@@ -77,23 +95,27 @@ export default function AdminCategoriesTab({ categories, onRefresh }: AdminCateg
                         vStats[p.category_id].total++;
                         aiStats[p.category_id].total++;
                         
-                        const hasEmbed = Array.isArray(p.embedding) 
-                            ? p.embedding.length > 0 
-                            : (typeof p.embedding === 'string' && p.embedding.trim().length > 0 && p.embedding.trim() !== '[]');
-                            
+                        // Check vector presence via our ID set
+                        const hasEmbed = vectorSet.has(p.id);
                         if (!hasEmbed) {
                             vStats[p.category_id].missing++;
                         }
                         
                         const attributes = p.attributes as null | Record<string, any>;
-                        const hasAiContent = p.description && (attributes?.productSpecs?.length > 0 || attributes?.technical_specs?.length > 0) && attributes?.effects?.length > 0;
+                        const hasAiContent = !!(p.description && 
+                            ((attributes?.productSpecs?.length ?? 0) > 0 || (attributes?.technical_specs?.length ?? 0) > 0) && 
+                            (attributes?.effects?.length ?? 0) > 0);
+                            
                         if (!hasAiContent) {
                             aiStats[p.category_id].missing++;
                         }
                     }
                 });
+                
                 setVectorStats(vStats);
                 setAiFillStats(aiStats);
+            } catch (err) {
+                console.error('[AdminCategories] Error checking product stats:', err);
             }
         };
         checkVectors();
