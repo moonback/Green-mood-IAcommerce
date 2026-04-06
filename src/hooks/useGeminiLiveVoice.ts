@@ -851,22 +851,34 @@ export function useGeminiLiveVoice({
   const prevSavedPrefsRef = useRef(savedPrefs);
   useEffect(() => {
     if (!sessionRef.current || isManualCloseRef.current || !savedPrefs) return;
+    
+    // Check for deep differences
     const isDifferent = JSON.stringify(savedPrefs) !== JSON.stringify(prevSavedPrefsRef.current);
+    
     if (isDifferent) {
       const renderValue = (val: any): string => {
         if (Array.isArray(val)) return val.join(', ');
         if (typeof val === 'object' && val !== null) {
+          if ('value' in val) return String(val.value);
           return Object.entries(val).map(([k, v]) => `${k}: ${v}`).join('; ');
         }
         return String(val);
       };
       
       const entries = Object.entries(savedPrefs)
-        .filter(([k, v]) => v && k !== 'id' && k !== 'user_id' && k !== 'updated_at' && k !== 'preferences')
+        .filter(([k, v]) => {
+          if (!v || ['id', 'user_id', 'updated_at', 'preferences'].includes(k)) return false;
+          // Only sync high-confidence traits (> 0.8) to the AI context
+          if (typeof v === 'object' && v !== null && 'confidence' in v) {
+            return (v.confidence as number) >= 0.8;
+          }
+          return true;
+        })
         .map(([k, v]) => `${k.replace(/_/g, ' ')}: ${renderValue(v)}`);
 
       if (entries.length > 0) {
-        const syncText = `[SYSTÈME] Ton savoir sur le client vient d'évoluer. Voici son PROFIL ÉVOLUTIF à jour : ${entries.join(' | ')}. Prends-en compte immédiatement pour la suite.`;
+        // High priority system instruction to ensure AI utilizes the updated knowledge
+        const syncText = `[SYSTÈME] TON SAVOIR SUR LE CLIENT VIENT D'ÉVOLUER. Utilise immédiatement ces informations pour personnaliser ton ton et tes conseils sans les citer littéralement : ${entries.join(' | ')}.`;
         queueClientMessage(syncText);
       }
       prevSavedPrefsRef.current = savedPrefs;
