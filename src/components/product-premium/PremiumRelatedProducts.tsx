@@ -12,85 +12,77 @@ export default function PremiumRelatedProducts({ products }: Props) {
   if (!products.length) return null;
 
   return (
-    <section className="relative border-t border-[color:var(--color-border)] bg-[color:var(--color-bg-elevated)]/50">
-      <div className="mx-auto max-w-[1200px] px-4 py-16 sm:px-6 lg:px-8">
-        <div className="flex items-end justify-between mb-10">
-          <div>
-            <p className="text-[10px] font-black uppercase tracking-[0.35em] text-[color:var(--color-primary)] mb-2">Vous aimerez aussi</p>
-            <h3 className="text-3xl text-[color:var(--color-text)]" style={{ fontFamily: "'DM Serif Display', Georgia, serif" }}>Produits associés</h3>
+    <section className="relative transition-all">
+      <div className="mx-auto max-w-[1200px] px-0 py-0">
+        <div className="flex items-end justify-between mb-6">
+          <div className="space-y-1">
+            <p className="text-[9px] font-black uppercase tracking-[0.2em] text-[color:var(--color-primary)]">Recommandations</p>
+            <h3 className="text-xl font-black uppercase tracking-tight text-[color:var(--color-text)]">Produits associés</h3>
           </div>
           <Link
             to="/catalogue"
-            className="hidden sm:flex items-center gap-1.5 text-sm text-[color:var(--color-text-subtle)] hover:text-[color:var(--color-primary)] transition-colors font-black uppercase tracking-widest"
+            className="flex items-center gap-1 text-[10px] text-[color:var(--color-text-subtle)] hover:text-[color:var(--color-primary)] transition-colors font-black uppercase tracking-widest"
           >
-            Voir tout <ArrowRight className="w-4 h-4" />
+            Voir tout <ArrowRight className="w-3 h-3" />
           </Link>
         </div>
 
-        <div className="grid gap-5 md:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {products.map((product, idx) => {
             const avgRating = (product as any).avg_rating || 0;
             const reviewCount = (product as any).review_count || 0;
+            const cbd = (product as any).attributes?.cbd_percentage || (product as any).cbd_percentage;
+
             return (
               <motion.div
                 key={product.id}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
+                initial={{ opacity: 0, scale: 0.95 }}
+                whileInView={{ opacity: 1, scale: 1 }}
                 viewport={{ once: true }}
-                transition={{ delay: idx * 0.1, duration: 0.4 }}
+                transition={{ delay: idx * 0.05, duration: 0.3 }}
               >
                 <Link
                   to={`/catalogue/${product.slug}`}
-                  className="group block rounded-2xl border border-[color:var(--color-border)] bg-[color:var(--color-card)] overflow-hidden hover:border-[color:var(--color-primary)]/35 hover:shadow-2xl transition-all duration-500"
+                  className="group block rounded-[1.5rem] border border-[color:var(--color-border)] bg-[color:var(--color-card)]/50 overflow-hidden hover:border-[color:var(--color-primary)]/40 hover:shadow-xl transition-all duration-300 backdrop-blur-sm"
                 >
                   {/* Image */}
-                  <div className="relative overflow-hidden aspect-[4/3] bg-[color:var(--color-bg-muted)]">
+                  <div className="relative overflow-hidden aspect-[1.4/1] bg-[color:var(--color-bg-muted)]">
                     <img
                       src={getProductImageSrc(product.image_url)}
                       loading="lazy"
                       alt={product.name}
-                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                      className="w-full h-full object-contain p-4 transition-transform duration-500 group-hover:scale-110"
                       onError={applyProductImageFallback}
                     />
-                    {/* Category label */}
-                    {product.category?.name && (
-                      <span className="absolute top-3 left-3 px-3 py-1.5 rounded-xl bg-[color:var(--color-bg)]/80 backdrop-blur-md text-[10px] font-black text-[color:var(--color-primary)] tracking-[0.2em] uppercase border border-[color:var(--color-primary)]/20 shadow-xl">
-                        {product.category.name}
-                      </span>
+                    {/* Corner Badge */}
+                    {cbd && (
+                      <div className="absolute top-2 right-2 px-2 py-1 rounded-lg bg-[color:var(--color-primary)] text-[color:var(--color-primary-contrast)] text-[8px] font-black uppercase tracking-tighter shadow-lg">
+                        {cbd}% CBD
+                      </div>
                     )}
-                    {/* Shadow overlay */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-[color:var(--color-bg)]/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                   </div>
 
                   {/* Info */}
-                  <div className="p-5 space-y-3">
-                    <p className="text-[10px] uppercase font-black tracking-[0.3em] text-[color:var(--color-text-subtle)]">Profil similaire</p>
-                    <h4 className="text-base font-black text-[color:var(--color-text)] group-hover:text-[color:var(--color-primary)] transition-colors leading-tight uppercase">
+                  <div className="p-4 space-y-2.5">
+                    <h4 className="text-[13px] font-black text-[color:var(--color-text)] group-hover:text-[color:var(--color-primary)] transition-colors leading-tight uppercase truncate">
                       {product.name}
                     </h4>
 
                     <div className="flex items-center gap-2">
                       {reviewCount > 0 ? (
-                        <>
-                          <div className="flex">
-                            {Array.from({ length: 5 }).map((_, i) => (
-                              <Star key={i} className={`w-3.5 h-3.5 ${i < Math.round(avgRating) ? 'fill-amber-400 text-amber-400' : 'text-[color:var(--color-bg-muted)] opacity-30'}`} />
-                            ))}
-                          </div>
-                          <span className="text-[11px] text-[color:var(--color-text-subtle)] font-black">{Number(avgRating).toFixed(1)}</span>
-                          <span className="text-[9px] text-[color:var(--color-text-muted)] opacity-60">({reviewCount})</span>
-                        </>
+                        <div className="flex items-center gap-1">
+                          <Star className="w-2.5 h-2.5 fill-amber-400 text-amber-400" />
+                          <span className="text-[10px] font-bold text-[color:var(--color-text-subtle)]">{avgRating.toFixed(1)}</span>
+                          <span className="text-[9px] text-[color:var(--color-text-muted)] opacity-50">({reviewCount})</span>
+                        </div>
                       ) : (
-                        <span className="text-[9px] font-black uppercase tracking-widest text-[color:var(--color-text-subtle)] opacity-50">Nouvelle sélection</span>
+                        <span className="text-[8px] font-bold text-[color:var(--color-text-muted)] uppercase tracking-tighter opacity-60">Nouvelle Variété</span>
                       )}
                     </div>
 
-                    <div className="flex items-center justify-between pt-2 border-t border-[color:var(--color-border)]/50">
-                      <p className="text-xl font-black text-[color:var(--color-primary)]">{product.price.toFixed(2)} €</p>
-                      <div className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-[color:var(--color-text-subtle)] group-hover:text-[color:var(--color-primary)] transition-all transform group-hover:translate-x-1">
-                        <span>Détails</span>
-                        <ArrowRight className="w-3.5 h-3.5" />
-                      </div>
+                    <div className="flex items-center justify-between pt-2.5 border-t border-[color:var(--color-border)]/50">
+                      <p className="text-base font-black text-[color:var(--color-primary)]">{product.price.toFixed(2)} €</p>
+                      <ArrowRight className="w-3.5 h-3.5 text-[color:var(--color-text-muted)] group-hover:text-[color:var(--color-primary)] transition-all transform group-hover:translate-x-0.5" />
                     </div>
                   </div>
                 </Link>

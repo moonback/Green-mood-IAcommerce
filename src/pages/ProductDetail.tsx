@@ -1,6 +1,6 @@
 import { Suspense, lazy, useEffect, useMemo, useState, Fragment } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
-import { ArrowLeft, ChevronRight, ShoppingBag, BookOpen, Sparkles } from 'lucide-react';
+import { ArrowLeft, ChevronRight, ShoppingBag, Star, BookOpen, Sparkles } from 'lucide-react';
 import { motion } from 'motion/react';
 import { supabase } from '../lib/supabase';
 import type { Category, Product as BaseProduct } from '../lib/types';
@@ -74,7 +74,7 @@ const fallbackSpecs: ProductSpec[] = [
 // ── Product evaluation metrics (0–10) ───────────────────────────────────────
 function deriveProductMetrics(base: BaseProduct): Record<'Détente' | 'Saveur' | 'Arôme' | 'Puissance', number> {
   const attrs = base.attributes ?? {};
-  
+
   // If we already have metrics in attributes, use them
   if (attrs.productMetrics) {
     return attrs.productMetrics;
@@ -131,7 +131,7 @@ function enhanceProduct(base: BaseProduct): Product {
         intensity: Math.min(100, (cbd / 20) * 100)
       });
     }
-    
+
     const thc = base.attributes?.thc_max !== undefined ? base.attributes.thc_max : (base as any).thc_max;
     if (thc !== undefined && thc <= 0.3) {
       specs_enhanced.push({
@@ -181,7 +181,7 @@ export default function ProductDetail() {
   const [reviews, setReviews] = useState<import('../types/premiumProduct').Review[]>([]);
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
-  const [recentlyViewed, setRecentlyViewed] = useState<Array<Pick<BaseProduct, 'id' | 'name' | 'slug' | 'image_url' | 'price'>>>([]);
+  const [recentlyViewed, setRecentlyViewed] = useState<Array<Pick<BaseProduct, 'id' | 'name' | 'slug' | 'image_url' | 'price'> & { avg_rating?: number; review_count?: number }>>([]);
   const [allCategories, setAllCategories] = useState<Category[]>([]);
 
   // ── Premium font injection ──
@@ -249,12 +249,12 @@ export default function ProductDetail() {
 
       const mappedReviews: import('../types/premiumProduct').Review[] = ((reviewData ?? []) as any[]).map((r) => {
         const fullName = Array.isArray(r.profile) ? r.profile[0]?.full_name : r.profile?.full_name;
-        return { 
-          id: r.id, 
-          rating: r.rating, 
-          comment: r.comment, 
-          created_at: r.created_at, 
-          author: fullName ?? 'Client vérifié' 
+        return {
+          id: r.id,
+          rating: r.rating,
+          comment: r.comment,
+          created_at: r.created_at,
+          author: fullName ?? 'Client vérifié'
         };
       });
 
@@ -264,7 +264,7 @@ export default function ProductDetail() {
         avg_rating: p.ratings?.[0]?.avg_rating ?? null,
         review_count: p.ratings?.[0]?.review_count ?? 0,
       })).map(enhanceProduct) ?? []);
-      
+
       // Update BudTender store for Cortex AI visibility
       setActiveProduct({
         ...enhanced,
@@ -287,7 +287,15 @@ export default function ProductDetail() {
       const raw = localStorage.getItem(key);
       const parsed = raw ? JSON.parse(raw) as any[] : [];
       const next = [
-        { id: product.id, name: product.name, slug: product.slug, image_url: product.image_url, price: product.price },
+        {
+          id: product.id,
+          name: product.name,
+          slug: product.slug,
+          image_url: product.image_url,
+          price: product.price,
+          avg_rating: (product as any).avg_rating,
+          review_count: (product as any).review_count
+        },
         ...parsed.filter((p) => p.id !== product.id),
       ].slice(0, 10);
       localStorage.setItem(key, JSON.stringify(next));
@@ -343,7 +351,7 @@ export default function ProductDetail() {
       {/* ── Header Area ── */}
       <div className="flex-none z-20 border-b border-white/5 bg-[color:var(--color-bg)]/20 backdrop-blur-sm">
         <div className="mx-auto max-w-[1400px] px-4 py-2.5 sm:px-6 lg:px-8 flex items-center justify-between gap-4">
-          <nav className="flex items-center gap-1.5 flex-wrap min-w-0" 
+          <nav className="flex items-center gap-1.5 flex-wrap min-w-0"
             style={{ fontFamily: "'DM Mono', monospace", fontSize: '9px', letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--color-text-muted)' }}>
             <Link to="/" className="hover:text-[color:var(--color-primary)] transition-colors shrink-0">Accueil</Link>
             <ChevronRight className="w-2.5 h-2.5 flex-shrink-0 opacity-20" />
@@ -435,32 +443,44 @@ export default function ProductDetail() {
           onClose={() => setActiveModal(null)}
           title="Découvrir plus"
         >
-          <div className="space-y-16">
+          <div className="space-y-10">
             <PremiumRelatedProducts products={related} />
 
             {recentlyViewed.length > 0 && (
               <section className="w-full">
-                <div className="mb-8 flex items-center justify-between">
+                <div className="mb-6 flex items-center justify-between">
                   <div className="space-y-1">
-                    <p className="text-[10px] font-black uppercase tracking-[0.3em] text-[color:var(--color-primary)]">Navigation</p>
-                    <h3 className="text-2xl font-black uppercase tracking-tight text-white">Vus récemment</h3>
+                    <p className="text-[9px] font-black uppercase tracking-[0.2em] text-[color:var(--color-primary)]">Historique</p>
+                    <h3 className="text-xl font-black uppercase tracking-tight text-[color:var(--color-text)]">Vus récemment</h3>
                   </div>
                 </div>
-                <div className="flex gap-5 overflow-x-auto pb-6 scrollbar-none">
+                <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-none snap-x">
                   {recentlyViewed.map((p) => (
-                    <motion.div key={p.id} whileHover={{ y: -4 }} className="flex-shrink-0">
+                    <motion.div key={p.id} whileHover={{ y: -4 }} className="flex-shrink-0 snap-start">
                       <Link
                         to={`/catalogue/${p.slug}`}
                         onClick={() => setActiveModal(null)}
-                        className="block w-[240px] rounded-2xl border border-white/10 bg-white/5 p-4 transition-all hover:border-[color:var(--color-primary)]/30 hover:bg-white/10 shadow-sm"
+                        className="block w-[200px] rounded-[1.5rem] border border-[color:var(--color-border)] bg-[color:var(--color-card)]/50 p-3.5 transition-all hover:border-[color:var(--color-primary)]/40 hover:bg-[color:var(--color-card)]/80 shadow-sm backdrop-blur-md"
                       >
-                        <div className="mb-4 h-32 w-full overflow-hidden rounded-xl bg-black/20">
-                          <img src={getProductImageSrc(p.image_url)} alt={p.name} className="h-full w-full object-cover" onError={applyProductImageFallback} />
+                        <div className="mb-3 h-28 w-full overflow-hidden rounded-xl bg-[color:var(--color-bg-muted)]">
+                          <img src={getProductImageSrc(p.image_url)} alt={p.name} className="h-full w-full object-contain" onError={applyProductImageFallback} />
                         </div>
-                        <p className="line-clamp-1 text-sm font-black text-white uppercase tracking-tight">{p.name}</p>
-                        <div className="mt-2 pt-2 border-t border-white/10 flex justify-between items-center">
-                          <p className="text-sm font-black text-[color:var(--color-primary)]">{p.price.toFixed(2)} €</p>
-                          <ChevronRight className="w-3 h-3 text-white/40" />
+                        <p className="line-clamp-1 text-xs font-black text-[color:var(--color-text)] uppercase tracking-tight mb-1">{p.name}</p>
+
+                        <div className="flex items-center gap-1.5 mb-2.5">
+                          {p.avg_rating ? (
+                            <div className="flex items-center gap-1">
+                              <Star className="w-2.5 h-2.5 fill-amber-400 text-amber-400" />
+                              <span className="text-[10px] font-bold text-[color:var(--color-text-subtle)]">{p.avg_rating.toFixed(1)}</span>
+                            </div>
+                          ) : (
+                            <span className="text-[8px] font-bold text-[color:var(--color-text-muted)] uppercase">Nouveau</span>
+                          )}
+                        </div>
+
+                        <div className="pt-2.5 border-t border-[color:var(--color-border)]/50 flex justify-between items-center">
+                          <p className="text-[13px] font-black text-[color:var(--color-primary)]">{p.price.toFixed(2)} €</p>
+                          <ChevronRight className="w-3 h-3 text-[color:var(--color-text-muted)]" />
                         </div>
                       </Link>
                     </motion.div>
