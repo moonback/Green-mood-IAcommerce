@@ -50,7 +50,7 @@ export default function ProductHero({ product, quantity, onQuantityChange, onAdd
       {/* Background decoration */}
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_40%_50%_at_0%_0%,rgba(var(--theme-neon-rgb),0.08),transparent_70%)]" />
 
-      <div className="relative mx-auto px-4 max-w-[1200px]">
+      <div className="relative mx-auto px-4 max-w-[1400px]">
         <div className="grid grid-cols-1 md:grid-cols-[320px_1fr] lg:grid-cols-[400px_1fr] gap-6 lg:gap-10 items-start">
 
           {/* ── LEFT: Visual Column ── */}
