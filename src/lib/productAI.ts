@@ -48,6 +48,14 @@ export async function generateProductInfo(productName: string, categoryName?: st
     - Vérifie toujours la présence des guillemets ouvrants ET fermants pour chaque mot.
     - Utilise des balises HTML standards (<p>, <strong>, <ul>, <li>) exclusivement à l'intérieur de 'description'.
 
+    CONSIGNES SPÉCIFIQUES POUR 'productSpecs' :
+    - Rends les descriptions ULTRA COUNCISES (Max 15-20 mots par critère).
+    - 'Profil de Terpènes' : Liste uniquement les 2-3 notes dominantes avec pourcentages si possible (ex: 'Citron (35%), Pin (20%)').
+    - 'Méthode de Culture' : Sois très direct (ex: 'Indoor, 100% Organique' ou 'Glasshouse, Terre').
+    - 'Cannabinoïdes' : Résume l'essentiel (ex: 'CBD: 12%, THC < 0.2%, Full Spectrum').
+    - 'Certifications' : Cite uniquement le labo ou la norme (ex: 'Labo Indépendant (ISO 17025)').
+    - Utilise des balises <strong> pour mettre en valeur les MOTS CLÉS uniquement à l'intérieur des descriptions de specs.
+
     STRUCTURE STRICTE EXIGÉE :
     {
         "headline": "Texte court",
@@ -60,7 +68,8 @@ export async function generateProductInfo(productName: string, categoryName?: st
             "techFeatures": ["Tag1", "Tag2"],
             "productMetrics": { "Détente": 8, "Saveur": 9, "Arôme": 9, "Puissance": 7 },
             "productSpecs": [
-                { "name": "Critère", "icon": "Emoji", "category": "Catégorie", "description": "Valeur", "intensity": 80 }
+                { "name": "Profil de Terpènes", "icon": "🌿", "category": "Profil Aromatique", "description": "Notes de <strong>Citron</strong> et <strong>Pin</strong>", "intensity": 85 },
+                { "name": "Méthode de Culture", "icon": "🏗️", "category": "Culture", "description": "<strong>Indoor</strong> haute performance", "intensity": 90 }
             ]
         }
     }
