@@ -86,6 +86,7 @@ const FALLBACK_THRESHOLDS: Record<string, number> = {
 const FALLBACK_DEFAULT = 45;
 
 const LS_KEY = 'budtender_prefs_v1';
+const historyLoadedForUser = new Set<string>();
 
 // ─── Hook ────────────────────────────────────────────────────────────────────
 
@@ -125,10 +126,14 @@ export function useBudTenderMemory() {
 
     // ── Fetch order history for logged-in users ──────────────────────────────
     useEffect(() => {
-        if (!user) {
+        if (!user?.id) {
+            historyLoadedForUser.clear();
             setIsLoading(false);
             return;
         }
+
+        if (historyLoadedForUser.has(user.id)) return;
+        historyLoadedForUser.add(user.id);
 
         const fetchHistory = async () => {
             setIsLoading(true);
@@ -211,7 +216,7 @@ export function useBudTenderMemory() {
         };
 
         fetchHistory();
-    }, [user]);
+    }, [user?.id]);
 
     // ─── Save preferences ─────────────────────────────────────────────────────
     const savePrefs = async (prefs: SavedPrefs) => {

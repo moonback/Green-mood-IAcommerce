@@ -4,6 +4,9 @@ import { trackEvent } from '../lib/analytics';
 
 // Pages that should not be tracked (admin-only, internal screens)
 const IGNORED_PREFIXES = ['/admin', '/pos', '/customer-display', '/store-display'];
+const TRACK_DEDUP_MS = 1500;
+let lastGlobalTrackedPath: string | null = null;
+let lastGlobalTrackedAt = 0;
 
 /**
  * Tracks a `page_view` event every time the route pathname changes.
@@ -17,7 +20,11 @@ export function usePageTracker(): void {
     const path = location.pathname;
     if (IGNORED_PREFIXES.some((prefix) => path.startsWith(prefix))) return;
     if (path === lastTracked.current) return;
+    const now = Date.now();
+    if (path === lastGlobalTrackedPath && now - lastGlobalTrackedAt < TRACK_DEDUP_MS) return;
     lastTracked.current = path;
+    lastGlobalTrackedPath = path;
+    lastGlobalTrackedAt = now;
     trackEvent('page_view', path);
   }, [location.pathname]);
 }

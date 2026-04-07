@@ -20,6 +20,9 @@ export type AnalyticsEventType =
   | 'cart_abandon';
 
 const SESSION_KEY = 'esil_analytics_sid';
+const EVENT_DEDUP_WINDOW_MS = 1500;
+let lastEventKey: string | null = null;
+let lastEventTs = 0;
 
 // ─── Session ID ───────────────────────────────────────────────────────────────
 
@@ -79,12 +82,21 @@ export function trackEvent(
 
   const { user } = useAuthStore.getState();
   const utm = getUtm();
+  const resolvedPage = page ?? window.location.pathname;
+  const eventKey = `${eventType}:${resolvedPage}`;
+  const now = Date.now();
+
+  if (eventKey === lastEventKey && now - lastEventTs < EVENT_DEDUP_WINDOW_MS) {
+    return;
+  }
+  lastEventKey = eventKey;
+  lastEventTs = now;
 
   const record = {
     session_id:   getSessionId(),
     user_id:      user?.id ?? null,
     event_type:   eventType,
-    page:         page ?? window.location.pathname,
+    page:         resolvedPage,
     referrer:     document.referrer || null,
     utm_source:   utm.utm_source,
     utm_medium:   utm.utm_medium,

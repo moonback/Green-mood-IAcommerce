@@ -5,6 +5,11 @@ import { Profile } from '../lib/types';
 import { useSettingsStore } from './settingsStore';
 
 let authInitializationCleanup: (() => void) | null = null;
+const SESSION_TOUCH_DEBOUNCE_MS = 60_000;
+const SESSION_CLEANUP_INTERVAL_MS = 12 * 60 * 60 * 1000;
+const SESSION_CLEANUP_STORAGE_PREFIX = 'gm_last_session_cleanup_';
+const lastSessionTouchByUser = new Map<string, number>();
+const touchInFlightByUser = new Map<string, Promise<void>>();
 
 export function __resetAuthStoreInitializationForTests() {
   authInitializationCleanup?.();
@@ -38,6 +43,14 @@ function getDeviceName() {
 }
 
 async function cleanupOldSessions(userId: string) {
+  if (typeof window !== 'undefined') {
+    const key = `${SESSION_CLEANUP_STORAGE_PREFIX}${userId}`;
+    const lastCleanupRaw = localStorage.getItem(key);
+    const lastCleanupTs = lastCleanupRaw ? Number(lastCleanupRaw) : 0;
+    if (Date.now() - lastCleanupTs < SESSION_CLEANUP_INTERVAL_MS) return;
+    localStorage.setItem(key, String(Date.now()));
+  }
+
   const thirtyDaysAgo = new Date();
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
   
@@ -48,22 +61,37 @@ async function cleanupOldSessions(userId: string) {
     .lt('last_seen', thirtyDaysAgo.toISOString());
 }
 
-async function touchUserSession(userId: string) {
-  const deviceId = getDeviceId();
-  
-  // Cleanup old sessions first
-  await cleanupOldSessions(userId);
+async function touchUserSession(userId: string, force = false) {
+  const now = Date.now();
+  const lastTouch = lastSessionTouchByUser.get(userId) ?? 0;
+  if (!force && now - lastTouch < SESSION_TOUCH_DEBOUNCE_MS) return;
 
-  await supabase
-    .from('user_active_sessions')
-    .upsert({
-      user_id: userId,
-      device_id: deviceId,
-      device_name: getDeviceName(),
-      user_agent: navigator.userAgent,
-      last_seen: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    }, { onConflict: 'user_id,device_id' });
+  const existingTouch = touchInFlightByUser.get(userId);
+  if (existingTouch) return existingTouch;
+
+  const touchPromise = (async () => {
+    const deviceId = getDeviceId();
+    await cleanupOldSessions(userId);
+
+    await supabase
+      .from('user_active_sessions')
+      .upsert({
+        user_id: userId,
+        device_id: deviceId,
+        device_name: getDeviceName(),
+        user_agent: navigator.userAgent,
+        last_seen: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'user_id,device_id' });
+
+    lastSessionTouchByUser.set(userId, Date.now());
+  })()
+    .finally(() => {
+      touchInFlightByUser.delete(userId);
+    });
+
+  touchInFlightByUser.set(userId, touchPromise);
+  return touchPromise;
 }
 
 async function isSessionValid(userId: string) {
@@ -118,7 +146,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
         if (session?.user) {
           set({ session, user: session.user });
           await get().fetchProfile(session.user.id);
-          touchUserSession(session.user.id);
+          touchUserSession(session.user.id, true);
         }
         // isLoading: false toujours setté après INITIAL_SESSION,
         // qu'il y ait une session ou non.
@@ -129,8 +157,10 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       // SIGNED_IN, TOKEN_REFRESHED, USER_UPDATED
       set({ session, user: session?.user ?? null });
       if (session?.user) {
-        touchUserSession(session.user.id);
-        get().fetchProfile(session.user.id);
+        if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
+          touchUserSession(session.user.id, true);
+          get().fetchProfile(session.user.id);
+        }
       } else {
         set({ profile: null });
       }
