@@ -8,26 +8,25 @@ import { useAuthStore } from '../store/authStore';
 import FreeShippingGauge from './FreeShippingGauge';
 import EmptyCartSuggestions from './EmptyCartSuggestions';
 import LoyaltyRedemption from './LoyaltyRedemption';
+import { createPortal } from 'react-dom';
 
 export default function CartSidebar() {
-  const {
-    items,
-    isOpen,
-    deliveryType,
-    closeSidebar,
-    removeItem,
-    updateQuantity,
-    setDeliveryType,
-    itemCount,
-    subtotal,
-    deliveryFee,
-    pointsDiscount,
-  } = useCartStore();
+  const items = useCartStore(s => s.items);
+  const isOpen = useCartStore(s => s.isOpen);
+  const deliveryType = useCartStore(s => s.deliveryType);
+  const closeSidebar = useCartStore(s => s.closeSidebar);
+  const removeItem = useCartStore(s => s.removeItem);
+  const updateQuantity = useCartStore(s => s.updateQuantity);
+  const setDeliveryType = useCartStore(s => s.setDeliveryType);
+  const itemCount = useCartStore(s => s.itemCount());
+  const subtotal = useCartStore(s => s.subtotal());
+  const deliveryFee = useCartStore(s => s.deliveryFee());
+  const pointsDiscount = useCartStore(s => s.pointsDiscount);
 
   const settings = useSettingsStore((s) => s.settings);
   const { profile } = useAuthStore();
 
-  const sub = subtotal();
+  const sub = subtotal;
 
   // Tier Logic for benefits
   const points = profile?.loyalty_points ?? 0;
@@ -41,7 +40,7 @@ export default function CartSidebar() {
   const pointsVal = pointsDiscount(points, settings.loyalty_redeem_rate || 5);
 
   // 2. Shipping Fee Logic (from tier settings)
-  let fee = deliveryFee();
+  let fee = deliveryFee;
   if (deliveryType === 'delivery' && currentTier) {
     if (currentTier.free_shipping_threshold !== null) {
       fee = sub >= currentTier.free_shipping_threshold ? 0 : settings.delivery_fee;
@@ -49,9 +48,11 @@ export default function CartSidebar() {
   }
 
   const tot = Math.max(0, sub + fee - vipDiscount - pointsVal);
-  const count = itemCount();
+  const count = itemCount;
 
-  return (
+  if (typeof document === 'undefined') return null;
+
+  return createPortal(
     <AnimatePresence>
       {isOpen && (
         <>
@@ -60,7 +61,7 @@ export default function CartSidebar() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={closeSidebar}
-            className="fixed inset-0 bg-[color:var(--color-overlay)]/70 backdrop-blur-sm z-[100]"
+            className="fixed inset-0 bg-[color:var(--color-overlay)]/70 backdrop-blur-sm z-[2000]"
           />
 
           <motion.div
@@ -68,7 +69,7 @@ export default function CartSidebar() {
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', damping: 28, stiffness: 220 }}
-            className="fixed right-0 top-0 bottom-0 w-full sm:max-w-[900px] z-[100] flex flex-col bg-[color:var(--color-bg)] border-l border-[color:var(--color-border)] shadow-2xl overflow-hidden"
+            className="fixed right-0 top-0 bottom-0 w-full sm:max-w-[900px] z-[2001] flex flex-col bg-[color:var(--color-bg)] border-l border-[color:var(--color-border)] shadow-2xl overflow-hidden"
           >
             {/* Header */}
             <div className="px-6 lg:px-10 pt-5 pb-5 border-b border-[color:var(--color-border)] bg-[color:var(--color-bg)] relative overflow-hidden shrink-0">
@@ -105,13 +106,13 @@ export default function CartSidebar() {
                       />
                       <button
                         onClick={() => setDeliveryType('click_collect')}
-                        className={`relative z-10 flex items-center justify-center py-1 rounded-md text-[8px] font-black uppercase tracking-wider transition-all duration-300 ${deliveryType === 'click_collect' ? 'text-[color:var(--color-primary-contrast)]' : 'text-[color:var(--color-text-subtle)] hover:text-[color:var(--color-text-muted)]'}`}
+                        className={`relative z-10 flex items-center justify-center py-1 rounded-md text-[8px] font-black uppercase tracking-wider transition-all duration-300 \${deliveryType === 'click_collect' ? 'text-[color:var(--color-primary-contrast)]' : 'text-[color:var(--color-text-subtle)] hover:text-[color:var(--color-text-muted)]'}`}
                       >
                         Retrait
                       </button>
                       <button
                         onClick={() => setDeliveryType('delivery')}
-                        className={`relative z-10 flex items-center justify-center py-1 rounded-md text-[8px] font-black uppercase tracking-wider transition-all duration-300 ${deliveryType === 'delivery' ? 'text-[color:var(--color-primary-contrast)]' : 'text-[color:var(--color-text-subtle)] hover:text-[color:var(--color-text-muted)]'}`}
+                        className={`relative z-10 flex items-center justify-center py-1 rounded-md text-[8px] font-black uppercase tracking-wider transition-all duration-300 \${deliveryType === 'delivery' ? 'text-[color:var(--color-primary-contrast)]' : 'text-[color:var(--color-text-subtle)] hover:text-[color:var(--color-text-muted)]'}`}
                       >
                         Livraison
                       </button>
@@ -151,10 +152,8 @@ export default function CartSidebar() {
                 </div>
               ) : (
                 <>
-                  {/* Items list — scrollable */}
                   <div className="flex-1 flex flex-col min-h-0 overflow-y-auto scrollbar-thin bg-[color:var(--color-bg-elevated)]/20">
                     <div className="p-4">
-                      {/* Cart Items Grid */}
                       <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
                         <AnimatePresence mode="popLayout">
                           {items.map((item) => (
@@ -226,7 +225,6 @@ export default function CartSidebar() {
                     </div>
                   </div>
 
-                  {/* Summary — sticky bottom panel */}
                   <div className="shrink-0 border-t border-[color:var(--color-border)] bg-[color:var(--color-bg)]">
                     <div className="p-4 space-y-2">
                       <FreeShippingGauge variant="compact" />
@@ -244,7 +242,7 @@ export default function CartSidebar() {
                         <div className="flex justify-between text-[10px] text-[color:var(--color-text-subtle)]">
                           <span>Livraison</span>
                           <span className={fee === 0 ? 'text-[color:var(--color-primary)] font-bold' : 'text-[color:var(--color-text)] font-medium'}>
-                            {fee === 0 ? 'Offerte' : `${fee.toFixed(2)} €`}
+                            {fee === 0 ? 'Offerte' : `\${fee.toFixed(2)} €`}
                           </span>
                         </div>
                         {settings.loyalty_program_enabled && vipDiscount > 0 && (
@@ -311,6 +309,7 @@ export default function CartSidebar() {
           </motion.div>
         </>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 }

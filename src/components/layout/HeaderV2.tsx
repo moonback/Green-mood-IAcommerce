@@ -27,8 +27,18 @@ import {
   LogOut,
   ExternalLink,
   Heart,
+  ShoppingBag,
+  Trash2,
+  Minus,
+  Plus,
+  Crown,
+  Coins,
+  ArrowRight,
+  ShieldCheck,
+  Truck,
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion } from 'motion/react';
+import { createPortal } from 'react-dom';
 import { useBudtenderStore } from '../../store/budtenderStore';
 import { useCartStore } from '../../store/cartStore';
 import { useWishlistStore } from '../../store/wishlistStore';
@@ -241,15 +251,14 @@ const HeaderV2: React.FC<HeaderV2Props> = ({ setIsSearchOpen, setIsLoyaltyModalO
   const location = useLocation();
 
   // Store selectors (optimized)
-  const itemCount = useCartStore(useCallback((s) => s.itemCount(), []));
-  const favoritesCount = useWishlistStore(useCallback((s) => s.items.length, []));
-  const openCart = useCartStore(useCallback((s) => s.openSidebar, []));
+  const itemCount = useCartStore(s => s.itemCount());
+  const favoritesCount = useWishlistStore(s => s.items.length);
   
   const user = useAuthStore(s => s.user);
   const profile = useAuthStore(s => s.profile);
   const signOut = useAuthStore(s => s.signOut);
   
-  const settings = useSettingsStore(useCallback((s) => s.settings, []));
+  const settings = useSettingsStore(s => s.settings);
   
   const isVoiceOpen = useBudtenderStore(s => s.isVoiceOpen);
   const toggleVoice = useBudtenderStore(s => s.toggleVoice);
@@ -268,12 +277,6 @@ const HeaderV2: React.FC<HeaderV2Props> = ({ setIsSearchOpen, setIsLoyaltyModalO
   const categories = useMemo(() => {
     if (!allCategories.length) return [{ id: '', label: 'Tout le catalogue', slug: '', depth: 0, children: [] }];
 
-    // Filtering logic (if we wanted to filter based on products, we'd need another query)
-    // For now, let's keep it simple and show all active categories, 
-    // or we can fetch a "category_counts" or similar if needed.
-    // In HeaderV2 previous version, it was filtering based on active stock.
-    // To keep that optimization without double fetching, we could fetch product category_ids in the same hook or a separate one.
-    
     // Build tree
     const nodeMap = new Map<string, NavCategory>(
       allCategories.map((c) => [
@@ -481,7 +484,7 @@ const HeaderV2: React.FC<HeaderV2Props> = ({ setIsSearchOpen, setIsLoyaltyModalO
 
                 {/* Cart */}
                 <button
-                  onClick={openCart}
+                  onClick={() => useCartStore.getState().openSidebar()}
                   aria-label={`Panier — ${itemCount} article${itemCount !== 1 ? 's' : ''}`}
                   className="relative flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-[color:var(--color-bg-elevated)] text-[color:var(--color-text-muted)] hover:text-[color:var(--color-primary)] transition-all group border border-transparent hover:border-[color:var(--color-border)]"
                 >
