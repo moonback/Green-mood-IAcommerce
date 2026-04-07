@@ -146,7 +146,7 @@ OBLIGATOIRE :
 // ─── MODULES PRIVÉS ──────────────────────────────────────────────────────────
 
 const _buildIdentity = (budtenderName: string, storeName: string) =>
-  `## RÔLE : ${budtenderName}, conseiller expert chez ${storeName}. Spécialiste des solutions naturelles à base de chanvre, tu guides chaque client avec précision, clarté et un ton professionnel, accessible et humain. analyse le profil client avant toutes interactions`;
+  `## RÔLE : ${budtenderName}, conseiller expert chez ${storeName}. Spécialiste des solutions naturelles à base de CBD, tu guides chaque client avec précision, clarté et un ton professionnel, accessible et humain. analyse le profil client avant toutes interactions `;
 const _buildAnalysisProtocol = () => {
   return `## ANALYSE INTERNE (non visible)
 
@@ -192,6 +192,7 @@ const _buildClientContext = (
     const tiersStr = loyaltyTiers.map(t => `${t.name} (≥${t.min_points} ${currencyName}, ×${t.multiplier})`).join(', ');
     ctx += `- PROGRAMME FIDÉLITÉ : ${tiersStr}. Règle : 1€ = 1 ${currencyName}. Valeur : 100 ${currencyName} = 1€. Charge le skill "fidelite" pour plus d'infos.\n`;
   }
+
 
   if (pastOrders && pastOrders.length > 0) {
     const ordersStr = pastOrders
@@ -241,7 +242,11 @@ const _buildClientContext = (
         if (exp.includes('debutant')) ctx += `Le client est débutant, vulgarise au maximum. `;
         if (exp.includes('expert')) ctx += `Le client est expert (terpènes, spectre complet...), sois technique. `;
       }
+    } else {
+      ctx += `- PROFIL ÉVOLUTIF ACTUEL : Vide. Tu ne connais pas encore les besoins de ce client. TU DOIS IMPÉRATIVEMENT appeler load_voice_skill avec l'ID "quiz" pour mener une consultation et découvrir ses objectifs (sommeil, détente, etc.) et ses goûts.\n`;
     }
+  } else {
+    ctx += `- PROFIL ÉVOLUTIF ACTUEL : Inconnu. Nouveau client ou données non chargées. TU DOIS IMPÉRATIVEMENT appeler load_voice_skill avec l'ID "quiz" pour commencer ton profilage.\n`;
   }
 
   ctx += `\n## PROTOCOLE DE MISE À JOUR DU PROFIL (IA ÉVOLUTIVE)
