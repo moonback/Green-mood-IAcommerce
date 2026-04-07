@@ -125,9 +125,10 @@ export default function Profile() {
   }, [profile]);
 
   useEffect(() => {
-    if (savedPrefs && Object.keys(savedPrefs).length > 0) {
-      if (import.meta.env.DEV) console.info('[Profile] Hydrating prefs from memory:', savedPrefs);
-      setPrefs(p => ({ ...p, ...savedPrefs }));
+    if (savedPrefs) {
+      if (import.meta.env.DEV) console.info('[Profile] Syncing prefs from memory:', savedPrefs);
+      // On remplace totalement pour refléter les suppressions éventuelles
+      setPrefs(savedPrefs);
     }
   }, [savedPrefs]);
 
@@ -523,8 +524,15 @@ export default function Profile() {
                                       {key.replace(/_/g, ' ')}
                                     </div>
                                     <button 
-                                      onClick={() => removePref(key)}
-                                      className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-500/10 rounded-full text-red-500 transition-all"
+                                      onClick={async () => {
+                                        await removePref(key);
+                                        setPrefs(p => {
+                                          const updated = { ...p };
+                                          delete updated[key];
+                                          return updated;
+                                        });
+                                      }}
+                                      className="opacity-100 p-1 hover:bg-red-500/10 rounded-full text-red-500 transition-all"
                                       title="Supprimer ce trait"
                                     >
                                       <X className="w-3 h-3" />
