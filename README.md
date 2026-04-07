@@ -640,6 +640,9 @@ Les skills sont des fichiers Markdown qui définissent le comportement de l'IA. 
 | `vocal_actions.md` | Vocal uniquement | Protocole feedback simultané, gestion délai, transitions |
 | `botanique_expert.md` | Vocal | Expertise terpènes, cannabinoïdes, effet d'entourage |
 | `cross_selling.md` | Vocal | Stratégie bundles, associations, upselling discret |
+| `fidelite.md` | Vocal | Gestion points, statut VIP, offres exclusives |
+| `livraison.md` | Vocal | Suivi colis, adresse, délais, points relais |
+| `quiz.md` | Vocal | Profilage client, recommandations personnalisées |
 
 
 **Règles de chargement** :

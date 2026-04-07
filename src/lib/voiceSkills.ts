@@ -61,8 +61,8 @@ export function buildCoreVoiceSkillsContext(): string {
 export function buildOptionalVoiceSkillsInstruction(): string {
   return `## SKILLS ÉTENDUS (CHARGEMENT À LA DEMANDE)
 Ces instructions détaillées ne sont PAS dans ton prompt initial. Avant d'approfondir :
-- questions terpènes, cannabinoïdes, variétés, spectre complet, expertise botanique → appelle load_voice_skill avec skill_id "botanique_expert"
-- stratégie cross-sell poussée au-delà de suggest_bundle → appelle load_voice_skill avec skill_id "cross_selling"
+- questions terpènes, expertise botanique → appelle load_voice_skill avec skill_id "botanique_expert"
+- stratégie vente croisée complexe → appelle load_voice_skill avec skill_id "cross_selling"
 - questions fidélité, solde, conversion points → appelle load_voice_skill avec skill_id "fidelite"
 - questions livraison, suivi, adresse → appelle load_voice_skill avec skill_id "livraison"
 - questions quiz, profil, recommandations personnalisées → appelle load_voice_skill avec skill_id "quiz"
