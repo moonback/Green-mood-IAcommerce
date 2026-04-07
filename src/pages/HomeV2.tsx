@@ -104,18 +104,23 @@ const TESTIMONIALS = [
   }
 ];
 
+import { useCategories, useProducts } from '../hooks/useQueries';
+
 export default function HomeV2() {
-  const settings = useSettingsStore((s) => s.settings);
-  const { user } = useAuthStore();
-  const { openVoice } = useBudtenderStore();
+  const { settings } = useSettingsStore();
+  const user = useAuthStore(s => s.user);
+  const openVoice = useBudtenderStore(s => s.openVoice);
   const navigate = useNavigate();
   const storeName = settings.store_name || 'Green Mood';
 
-  const [bestSellers, setBestSellers] = useState<Product[]>([]);
-  const [recommended, setRecommended] = useState<Product[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [categoryBlocks, setCategoryBlocks] = useState<{ name: string, id: string, slug: string, products: Product[] }[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { data: allCategories = [], isLoading: catsLoading } = useCategories();
+  const { data: bestSellers = [], isLoading: bestSellersLoading } = useProducts({ featured: true, limit: 12 });
+  const { data: recommended = [], isLoading: recentLoading } = useProducts({ limit: 8 });
+
+  // Filter categories that have products (simplified logic for homepage)
+  const categories = useMemo(() => {
+    return allCategories.filter(c => (c.depth ?? 0) === 0).slice(0, 10);
+  }, [allCategories]);
 
   // BudTender demo state
   const [demoIndex, setDemoIndex] = useState(0);
@@ -145,105 +150,7 @@ export default function HomeV2() {
   }, []);
 
   const currentDemo = DEMO_CONVERSATIONS[demoIndex];
-
-  useEffect(() => {
-    async function fetchHomepageData() {
-      try {
-        // Fetch Categories and Products
-        const [{ data: catData }, { data: pData }] = await Promise.all([
-          supabase
-            .from('categories')
-            .select('*')
-            .eq('is_active', true)
-            .order('sort_order'),
-          supabase
-            .from('products')
-            .select('category_id')
-            .eq('is_active', true)
-            .eq('is_available', true)
-            .gt('stock_quantity', 0)
-        ]);
-
-        let filteredCats: Category[] = [];
-
-        if (catData && pData) {
-          const activeIds = new Set(pData.map(p => p.category_id).filter(Boolean));
-          const hasProducts = (catId: string): boolean => {
-            if (activeIds.has(catId)) return true;
-            const children = catData.filter(c => c.parent_id === catId);
-            return children.some(c => hasProducts(c.id));
-          };
-          filteredCats = catData.filter(c => hasProducts(c.id));
-          setCategories(filteredCats);
-        }
-
-        // Fetch Best Sellers (Featured products or just popular active ones)
-        const { data: bestSellersData } = await supabase
-          .from('products')
-          .select('*, category:categories(*), ratings:product_ratings(avg_rating, review_count)')
-          .eq('is_active', true)
-          .eq('is_available', true)
-          .order('is_featured', { ascending: false })
-          .order('created_at', { ascending: false })
-          .limit(12);
-
-        const mappedBestSellers = (bestSellersData || []).map(p => ({
-          ...p,
-          avg_rating: (p as any).ratings?.[0]?.avg_rating ?? null,
-          review_count: (p as any).ratings?.[0]?.review_count ?? 0,
-        }));
-
-        setBestSellers(mappedBestSellers as Product[]);
-
-        // Fetch Recent Products (Arrivals)
-        const { data: recData } = await supabase
-          .from('products')
-          .select('*, category:categories(*), ratings:product_ratings(avg_rating, review_count)')
-          .eq('is_active', true)
-          .eq('is_available', true)
-          .order('created_at', { ascending: false })
-          .limit(8);
-
-        setRecommended((recData || []).map(p => ({
-          ...p,
-          avg_rating: (p as any).ratings?.[0]?.avg_rating ?? null,
-          review_count: (p as any).ratings?.[0]?.review_count ?? 0,
-        })) as Product[]);
-
-        // Category blocks
-        if (filteredCats && filteredCats.length > 0) {
-          const blockCategories = filteredCats.slice(0, 6);
-          const blocks = await Promise.all(blockCategories.map(async (cat) => {
-            const { data: p } = await supabase
-              .from('products')
-              .select('*, category:categories(*), ratings:product_ratings(avg_rating, review_count)')
-              .eq('category_id', cat.id)
-              .eq('is_active', true)
-              .limit(4);
-            if (!p || p.length === 0) return null;
-            return {
-              name: cat.name,
-              id: cat.id,
-              slug: cat.slug,
-              products: (p || []).map(item => ({
-                ...item,
-                avg_rating: (item as any).ratings?.[0]?.avg_rating ?? null,
-                review_count: (item as any).ratings?.[0]?.review_count ?? 0,
-              })) as Product[]
-            };
-          }));
-          setCategoryBlocks(blocks.filter(Boolean).slice(0, 3) as { name: string, id: string, slug: string, products: Product[] }[]);
-        }
-
-      } catch (error) {
-        console.error('Erreur chargement home data:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    }
-
-    fetchHomepageData();
-  }, []);
+  const isLoading = catsLoading || bestSellersLoading || recentLoading;
 
   return (
     <div className="min-h-screen bg-[color:var(--color-bg)] text-[color:var(--color-text)] selection:bg-[color:var(--color-primary)]/40 selection:text-[color:var(--color-text)] relative overflow-hidden">
@@ -591,49 +498,6 @@ export default function HomeV2() {
                   >
                     <ProductCard product={product} />
                   </motion.div>
-                ))}
-              </div>
-            </div>
-          </section>
-        )}
-
-        {/* 6. CATÉGORIES PRODUITS BLOCKS */}
-        {categoryBlocks.length > 0 && (
-          <section className="relative z-10 py-32 px-4 lg:px-8 bg-black/40 border-y border-white/5">
-            <div className="mx-auto max-w-screen-2xl">
-              <div className="grid lg:grid-cols-3 gap-12">
-                {categoryBlocks.map((block) => (
-                  <div key={block.id} className="space-y-8 p-8 rounded-[3rem] bg-white/[0.02] border border-white/5">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-lg font-black uppercase italic tracking-tight flex items-center gap-3">
-                        <span className="w-1.5 h-6 bg-[color:var(--color-primary)] rounded-full animate-pulse" />
-                        {block.name}
-                      </h3>
-                      <Link to={`/catalogue?category=${block.slug}`} className="text-[10px] font-black uppercase tracking-widest text-[color:var(--color-text-subtle)] hover:text-white transition-colors">
-                        Tout voir
-                      </Link>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      {block.products.slice(0, 4).map(p => (
-                        <Link
-                          to={`/catalogue/${p.slug}`}
-                          key={p.id}
-                          className="group relative bg-black/40 border border-white/5 rounded-2xl p-3 transition-all hover:border-[color:var(--color-primary)]/40"
-                        >
-                          <div className="aspect-square rounded-xl bg-zinc-900 overflow-hidden mb-3">
-                            <img
-                              src={p.image_url || '/images/presentation.png'}
-                              alt={p.name}
-                              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                            />
-                          </div>
-                          <p className="text-[10px] font-bold text-zinc-400 truncate uppercase tracking-tight">{p.name}</p>
-                          <p className="text-xs font-black text-[color:var(--color-primary)] mt-1">{p.price}€</p>
-                        </Link>
-                      ))}
-                    </div>
-                  </div>
                 ))}
               </div>
             </div>
