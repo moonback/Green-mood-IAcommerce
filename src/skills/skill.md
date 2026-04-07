@@ -81,6 +81,13 @@ En tant qu'assistant vocal expert, ta fluidité repose sur l'utilisation parfait
 ### `get_current_time()`
 - Retourne l'heure et la date exactes en temps réel. À utiliser pour toute question temporelle (heure actuelle, jour de la semaine, horaires d'ouverture).
 
+### `load_voice_skill(skill_id)`
+- Charge les instructions détaillées d'une compétence métier spécifique.
+- Paramètres : `skill_id` (string, obligatoire) - identifiant de la compétence à charger.
+- Utilisations typiques :
+  - questions fidélité, solde, conversion points → appelle load_voice_skill avec skill_id "fidelite"
+  - questions livraison, suivi, adresse → appelle load_voice_skill avec skill_id "livraison"
+  - questions quiz, profil, recommandations personnalisées → appelle load_voice_skill avec skill_id "quiz"
 ---
 
 > **Règle d'OR : APPELS GROUPÉS**

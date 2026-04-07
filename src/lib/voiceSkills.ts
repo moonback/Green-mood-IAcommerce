@@ -3,7 +3,7 @@
  * skills optionnels chargés via load_voice_skill (lazy Vite + hook).
  */
 
-export const OPTIONAL_VOICE_SKILL_IDS = ['botanique_expert', 'cross_selling'] as const;
+export const OPTIONAL_VOICE_SKILL_IDS = ['botanique_expert', 'cross_selling', 'fidelite', 'livraison', 'quiz'] as const;
 export type OptionalVoiceSkillId = (typeof OPTIONAL_VOICE_SKILL_IDS)[number];
 
 const OPTIONAL_VOICE_SKILL_SET = new Set<string>(OPTIONAL_VOICE_SKILL_IDS);
@@ -26,7 +26,7 @@ const coreVoiceSkillFiles = import.meta.glob(
 ) as Record<string, string>;
 
 const optionalVoiceSkillLoaders = import.meta.glob(
-  ['../skills/botanique_expert.md', '../skills/cross_selling.md'],
+  ['../skills/botanique_expert.md', '../skills/cross_selling.md', '../skills/fidelite.md', '../skills/livraison.md', '../skills/quiz.md'],
   { query: '?raw', eager: false, import: 'default' }
 ) as Record<string, () => Promise<string>>;
 
@@ -63,6 +63,9 @@ export function buildOptionalVoiceSkillsInstruction(): string {
 Ces instructions détaillées ne sont PAS dans ton prompt initial. Avant d'approfondir :
 - questions terpènes, cannabinoïdes, variétés, spectre complet, expertise botanique → appelle load_voice_skill avec skill_id "botanique_expert"
 - stratégie cross-sell poussée au-delà de suggest_bundle → appelle load_voice_skill avec skill_id "cross_selling"
+- questions fidélité, solde, conversion points → appelle load_voice_skill avec skill_id "fidelite"
+- questions livraison, suivi, adresse → appelle load_voice_skill avec skill_id "livraison"
+- questions quiz, profil, recommandations personnalisées → appelle load_voice_skill avec skill_id "quiz"
 Après réception du texte de l'outil, applique-le pour la suite de la conversation. Tu peux rappeler l'outil si tu as besoin de relire ces consignes.`;
 }
 
