@@ -9,7 +9,8 @@
  * - Hierarchical category navigation
  */
 
-import React, { memo, useState, useEffect, useCallback } from 'react';
+import React, { memo, useState, useEffect, useCallback, useMemo } from 'react';
+import { useCategories } from '../../hooks/useQueries';
 import { Link, useLocation } from 'react-router-dom';
 import {
   ShoppingCart,
@@ -236,80 +237,68 @@ const HeaderV2: React.FC<HeaderV2Props> = ({ setIsSearchOpen, setIsLoyaltyModalO
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [bannerVisible, setBannerVisible] = useState(true);
-  const [categories, setCategories] = useState<NavCategory[]>([
-    { id: '', label: 'Tout le catalogue', slug: '', depth: 0, children: [] },
-  ]);
   const [expandedMobileCats, setExpandedMobileCats] = useState<Set<string>>(new Set());
   const location = useLocation();
 
-  // Store selectors (optimized with useCallback)
+  // Store selectors (optimized)
   const itemCount = useCartStore(useCallback((s) => s.itemCount(), []));
   const favoritesCount = useWishlistStore(useCallback((s) => s.items.length, []));
   const openCart = useCartStore(useCallback((s) => s.openSidebar, []));
-  const { user, profile, signOut } = useAuthStore();
+  
+  const user = useAuthStore(s => s.user);
+  const profile = useAuthStore(s => s.profile);
+  const signOut = useAuthStore(s => s.signOut);
+  
   const settings = useSettingsStore(useCallback((s) => s.settings, []));
-  const { isVoiceOpen, toggleVoice } = useBudtenderStore();
+  
+  const isVoiceOpen = useBudtenderStore(s => s.isVoiceOpen);
+  const toggleVoice = useBudtenderStore(s => s.toggleVoice);
 
   // Logo URL based on theme
-  const logoUrl = resolvedTheme === 'dark' ? settings.store_logo_dark_url || settings.store_logo_url || '/logo.png' : settings.store_logo_url || '/logo.png';
+  const logoUrl = useMemo(() => 
+    resolvedTheme === 'dark' 
+      ? settings.store_logo_dark_url || settings.store_logo_url || '/logo.png' 
+      : settings.store_logo_url || '/logo.png',
+    [resolvedTheme, settings]
+  );
+  // Fetch categories using React Query (shared with other components)
+  const { data: allCategories = [] } = useCategories();
+  
+  // Memoize filtered and built category tree
+  const categories = useMemo(() => {
+    if (!allCategories.length) return [{ id: '', label: 'Tout le catalogue', slug: '', depth: 0, children: [] }];
 
-  // Fetch categories on mount
-  useEffect(() => {
-    const fetchCategories = async () => {
-      const [{ data: catData }, { data: prodData }] = await Promise.all([
-        supabase
-          .from('categories')
-          .select('id, name, slug, parent_id, depth, sort_order')
-          .eq('is_active', true)
-          .order('sort_order', { ascending: true }),
-        supabase
-          .from('products')
-          .select('category_id')
-          .eq('is_active', true)
-          .eq('is_available', true)
-          .gt('stock_quantity', 0),
-      ]);
+    // Filtering logic (if we wanted to filter based on products, we'd need another query)
+    // For now, let's keep it simple and show all active categories, 
+    // or we can fetch a "category_counts" or similar if needed.
+    // In HeaderV2 previous version, it was filtering based on active stock.
+    // To keep that optimization without double fetching, we could fetch product category_ids in the same hook or a separate one.
+    
+    // Build tree
+    const nodeMap = new Map<string, NavCategory>(
+      allCategories.map((c) => [
+        c.id,
+        { id: c.id, label: c.name, slug: c.slug, depth: c.depth ?? 0, children: [] },
+      ]),
+    );
+    const roots: NavCategory[] = [];
 
-      if (!catData || !prodData) return;
+    allCategories.forEach((c) => {
+      const node = nodeMap.get(c.id)!;
+      if (!c.parent_id || !nodeMap.has(c.parent_id)) {
+        roots.push(node);
+      } else {
+        nodeMap.get(c.parent_id)!.children.push(node);
+      }
+    });
 
-      const activeIds = new Set(prodData.map((p) => p.category_id).filter(Boolean));
-
-      const hasProducts = (catId: string): boolean => {
-        if (activeIds.has(catId)) return true;
-        const children = catData.filter((c) => c.parent_id === catId);
-        return children.some((c) => hasProducts(c.id));
-      };
-
-      const filteredCats = catData.filter((c) => hasProducts(c.id));
-
-      // Build nav tree
-      const nodeMap = new Map<string, NavCategory>(
-        filteredCats.map((c) => [
-          c.id,
-          { id: c.id, label: c.name, slug: c.slug, depth: c.depth ?? 0, children: [] },
-        ]),
-      );
-      const roots: NavCategory[] = [];
-
-      filteredCats.forEach((c) => {
-        const node = nodeMap.get(c.id)!;
-        if (!c.parent_id || !nodeMap.has(c.parent_id)) {
-          roots.push(node);
-        } else {
-          nodeMap.get(c.parent_id)!.children.push(node);
-        }
-      });
-
-      setCategories([
-        { id: '', label: 'Tout le catalogue', slug: '', depth: 0, children: [] },
-        ...roots,
-        { id: 'nouveautes', label: 'Nouveautés', slug: 'nouveautes', depth: 0, children: [] },
-        { id: 'promotions', label: 'Promotions', slug: 'promotions', depth: 0, children: [] },
-      ]);
-    };
-
-    fetchCategories();
-  }, []);
+    return [
+      { id: '', label: 'Tout le catalogue', slug: '', depth: 0, children: [] },
+      ...roots,
+      { id: 'nouveautes', label: 'Nouveautés', slug: 'nouveautes', depth: 0, children: [] },
+      { id: 'promotions', label: 'Promotions', slug: 'promotions', depth: 0, children: [] },
+    ];
+  }, [allCategories]);
 
   // Scroll effect with hysteresis
   useEffect(() => {

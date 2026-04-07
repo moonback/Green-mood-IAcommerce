@@ -36,8 +36,8 @@ describe('TECH_ADVISOR_DEFAULTS', () => {
     expect(TECH_ADVISOR_DEFAULTS.welcome_message.length).toBeGreaterThan(0);
   });
 
-  it('has 7 default quiz steps', () => {
-    expect(TECH_ADVISOR_DEFAULT_QUIZ).toHaveLength(7);
+  it('has 4 default quiz steps', () => {
+    expect(TECH_ADVISOR_DEFAULT_QUIZ).toHaveLength(4);
   });
 });
 

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { Product } from '../lib/types';
 import { useAuthStore } from '../store/authStore';
@@ -86,7 +86,6 @@ const FALLBACK_THRESHOLDS: Record<string, number> = {
 const FALLBACK_DEFAULT = 45;
 
 const LS_KEY = 'budtender_prefs_v1';
-
 // ─── Hook ────────────────────────────────────────────────────────────────────
 
 export function useBudTenderMemory() {
@@ -101,6 +100,8 @@ export function useBudTenderMemory() {
     const [isLoading, setIsLoading] = useState(true);
     const [isHistoryLoading, setIsHistoryLoading] = useState(false);
     const [activeDbId, setActiveDbId] = useState<string | null>(null);
+    const loadedHistoryForUserRef = useRef<Set<string>>(new Set());
+    const syncedSupabaseForUserRef = useRef<Set<string>>(new Set());
 
     const isLoggedIn = !!user;
     const userName = profile?.full_name
@@ -125,10 +126,14 @@ export function useBudTenderMemory() {
 
     // ── Fetch order history for logged-in users ──────────────────────────────
     useEffect(() => {
-        if (!user) {
+        if (!user?.id) {
+            loadedHistoryForUserRef.current.clear();
             setIsLoading(false);
             return;
         }
+
+        if (loadedHistoryForUserRef.current.has(user.id)) return;
+        loadedHistoryForUserRef.current.add(user.id);
 
         const fetchHistory = async () => {
             setIsLoading(true);
@@ -211,7 +216,7 @@ export function useBudTenderMemory() {
         };
 
         fetchHistory();
-    }, [user]);
+    }, [user?.id]);
 
     // ─── Save preferences ─────────────────────────────────────────────────────
     const savePrefs = async (prefs: SavedPrefs) => {
@@ -449,7 +454,12 @@ export function useBudTenderMemory() {
 
     // ── Load from Supabase on Login ───────────────────────────────────────────
     useEffect(() => {
-        if (!user) return;
+        if (!user?.id) {
+            syncedSupabaseForUserRef.current.clear();
+            return;
+        }
+        if (syncedSupabaseForUserRef.current.has(user.id)) return;
+        syncedSupabaseForUserRef.current.add(user.id);
 
         const syncWithSupabase = async () => {
             try {
@@ -493,7 +503,7 @@ export function useBudTenderMemory() {
         };
 
         syncWithSupabase();
-    }, [user]);
+    }, [user?.id]);
 
     return {
         isLoggedIn,

@@ -2,19 +2,41 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { Ad } from '../components/AdCard';
 
+const ADS_CACHE_TTL_MS = 5 * 60 * 1000;
+let adsCache: { data: Ad[]; fetchedAt: number } | null = null;
+let adsInFlight: Promise<Ad[]> | null = null;
+
+async function fetchActiveAds(): Promise<Ad[]> {
+  const now = Date.now();
+  if (adsCache && now - adsCache.fetchedAt < ADS_CACHE_TTL_MS) return adsCache.data;
+  if (adsInFlight) return adsInFlight;
+
+  adsInFlight = (async () => {
+    const { data, error } = await supabase
+      .from('catalog_ads')
+      .select('*')
+      .eq('is_active', true)
+      .order('position', { ascending: true });
+
+    if (error) throw error;
+    const resolved = (data ?? []) as Ad[];
+    adsCache = { data: resolved, fetchedAt: Date.now() };
+    return resolved;
+  })().finally(() => {
+    adsInFlight = null;
+  });
+
+  return adsInFlight;
+}
+
 export function useAds(selectedCategory?: string | null) {
   const [ads, setAds] = useState<Ad[]>([]);
 
   useEffect(() => {
     async function fetchAds() {
-      const { data, error } = await supabase
-        .from('catalog_ads')
-        .select('*')
-        .eq('is_active', true)
-        .order('position', { ascending: true });
-
-      if (!error && data) {
-        let filtered: Ad[] = data as Ad[];
+      try {
+        const allAds = await fetchActiveAds();
+        let filtered: Ad[] = allAds;
         if (selectedCategory) {
           filtered = filtered.filter(
             (ad) =>
@@ -23,6 +45,8 @@ export function useAds(selectedCategory?: string | null) {
           );
         }
         setAds(filtered);
+      } catch (error) {
+        console.error('[useAds] Error fetching ads:', error);
       }
     }
     fetchAds();

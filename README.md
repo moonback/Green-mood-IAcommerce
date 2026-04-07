@@ -13,7 +13,7 @@
   <img src="https://img.shields.io/badge/Supabase-PostgreSQL-3ECF8E?logo=supabase&logoColor=white" />
   <img src="https://img.shields.io/badge/TailwindCSS-v4-06B6D4?logo=tailwindcss&logoColor=white" />
   <img src="https://img.shields.io/badge/Gemini_Live-Voice_AI-EA4335?logo=google&logoColor=white" />
-  <img src="https://img.shields.io/badge/Tests-368%20passing-brightgreen?logo=vitest" alt="Tests 368 passing" />
+  <img src="https://img.shields.io/badge/Tests-363%20passing-brightgreen?logo=vitest" alt="Tests 363 passing" />
   <img src="https://img.shields.io/badge/Stripe-Payments-635BFF?logo=stripe&logoColor=white" />
   <img src="https://img.shields.io/badge/Playwright-21%2F21_Passed-28A745?logo=playwright&logoColor=white" />
 </p>

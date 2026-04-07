@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Mic } from 'lucide-react';
 import { supabase } from '../lib/supabase';
@@ -55,6 +55,9 @@ export default function Admin() {
   const [isKanbanFullScreen, setIsKanbanFullScreen] = useState(true);
 
   const [isVoiceOpen, setIsVoiceOpen] = useState(false);
+  const didInitRef = useRef(false);
+  const hasLoadedProductsRef = useRef(false);
+  const hasLoadedCategoriesRef = useRef(false);
 
   const { fetchSettings, settings } = useSettingsStore();
   const { signOut, profile } = useAuthStore();
@@ -65,7 +68,7 @@ export default function Admin() {
     }
   }, [tab]);
 
-  const loadDashboard = async () => {
+  const loadDashboard = useCallback(async () => {
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
     const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
@@ -99,17 +102,20 @@ export default function Admin() {
       totalCustomers: profileCount?.length ?? 0,
       recentOrders: (recentOrders as Order[]) ?? [],
     });
-  };
+  }, []);
 
-  const loadProducts = useCallback(async () => {
+  const loadProducts = useCallback(async (force = false) => {
+    if (hasLoadedProductsRef.current && !force) return;
     const { data } = await supabase
       .from('products')
       .select('*, embedding, category:categories(*)')
       .order('name');
     setProducts((data as Product[]) ?? []);
+    hasLoadedProductsRef.current = true;
   }, []);
 
-  const loadCategories = useCallback(async () => {
+  const loadCategories = useCallback(async (force = false) => {
+    if (hasLoadedCategoriesRef.current && !force) return;
     try {
       // Direct query to categories
       const { data: catData, error: catError } = await supabase
@@ -142,21 +148,22 @@ export default function Admin() {
       }));
       
       setCategories(categoriesWithCounts);
+      hasLoadedCategoriesRef.current = true;
     } catch (err) {
       console.error('Unexpected error in loadCategories:', err);
     }
   }, []);
 
-  const loadOrders = async () => {
+  const loadOrders = useCallback(async () => {
     const { data } = await supabase
       .from('orders')
       .select('*, order_items(*), profile:profiles(*, addresses(*)), address:addresses(*)')
       .order('created_at', { ascending: false })
       .limit(200);
     setOrders((data as Order[]) ?? []);
-  };
+  }, []);
 
-  const loadStock = async () => {
+  const loadStock = useCallback(async () => {
     const [{ data: prods }, { data: movs }] = await Promise.all([
       supabase.from('products').select('id, name, stock_quantity, is_available').order('name'),
       supabase
@@ -167,16 +174,16 @@ export default function Admin() {
     ]);
     setProducts((prods as Product[]) ?? []);
     setMovements((movs as StockMovement[]) ?? []);
-  };
+  }, []);
 
-  const loadCustomers = async () => {
+  const loadCustomers = useCallback(async () => {
     const { data } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
     setCustomers((data as Profile[]) ?? []);
-  };
+  }, []);
 
-  const loadData = useCallback(async () => {
+  const loadData = useCallback(async (activeTab: Tab) => {
     setIsLoading(true);
-    switch (tab) {
+    switch (activeTab) {
       case 'dashboard':
         await loadDashboard();
         break;
@@ -204,14 +211,19 @@ export default function Admin() {
         break;
     }
     setIsLoading(false);
-  }, [tab]);
+  }, [loadCategories, loadCustomers, loadDashboard, loadOrders, loadProducts, loadStock]);
 
   useEffect(() => {
-    loadData();
+    loadData(tab);
+  }, [tab, loadData]);
+
+  useEffect(() => {
+    if (didInitRef.current) return;
+    didInitRef.current = true;
     fetchSettings();
-    // Pre-fetch categories on mount for all tabs
+    // Pre-fetch categories once for all tabs
     loadCategories();
-  }, [loadData, fetchSettings, loadCategories]);
+  }, [fetchSettings, loadCategories]);
 
   return (
     <AdminLayout
@@ -244,11 +256,11 @@ export default function Admin() {
             <AdminProductsTab
               products={products}
               categories={categories}
-              onRefresh={loadProducts}
+              onRefresh={() => loadProducts(true)}
             />
           )}
           {tab === 'categories' && (
-            <AdminCategoriesTab categories={categories} onRefresh={loadCategories} />
+            <AdminCategoriesTab categories={categories} onRefresh={() => loadCategories(true)} />
           )}
           {tab === 'orders' && (
             <AdminOrdersTab

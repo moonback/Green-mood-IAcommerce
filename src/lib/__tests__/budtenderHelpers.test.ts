@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { makeProduct } from '../../test/utils';
+import { CATEGORY_SLUGS } from '../constants';
 
 vi.mock('../supabase', () => ({ supabase: { functions: { invoke: vi.fn() } } }));
 vi.mock('../budtenderPrompts', () => ({ getQuizPrompt: vi.fn(() => 'prompt'), getDynamicQuizPrompt: vi.fn(() => 'dynamic') }));
@@ -13,121 +14,104 @@ import type { Answers } from '../budtenderHelpers';
 // ─── scoreProduct ────────────────────────────────────────────────────────────
 
 describe('scoreProduct — goal', () => {
-  it('gives bonus for gaming goal', () => {
-    const pc = makeProduct({ price: 1000, name: 'PC Gaming RTX', description: 'haute performance rtx 4080', category: { slug: 'pc-gaming', name: 'PC Gaming' } as any });
-    const answers: Answers = { tech_goal: 'gaming' };
-    expect(scoreProduct(pc, answers)).toBeGreaterThan(0);
+  it('gives bonus for relaxation goal', () => {
+    const flower = makeProduct({ 
+      name: 'Amnesia Relax', 
+      description: 'parfait pour la détente et le calme', 
+      category: { slug: CATEGORY_SLUGS.FLEURS, name: 'Fleurs' } as any 
+    });
+    const answers: Answers = { effect_goal: 'relaxation' };
+    expect(scoreProduct(flower, answers)).toBeGreaterThan(0);
   });
 
-  it('gives bonus for work goal', () => {
-    const laptop = makeProduct({ price: 1200, name: 'ThinkPad', description: 'productivité ergonomique autonomie', category: { slug: 'laptops', name: 'Laptops' } as any });
-    const answers: Answers = { tech_goal: 'work' };
-    expect(scoreProduct(laptop, answers)).toBeGreaterThan(0);
+  it('gives bonus for sleep goal', () => {
+    const oil = makeProduct({ 
+      name: 'Huile Sommeil', 
+      description: 'aide à dormir profondément toute la nuit', 
+      category: { slug: CATEGORY_SLUGS.HUILES, name: 'Huiles' } as any 
+    });
+    const answers: Answers = { effect_goal: 'sleep' };
+    expect(scoreProduct(oil, answers)).toBeGreaterThan(0);
   });
 
-  it('gives bonus for creation goal', () => {
-    const station = makeProduct({ price: 2500, name: 'Mac Studio', description: 'rendu adobe photo puissance', category: { slug: 'stations-de-travail', name: 'Stations' } as any });
-    const answers: Answers = { tech_goal: 'creation' };
-    expect(scoreProduct(station, answers)).toBeGreaterThan(0);
+  it('gives bonus for relief goal', () => {
+    const oil = makeProduct({ 
+      name: 'Huile Relief', 
+      description: 'soulagement du stress et des douleurs', 
+      category: { slug: CATEGORY_SLUGS.HUILES, name: 'Huiles' } as any 
+    });
+    const answers: Answers = { effect_goal: 'relief' };
+    expect(scoreProduct(oil, answers)).toBeGreaterThan(0);
   });
 
-  it('gives bonus for smart_home goal', () => {
-    const iot = makeProduct({ price: 150, name: 'Capteur', description: 'connecté domotique wifi', category: { slug: 'iot', name: 'IoT' } as any });
-    const answers: Answers = { tech_goal: 'smart_home' };
-    expect(scoreProduct(iot, answers)).toBeGreaterThan(0);
+  it('gives bonus for energy goal', () => {
+    const flower = makeProduct({ 
+      name: 'Super Silver Haze', 
+      description: 'boost d\'énergie et vitalité pour le jour', 
+      category: { slug: CATEGORY_SLUGS.FLEURS, name: 'Fleurs' } as any 
+    });
+    const answers: Answers = { effect_goal: 'energy' };
+    expect(scoreProduct(flower, answers)).toBeGreaterThan(0);
   });
 });
 
 describe('scoreProduct — experience', () => {
-  it('beginner gets bonus for bundles', () => {
-    const bundle = makeProduct({ price: 1000, is_bundle: true, description: 'pack complet facile' });
+  it('beginner gets bonus for oils/gummies', () => {
+    const oil = makeProduct({ category: { slug: CATEGORY_SLUGS.HUILES } as any });
     const answers: Answers = { experience_level: 'beginner' };
-    expect(scoreProduct(bundle, answers)).toBeGreaterThan(0);
+    expect(scoreProduct(oil, answers)).toBeGreaterThan(0);
   });
 
-  it('expert gets bonus for premium/custom products', () => {
-    const custom = makeProduct({ price: 6000, description: 'custom premium overclocking' });
+  it('expert gets bonus for resins/strong products', () => {
+    const resin = makeProduct({ 
+      category: { slug: CATEGORY_SLUGS.RESINES } as any,
+      description: 'un hash puissant et intense' 
+    });
     const answers: Answers = { experience_level: 'expert' };
-    expect(scoreProduct(custom, answers)).toBeGreaterThan(0);
+    expect(scoreProduct(resin, answers)).toBeGreaterThan(0);
   });
 });
 
-describe('scoreProduct — budget', () => {
-  it('entry budget matches cheap products', () => {
-    const low = makeProduct({ price: 300 });
-    const high = makeProduct({ price: 4000 });
-    expect(scoreProduct(low, { budget_range: 'entry' })).toBeGreaterThan(
-      scoreProduct(high, { budget_range: 'entry' })
-    );
-  });
-
-  it('ultra budget matches expensive products', () => {
-    const low = makeProduct({ price: 300 });
-    const high = makeProduct({ price: 4000 });
-    expect(scoreProduct(high, { budget_range: 'ultra' })).toBeGreaterThan(
-      scoreProduct(low, { budget_range: 'ultra' })
-    );
-  });
-});
-
-// ─── scoreTechFeatures ───────────────────────────────────────────────────────────
+// ─── scoreTechFeatures (Renamed to match helper but domain is CBD) ───────────
 
 describe('scoreTechFeatures', () => {
   it('returns 0 when no features selected', () => {
-    const p = makeProduct({ attributes: { specs: ['4k', 'wifi'] } as any });
+    const p = makeProduct({ attributes: { specs: ['bio', 'indoor'] } as any });
     expect(scoreTechFeatures(p, [])).toBe(0);
   });
 
   it('gives bonus for spec match', () => {
-    const p = makeProduct({ attributes: { specs: ['écran 4k', 'wi-fi'] } as any });
-    expect(scoreTechFeatures(p, ['4K'])).toBeGreaterThanOrEqual(6);
-  });
-
-  it('gives bonus for benefit match', () => {
-    const p = makeProduct({ attributes: { benefits: ['immersion totale'] } as any });
-    expect(scoreTechFeatures(p, ['Immersion'])).toBeGreaterThan(0);
+    const p = makeProduct({ attributes: { specs: ['Culture Indoor', 'Bio'] } as any });
+    expect(scoreTechFeatures(p, ['Indoor'])).toBeGreaterThanOrEqual(6);
   });
 
   it('gives bonus for description text match', () => {
-    const p = makeProduct({ description: 'un feeling vintage 80s', attributes: { specs: [], benefits: [] } as any });
-    expect(scoreTechFeatures(p, ['Vintage 80s'])).toBeGreaterThan(0);
-  });
-
-  it('accumulates bonus for multiple matches', () => {
-    const p = makeProduct({ attributes: { specs: ['multijoueur'], benefits: ['compétition'] } as any });
-    const single = scoreTechFeatures(p, ['Multijoueur']);
-    const multi = scoreTechFeatures(p, ['Multijoueur', 'Compétition']);
-    expect(multi).toBeGreaterThan(single);
+    const p = makeProduct({ description: 'un arôme terreux et boisé', attributes: { specs: [], benefits: [] } as any });
+    expect(scoreTechFeatures(p, ['Terreux'])).toBeGreaterThan(0);
   });
 });
 
 // ─── generateAdvice ──────────────────────────────────────────────────────────
 
 describe('generateAdvice', () => {
-  it('returns advice for gaming goal', () => {
-    expect(generateAdvice({ tech_goal: 'gaming' }).toLowerCase()).toContain('gaming');
+  it('returns advice for relaxation goal', () => {
+    expect(generateAdvice({ effect_goal: 'relaxation' }).toLowerCase()).toContain('détente');
   });
 
-  it('returns advice for work goal', () => {
-    expect(generateAdvice({ tech_goal: 'work' }).toLowerCase()).toContain('productivité');
+  it('returns advice for sleep goal', () => {
+    expect(generateAdvice({ effect_goal: 'sleep' }).toLowerCase()).toContain('sommeil');
   });
 
-  it('returns advice for creation goal', () => {
-    expect(generateAdvice({ tech_goal: 'creation' }).toLowerCase()).toContain('création');
+  it('returns advice for relief goal', () => {
+    expect(generateAdvice({ effect_goal: 'relief' }).toLowerCase()).toContain('soulagement');
   });
 
-  it('returns advice for smart_home goal', () => {
-    expect(generateAdvice({ tech_goal: 'smart_home' }).toLowerCase()).toContain('maison connectée');
+  it('returns advice for energy goal', () => {
+    expect(generateAdvice({ effect_goal: 'energy' }).toLowerCase()).toContain('boost');
   });
 
   it('includes beginner tip for beginner experience', () => {
-    expect(generateAdvice({ experience_level: 'beginner' }).toLowerCase()).toContain('débuter');
-  });
-
-  it('includes tech info when tech features are provided', () => {
-    const advice = generateAdvice({}, ['4K', 'Wi-Fi']);
-    expect(advice.toLowerCase()).toContain('critères prioritaires');
-    expect(advice.toLowerCase()).toContain('4k');
+    expect(generateAdvice({ experience_level: 'beginner' }).toLowerCase()).toContain('débutez');
   });
 
   it('returns empty string when no answers match', () => {

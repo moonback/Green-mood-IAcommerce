@@ -68,16 +68,21 @@ export default function App() {
   const settings = useSettingsStore((s) => s.settings);
 
   useEffect(() => {
-    initializeAuth();
-    fetchSettings();
+    const cleanupAuth = initializeAuth();
+    return cleanupAuth;
+  }, [initializeAuth]);
 
+  useEffect(() => {
+    fetchSettings();
     const onFocus = () => {
       fetchSettings(true);
     };
 
     window.addEventListener('focus', onFocus);
-    return () => window.removeEventListener('focus', onFocus);
-  }, [initializeAuth, fetchSettings]);
+    return () => {
+      window.removeEventListener('focus', onFocus);
+    };
+  }, [fetchSettings]);
 
   useEffect(() => {
     const name = settings.store_name || 'Ma Boutique';
