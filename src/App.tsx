@@ -69,8 +69,11 @@ export default function App() {
 
   useEffect(() => {
     const cleanupAuth = initializeAuth();
-    fetchSettings();
+    return cleanupAuth;
+  }, [initializeAuth]);
 
+  useEffect(() => {
+    fetchSettings();
     const onFocus = () => {
       fetchSettings(true);
     };
@@ -78,9 +81,8 @@ export default function App() {
     window.addEventListener('focus', onFocus);
     return () => {
       window.removeEventListener('focus', onFocus);
-      cleanupAuth();
     };
-  }, [initializeAuth, fetchSettings]);
+  }, [fetchSettings]);
 
   useEffect(() => {
     const name = settings.store_name || 'Ma Boutique';

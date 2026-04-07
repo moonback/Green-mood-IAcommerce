@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Mic } from 'lucide-react';
 import { supabase } from '../lib/supabase';
@@ -55,6 +55,7 @@ export default function Admin() {
   const [isKanbanFullScreen, setIsKanbanFullScreen] = useState(true);
 
   const [isVoiceOpen, setIsVoiceOpen] = useState(false);
+  const didInitRef = useRef(false);
 
   const { fetchSettings, settings } = useSettingsStore();
   const { signOut, profile } = useAuthStore();
@@ -65,7 +66,7 @@ export default function Admin() {
     }
   }, [tab]);
 
-  const loadDashboard = async () => {
+  const loadDashboard = useCallback(async () => {
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
     const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
@@ -99,7 +100,7 @@ export default function Admin() {
       totalCustomers: profileCount?.length ?? 0,
       recentOrders: (recentOrders as Order[]) ?? [],
     });
-  };
+  }, []);
 
   const loadProducts = useCallback(async () => {
     const { data } = await supabase
@@ -147,16 +148,16 @@ export default function Admin() {
     }
   }, []);
 
-  const loadOrders = async () => {
+  const loadOrders = useCallback(async () => {
     const { data } = await supabase
       .from('orders')
       .select('*, order_items(*), profile:profiles(*, addresses(*)), address:addresses(*)')
       .order('created_at', { ascending: false })
       .limit(200);
     setOrders((data as Order[]) ?? []);
-  };
+  }, []);
 
-  const loadStock = async () => {
+  const loadStock = useCallback(async () => {
     const [{ data: prods }, { data: movs }] = await Promise.all([
       supabase.from('products').select('id, name, stock_quantity, is_available').order('name'),
       supabase
@@ -167,16 +168,16 @@ export default function Admin() {
     ]);
     setProducts((prods as Product[]) ?? []);
     setMovements((movs as StockMovement[]) ?? []);
-  };
+  }, []);
 
-  const loadCustomers = async () => {
+  const loadCustomers = useCallback(async () => {
     const { data } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
     setCustomers((data as Profile[]) ?? []);
-  };
+  }, []);
 
-  const loadData = useCallback(async () => {
+  const loadData = useCallback(async (activeTab: Tab) => {
     setIsLoading(true);
-    switch (tab) {
+    switch (activeTab) {
       case 'dashboard':
         await loadDashboard();
         break;
@@ -204,14 +205,19 @@ export default function Admin() {
         break;
     }
     setIsLoading(false);
-  }, [tab]);
+  }, [loadCategories, loadCustomers, loadDashboard, loadOrders, loadProducts, loadStock]);
 
   useEffect(() => {
-    loadData();
+    loadData(tab);
+  }, [tab, loadData]);
+
+  useEffect(() => {
+    if (didInitRef.current) return;
+    didInitRef.current = true;
     fetchSettings();
-    // Pre-fetch categories on mount for all tabs
+    // Pre-fetch categories once for all tabs
     loadCategories();
-  }, [loadData, fetchSettings, loadCategories]);
+  }, [fetchSettings, loadCategories]);
 
   return (
     <AdminLayout
