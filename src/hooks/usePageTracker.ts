@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import { trackEvent } from '../lib/analytics';
 
@@ -15,6 +15,9 @@ let lastGlobalTrackedAt = 0;
 export function usePageTracker(): void {
   const location = useLocation();
   const lastTracked = useRef<string | null>(null);
+  const trackPageView = useCallback((path: string) => {
+    trackEvent('page_view', path);
+  }, []);
 
   useEffect(() => {
     const path = location.pathname;
@@ -25,6 +28,6 @@ export function usePageTracker(): void {
     lastTracked.current = path;
     lastGlobalTrackedPath = path;
     lastGlobalTrackedAt = now;
-    trackEvent('page_view', path);
-  }, [location.pathname]);
+    trackPageView(path);
+  }, [location.pathname, trackPageView]);
 }

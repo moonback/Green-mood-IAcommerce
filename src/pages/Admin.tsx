@@ -56,6 +56,8 @@ export default function Admin() {
 
   const [isVoiceOpen, setIsVoiceOpen] = useState(false);
   const didInitRef = useRef(false);
+  const hasLoadedProductsRef = useRef(false);
+  const hasLoadedCategoriesRef = useRef(false);
 
   const { fetchSettings, settings } = useSettingsStore();
   const { signOut, profile } = useAuthStore();
@@ -102,15 +104,18 @@ export default function Admin() {
     });
   }, []);
 
-  const loadProducts = useCallback(async () => {
+  const loadProducts = useCallback(async (force = false) => {
+    if (hasLoadedProductsRef.current && !force) return;
     const { data } = await supabase
       .from('products')
       .select('*, embedding, category:categories(*)')
       .order('name');
     setProducts((data as Product[]) ?? []);
+    hasLoadedProductsRef.current = true;
   }, []);
 
-  const loadCategories = useCallback(async () => {
+  const loadCategories = useCallback(async (force = false) => {
+    if (hasLoadedCategoriesRef.current && !force) return;
     try {
       // Direct query to categories
       const { data: catData, error: catError } = await supabase
@@ -143,6 +148,7 @@ export default function Admin() {
       }));
       
       setCategories(categoriesWithCounts);
+      hasLoadedCategoriesRef.current = true;
     } catch (err) {
       console.error('Unexpected error in loadCategories:', err);
     }
@@ -250,11 +256,11 @@ export default function Admin() {
             <AdminProductsTab
               products={products}
               categories={categories}
-              onRefresh={loadProducts}
+              onRefresh={() => loadProducts(true)}
             />
           )}
           {tab === 'categories' && (
-            <AdminCategoriesTab categories={categories} onRefresh={loadCategories} />
+            <AdminCategoriesTab categories={categories} onRefresh={() => loadCategories(true)} />
           )}
           {tab === 'orders' && (
             <AdminOrdersTab
