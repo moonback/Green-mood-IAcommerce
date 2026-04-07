@@ -101,7 +101,7 @@ export default function AdminLoyaltyTab() {
         setIsSaving(true);
         try {
             const payload = Object.entries(localSettings).filter(([key]) => 
-                ['loyalty_packs', 'loyalty_tiers', 'loyalty_earn_rate', 'loyalty_redeem_rate', 'loyalty_currency_name', 'referral_program_enabled', 'referral_reward_points', 'referral_welcome_bonus'].includes(key)
+                ['loyalty_tiers', 'loyalty_earn_rate', 'loyalty_redeem_rate', 'loyalty_currency_name', 'referral_program_enabled', 'referral_reward_points', 'referral_welcome_bonus'].includes(key)
             ).map(([key, value]) => ({
                 key,
                 value,
@@ -508,118 +508,7 @@ export default function AdminLoyaltyTab() {
                             </div>
                         </div>
 
-                        {/* Packs Management */}
-                        <div className="bg-zinc-900 border border-white/5 rounded-[2.5rem] p-8">
-                            <div className="flex items-center justify-between mb-8">
-                                <h3 className="text-lg font-black text-white italic uppercase tracking-tight flex items-center gap-3">
-                                    <Coins className="w-6 h-6 text-blue-400" />
-                                    Packs d'Achat Direct
-                                </h3>
-                                <button 
-                                    onClick={() => {
-                                        const packs = localSettings.loyalty_packs || [];
-                                        const newPack = {
-                                            id: `pack-${Date.now()}`,
-                                            name: 'Nouveau Pack',
-                                            points: 100,
-                                            price: 10,
-                                            desc: 'Description du pack',
-                                            icon_type: 'award' as const
-                                        };
-                                        setLocalSettings({ ...localSettings, loyalty_packs: [...packs, newPack] });
-                                    }}
-                                    className="flex items-center gap-2 px-4 py-2 bg-blue-400/10 text-blue-400 text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-blue-400 hover:text-black transition-all"
-                                >
-                                    <Plus className="w-4 h-4" /> Ajouter
-                                </button>
-                            </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                {(localSettings.loyalty_packs || []).map((pack, idx) => (
-                                    <div key={pack.id} className="p-8 bg-white/[0.02] border border-white/[0.05] rounded-3xl space-y-6 group hover:border-blue-400/30 transition-all">
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-10 h-10 rounded-xl bg-blue-400/10 flex items-center justify-center">
-                                                    {pack.icon_type === 'award' && <Award className="w-5 h-5 text-blue-400" />}
-                                                    {pack.icon_type === 'star' && <Star className="w-5 h-5 text-zinc-300" />}
-                                                    {pack.icon_type === 'crown' && <Crown className="w-5 h-5 text-yellow-400" />}
-                                                </div>
-                                                <input
-                                                    value={pack.name}
-                                                    onChange={(e) => {
-                                                        const newPacks = [...localSettings.loyalty_packs];
-                                                        newPacks[idx].name = e.target.value;
-                                                        setLocalSettings({ ...localSettings, loyalty_packs: newPacks });
-                                                    }}
-                                                    className="bg-transparent border-none text-base font-black text-white p-0 focus:outline-none focus:ring-0 w-28"
-                                                />
-                                            </div>
-                                            <button 
-                                                onClick={() => {
-                                                    const newPacks = localSettings.loyalty_packs.filter((_, i) => i !== idx);
-                                                    setLocalSettings({ ...localSettings, loyalty_packs: newPacks });
-                                                }}
-                                                className="p-1 text-red-500 hover:bg-red-500/10 rounded-lg transition-all opacity-0 group-hover:opacity-100"
-                                            >
-                                                <X className="w-4 h-4" />
-                                            </button>
-                                        </div>
-
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <div>
-                                                <label className={LABEL}>Points</label>
-                                                <input
-                                                    type="number"
-                                                    value={pack.points}
-                                                    onChange={(e) => {
-                                                        const newPacks = [...localSettings.loyalty_packs];
-                                                        newPacks[idx].points = parseInt(e.target.value) || 0;
-                                                        setLocalSettings({ ...localSettings, loyalty_packs: newPacks });
-                                                    }}
-                                                    className={INPUT}
-                                                />
-                                            </div>
-                                            <div>
-                                                <label className={LABEL}>Prix (€)</label>
-                                                <input
-                                                    type="number"
-                                                    value={pack.price}
-                                                    onChange={(e) => {
-                                                        const newPacks = [...localSettings.loyalty_packs];
-                                                        newPacks[idx].price = parseFloat(e.target.value) || 0;
-                                                        setLocalSettings({ ...localSettings, loyalty_packs: newPacks });
-                                                    }}
-                                                    className={INPUT}
-                                                />
-                                            </div>
-                                        </div>
-
-                                        <div>
-                                            <label className={LABEL}>Icône</label>
-                                            <div className="flex gap-2">
-                                                {['award', 'star', 'crown'].map((type) => (
-                                                    <button
-                                                        key={type}
-                                                        onClick={() => {
-                                                            const newPacks = [...localSettings.loyalty_packs];
-                                                            newPacks[idx].icon_type = type as any;
-                                                            setLocalSettings({ ...localSettings, loyalty_packs: newPacks });
-                                                        }}
-                                                        className={`flex-1 py-1.5 rounded-lg border text-[9px] font-black uppercase tracking-widest transition-all ${
-                                                            pack.icon_type === type 
-                                                                ? 'bg-blue-400/20 border-blue-400 text-blue-400 shadow-[0_0_10px_rgba(59,130,246,0.3)]' 
-                                                                : 'border-white/5 text-zinc-600 hover:border-white/20'
-                                                        }`}
-                                                    >
-                                                        {type}
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
                     </motion.div>
                 )}
 

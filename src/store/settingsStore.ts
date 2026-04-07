@@ -56,15 +56,6 @@ export interface StoreSettings {
     store_email: string;
     store_url: string;
     budtender_name: string;
-    loyalty_packs: {
-        id: string;
-        name: string;
-        points: number;
-        price: number;
-        desc: string;
-        popular?: boolean;
-        icon_type: 'award' | 'star' | 'crown';
-    }[];
     loyalty_tiers: {
         id: string;
         name: string;
@@ -164,33 +155,6 @@ export const DEFAULT_SETTINGS: StoreSettings = {
     store_email: 'contact@mystore.com',
     store_url: 'https://mystore.com',
     budtender_name: 'Mélina',
-    loyalty_packs: [
-        {
-            id: 'pack-small',
-            name: 'Pack Starter',
-            points: 100,
-            price: 5,
-            desc: 'Idéal pour compléter une remise.',
-            icon_type: 'award'
-        },
-        {
-            id: 'pack-medium',
-            name: 'Pack Pro',
-            points: 500,
-            price: 20,
-            desc: 'Passez instantanément au rang Silver.',
-            popular: true,
-            icon_type: 'star'
-        },
-        {
-            id: 'pack-large',
-            name: 'Pack Elite',
-            points: 1500,
-            price: 50,
-            desc: 'Accès immédiat au rang Gold et remises maximales.',
-            icon_type: 'crown'
-        }
-    ],
     loyalty_tiers: [
         {
             id: 'bronze',
