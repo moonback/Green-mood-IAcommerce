@@ -1,6 +1,6 @@
 {
-    "name": "My Store",
-    "short_name": "My Store",
+    "name": "Green Mood",
+    "short_name": "Green Mood",
     "description": "Boutique en ligne — Click & Collect et Livraison.",
     "start_url": "/",
     "display": "standalone",

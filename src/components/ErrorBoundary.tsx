@@ -43,7 +43,7 @@ class ErrorBoundary extends Component<Props, State> {
 
     public render() {
         const { settings } = useSettingsStore.getState();
-        const storeName = settings.store_name || 'My Store';
+        const storeName = settings.store_name || 'Green Mood';
 
         if (this.state.hasError) {
             return (

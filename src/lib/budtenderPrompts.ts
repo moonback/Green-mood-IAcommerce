@@ -15,7 +15,7 @@ export const getQuizPrompt = (
   context?: string,
   customPrompt?: string,
   budtenderName: string = 'Assistant',
-  storeName: string = 'My Store'
+  storeName: string = 'Green Mood'
 ) => {
   const contextBlock = context
     ? `\nContexte client additionnel (haute priorité) :\n${context}\n`
@@ -77,7 +77,7 @@ export const getDynamicQuizPrompt = (
   context?: string,
   customPrompt?: string,
   budtenderName: string = 'Assistant',
-  storeName: string = 'My Store'
+  storeName: string = 'Green Mood'
 ) => {
   const contextBlock = context
     ? `\nContexte client supplémentaire (achats passés, préférences) :\n${context}\n`
@@ -344,7 +344,7 @@ export const getVoicePrompt = (
   loyaltyTiers: any[] = [],
   allowCloseSession: boolean = true,
   recentlyViewed: any[] = [],
-  storeName: string = 'My Store',
+  storeName: string = 'Green Mood',
   currencyName: string = 'Credit',
   activeProduct?: (PremiumProduct & { reviews: PremiumReview[]; relatedProducts?: Product[] }) | null
 ) => {
@@ -393,7 +393,7 @@ export const getBirthdayGiftPrompt = (
   pastProducts: any[] = [],
   pastOrders: any[] = [],
   budtenderName: string = 'Assistant',
-  storeName: string = 'My Store'
+  storeName: string = 'Green Mood'
 ) => {
   const catalogStr = products.map(p => `- ID : ${p.id}, Nom : ${p.name}, Description : ${p.description}, Catégorie : ${p.category?.name}`).join('\n');
 

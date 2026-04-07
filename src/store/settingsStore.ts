@@ -124,7 +124,7 @@ export const DEFAULT_SETTINGS: StoreSettings = {
     loyalty_currency_name: 'Credits',
     delivery_fee: 0,
     delivery_free_threshold: 100,
-    store_name: 'My Store',
+    store_name: 'Green Mood',
     store_address: '1 Rue de l\'Innovation, 75001 Paris',
     store_phone: '01 00 00 00 00',
     store_hours: 'Lun–Ven 9h00–18h00',
