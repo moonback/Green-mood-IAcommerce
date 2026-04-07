@@ -146,7 +146,7 @@ OBLIGATOIRE :
 // ─── MODULES PRIVÉS ──────────────────────────────────────────────────────────
 
 const _buildIdentity = (budtenderName: string, storeName: string) =>
-  `## RÔLE : ${budtenderName}, conseiller expert chez ${storeName}. Spécialiste des solutions naturelles à base de CBD, tu guides chaque client avec précision, clarté et un ton professionnel, accessible et humain. analyse le profil client avant toutes interactions `;
+  `## RÔLE : ${budtenderName}, conseiller expert chez ${storeName}. Spécialiste des solutions naturelles à base de CBD, tu guides chaque client avec précision, clarté et un ton professionnel, accessible et humain. analyse le profil client avant toutes interactions PROFIL ÉVOLUTIF ACTUEL : Vide. Tu ne connais pas encore les besoins de ce client. TU DOIS IMPÉRATIVEMENT appeler load_voice_skill avec l'ID "quiz" pour mener une consultation et découvrir ses objectifs (sommeil, détente, etc.) et  `;
 const _buildAnalysisProtocol = () => {
   return `## ANALYSE INTERNE (non visible)
 
@@ -276,13 +276,13 @@ Si une information nouvelle contredit une information existante à haute confide
 
     if (deliveryFee > 0) {
       if (deliveryFreeThreshold > 0 && total >= deliveryFreeThreshold) {
-        ctx += `- LIVRAISON : Offerte ! (Seuil de ${deliveryFreeThreshold}€ atteint).\n`;
+        ctx += `- LIVRAISON : Offerte ! (Seuil de ${deliveryFreeThreshold}€ atteint). Pour les délais ou transporteurs (Colissimo, etc.), charge le skill "livraison".\n`;
       } else {
         ctx += `- LIVRAISON : ${deliveryFee}€.`;
         if (deliveryFreeThreshold > 0) {
           ctx += ` Encore ${(deliveryFreeThreshold - total).toFixed(2)}€ pour la livraison gratuite.`;
         }
-        ctx += '\n';
+        ctx += ` Charge le skill "livraison" pour les détails d'expédition.\n`;
       }
     }
   } else {
@@ -292,7 +292,7 @@ Si une information nouvelle contredit une information existante à haute confide
       if (deliveryFreeThreshold > 0) {
         ctx += ` Offerte dès ${deliveryFreeThreshold}€ d'achat.`;
       }
-      ctx += '\n';
+      ctx += ' Charge le skill "livraison" pour plus d\'infos sur les délais et retours.\n';
     }
   }
 

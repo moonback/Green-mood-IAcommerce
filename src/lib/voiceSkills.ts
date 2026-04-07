@@ -3,7 +3,7 @@
  * skills optionnels chargés via load_voice_skill (lazy Vite + hook).
  */
 
-export const OPTIONAL_VOICE_SKILL_IDS = ['botanique_expert', 'cross_selling', 'fidelite', 'quiz'] as const;
+export const OPTIONAL_VOICE_SKILL_IDS = ['botanique_expert', 'cross_selling', 'fidelite', 'quiz', 'livraison'] as const;
 export type OptionalVoiceSkillId = (typeof OPTIONAL_VOICE_SKILL_IDS)[number];
 
 const OPTIONAL_VOICE_SKILL_SET = new Set<string>(OPTIONAL_VOICE_SKILL_IDS);
@@ -26,7 +26,7 @@ const coreVoiceSkillFiles = import.meta.glob(
 ) as Record<string, string>;
 
 const optionalVoiceSkillLoaders = import.meta.glob(
-  ['../skills/botanique_expert.md', '../skills/cross_selling.md', '../skills/fidelite.md', '../skills/quiz.md'],
+  ['../skills/botanique_expert.md', '../skills/cross_selling.md', '../skills/fidelite.md', '../skills/quiz.md', '../skills/livraison.md'],
   { query: '?raw', eager: false, import: 'default' }
 ) as Record<string, () => Promise<string>>;
 
@@ -65,6 +65,7 @@ Ces instructions détaillées ne sont PAS dans ton prompt initial. Tu DOIS impé
 - Stratégie cross-sell avancée (recommandations complexes) → appelle load_voice_skill avec skill_id "cross_selling"
 - Informations sur le programme de fidélité, les points, les paliers, les récompenses ou le parrainage → appelle systématiquement load_voice_skill avec skill_id "fidelite"
 - Besoins de mener une consultation structurée, un quiz de profilage ou une découverte des besoins client → appelle load_voice_skill avec skill_id "quiz"
+- Délais de livraison, méthodes d'expédition (Colissimo, Chronopost), zones géographiques ou politique de retours et remboursements → appelle systématiquement load_voice_skill avec skill_id "livraison"
 Après réception du contenu du skill, utilise ces règles pour guider ta réponse.`;
 }
 
