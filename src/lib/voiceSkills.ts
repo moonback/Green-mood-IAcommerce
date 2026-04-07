@@ -3,7 +3,7 @@
  * skills optionnels chargés via load_voice_skill (lazy Vite + hook).
  */
 
-export const OPTIONAL_VOICE_SKILL_IDS = ['botanique_expert', 'cross_selling', 'fidelite', 'quiz', 'livraison'] as const;
+export const OPTIONAL_VOICE_SKILL_IDS = ['botanique_expert', 'cross_selling'] as const;
 export type OptionalVoiceSkillId = (typeof OPTIONAL_VOICE_SKILL_IDS)[number];
 
 const OPTIONAL_VOICE_SKILL_SET = new Set<string>(OPTIONAL_VOICE_SKILL_IDS);
@@ -21,12 +21,12 @@ export function minifySkillMarkdown(raw: string): string {
 }
 
 const coreVoiceSkillFiles = import.meta.glob(
-  ['../skills/skill.md'],
+  ['../skills/skill.md', '../skills/vocal_actions.md'],
   { query: '?raw', eager: true, import: 'default' }
 ) as Record<string, string>;
 
 const optionalVoiceSkillLoaders = import.meta.glob(
-  ['../skills/botanique_expert.md', '../skills/cross_selling.md', '../skills/fidelite.md', '../skills/quiz.md', '../skills/livraison.md'],
+  ['../skills/botanique_expert.md', '../skills/cross_selling.md'],
   { query: '?raw', eager: false, import: 'default' }
 ) as Record<string, () => Promise<string>>;
 
@@ -35,12 +35,20 @@ function appendSkillBlock(context: string, skillKey: string, raw: string): strin
   return `${context}### ${skillKey.toUpperCase()}\n${content}\n\n`;
 }
 
-/** Contenu injecté dans getVoicePrompt : skill.md (noyau) */
+/** Contenu injecté dans getVoicePrompt : skill.md puis vocal_actions.md uniquement */
 export function buildCoreVoiceSkillsContext(): string {
+  const paths = Object.keys(coreVoiceSkillFiles).sort((a, b) => {
+    const fa = a.split('/').pop() || '';
+    const fb = b.split('/').pop() || '';
+    if (fa === 'skill.md') return -1;
+    if (fb === 'skill.md') return 1;
+    return fa.localeCompare(fb);
+  });
+
   let context =
     '## COMPÉTENCES SPÉCIALISÉES (SKILLS — NOYAU)\nTu possèdes les instructions suivantes, toujours actives :\n\n';
 
-  for (const path in coreVoiceSkillFiles) {
+  for (const path of paths) {
     const fileName = path.split('/').pop() || '';
     const skillKey = fileName.replace('.md', '');
     const raw = coreVoiceSkillFiles[path] as string;
@@ -52,13 +60,10 @@ export function buildCoreVoiceSkillsContext(): string {
 
 export function buildOptionalVoiceSkillsInstruction(): string {
   return `## SKILLS ÉTENDUS (CHARGEMENT À LA DEMANDE)
-Ces instructions détaillées ne sont PAS dans ton prompt initial. Tu DOIS impérativement charger le skill correspondant avant de répondre précisément à ces sujets :
-- Expertise botanique (terpènes, cannabinoïdes, variétés, spectre complet) → appelle load_voice_skill avec skill_id "botanique_expert"
-- Stratégie cross-sell avancée (recommandations complexes) → appelle load_voice_skill avec skill_id "cross_selling"
-- Informations sur le programme de fidélité, les points, les paliers, les récompenses ou le parrainage → appelle systématiquement load_voice_skill avec skill_id "fidelite"
-- Besoins de mener une consultation structurée, un quiz de profilage ou une découverte des besoins client → appelle load_voice_skill avec skill_id "quiz"
-- Délais de livraison, méthodes d'expédition (Colissimo, Chronopost), zones géographiques ou politique de retours et remboursements → appelle systématiquement load_voice_skill avec skill_id "livraison"
-Après réception du contenu du skill, utilise ces règles pour guider ta réponse.`;
+Ces instructions détaillées ne sont PAS dans ton prompt initial. Avant d'approfondir :
+- questions terpènes, cannabinoïdes, variétés, spectre complet, expertise botanique → appelle load_voice_skill avec skill_id "botanique_expert"
+- stratégie cross-sell poussée au-delà de suggest_bundle → appelle load_voice_skill avec skill_id "cross_selling"
+Après réception du texte de l'outil, applique-le pour la suite de la conversation. Tu peux rappeler l'outil si tu as besoin de relire ces consignes.`;
 }
 
 export function isOptionalVoiceSkillId(id: string): id is OptionalVoiceSkillId {
