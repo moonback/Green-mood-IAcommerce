@@ -186,10 +186,11 @@ const _buildClientContext = (
     ctx += `- FIDÉLITÉ : ${loyaltyPoints} ${currencyName}`;
     if (currentTier) ctx += ` — palier ${currentTier.name} (×${currentTier.multiplier} sur chaque achat)`;
     if (nextTier) ctx += ` — encore ${nextTier.min_points - loyaltyPoints} ${currencyName} pour atteindre le palier ${nextTier.name}`;
-    ctx += `. Valeur : 100 ${currencyName} = 1€ de réduction.\n`;
+    ctx += `. Règle : 1€ dépensé = 1 ${currencyName}. Valeur : 100 ${currencyName} = 1€ de réduction.\n`;
+    ctx += `Pour toute question détaillée sur le programme de fidélité ou le parrainage, charge impérativement le skill "fidelite".\n`;
   } else if (loyaltyTiers && loyaltyTiers.length > 0) {
     const tiersStr = loyaltyTiers.map(t => `${t.name} (≥${t.min_points} ${currencyName}, ×${t.multiplier})`).join(', ');
-    ctx += `- PROGRAMME FIDÉLITÉ : ${tiersStr}. Valeur : 100 ${currencyName} = 1€.\n`;
+    ctx += `- PROGRAMME FIDÉLITÉ : ${tiersStr}. Règle : 1€ = 1 ${currencyName}. Valeur : 100 ${currencyName} = 1€. Charge le skill "fidelite" pour plus d'infos.\n`;
   }
 
   if (pastOrders && pastOrders.length > 0) {
