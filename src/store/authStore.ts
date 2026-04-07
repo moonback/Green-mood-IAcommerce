@@ -4,6 +4,12 @@ import { supabase } from '../lib/supabase';
 import { Profile } from '../lib/types';
 import { useSettingsStore } from './settingsStore';
 
+let authInitializationCleanup: (() => void) | null = null;
+
+export function __resetAuthStoreInitializationForTests() {
+  authInitializationCleanup?.();
+  authInitializationCleanup = null;
+}
 
 export const DEVICE_ID_STORAGE_KEY = 'gm_device_id';
 
@@ -77,7 +83,7 @@ interface AuthStore {
   profile: Profile | null;
   session: Session | null;
   isLoading: boolean;
-  initialize: () => void;
+  initialize: () => () => void;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string, fullName: string, referralCode?: string) => Promise<void>;
   signOut: () => Promise<void>;
@@ -94,11 +100,15 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   isLoading: true,
 
   initialize: () => {
+    if (authInitializationCleanup) {
+      return authInitializationCleanup;
+    }
+
     // On s'appuie uniquement sur onAuthStateChange (pattern recommandé Supabase).
     // INITIAL_SESSION est toujours émis au chargement — avec ou sans session.
     // TOKEN_REFRESHED est émis après un refresh automatique du token.
     // Cela évite la race condition entre getSession() et onAuthStateChange.
-    supabase.auth.onAuthStateChange(async (event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_OUT') {
         set({ session: null, user: null, profile: null, isLoading: false });
         return;
@@ -139,7 +149,13 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       }
     }, 30000);
 
-    return () => clearInterval(interval);
+    authInitializationCleanup = () => {
+      clearInterval(interval);
+      subscription.unsubscribe();
+      authInitializationCleanup = null;
+    };
+
+    return authInitializationCleanup;
   },
 
   fetchProfile: async (userId: string) => {

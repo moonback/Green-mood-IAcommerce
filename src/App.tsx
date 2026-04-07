@@ -68,7 +68,7 @@ export default function App() {
   const settings = useSettingsStore((s) => s.settings);
 
   useEffect(() => {
-    initializeAuth();
+    const cleanupAuth = initializeAuth();
     fetchSettings();
 
     const onFocus = () => {
@@ -76,7 +76,10 @@ export default function App() {
     };
 
     window.addEventListener('focus', onFocus);
-    return () => window.removeEventListener('focus', onFocus);
+    return () => {
+      window.removeEventListener('focus', onFocus);
+      cleanupAuth();
+    };
   }, [initializeAuth, fetchSettings]);
 
   useEffect(() => {

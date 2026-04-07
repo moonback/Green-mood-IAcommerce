@@ -14,7 +14,7 @@ vi.mock('../../lib/supabase', () => ({
   supabase: mockSupabase,
 }));
 
-const { useAuthStore, DEVICE_ID_STORAGE_KEY, getDeviceId } = await import('../authStore');
+const { useAuthStore, DEVICE_ID_STORAGE_KEY, getDeviceId, __resetAuthStoreInitializationForTests } = await import('../authStore');
 
 function emitAuthEvent(event: string, session: any) {
   for (const cb of authStateSubscribers) {
@@ -27,6 +27,7 @@ describe('authStore', () => {
     vi.clearAllMocks();
     authStateSubscribers.length = 0;
     localStorage.clear();
+    __resetAuthStoreInitializationForTests();
 
     act(() => {
       useAuthStore.setState({ user: null, profile: null, session: null, isLoading: true });
