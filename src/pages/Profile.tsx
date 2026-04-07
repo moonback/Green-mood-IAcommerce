@@ -482,20 +482,31 @@ export default function Profile() {
                       </div>
                     </div>
 
-                    {/* 🧠 Dynamic AI Traits Section - NOW FIRST */}
-                    <div className="space-y-10 pb-12 border-b border-[color:var(--color-border)]/50">
-                      <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-500">
-                          <Zap className="w-6 h-6" />
+                    {/* 🧠 Dynamic AI Traits Section - PREMIUM REDESIGN */}
+                    <div className="space-y-12 pb-16">
+                      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 px-4">
+                        <div className="flex items-center gap-5">
+                          <div className="relative">
+                            <div className="absolute inset-0 bg-purple-500 blur-xl opacity-20 animate-pulse" />
+                            <div className="relative w-14 h-14 rounded-2xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-purple-500 shadow-inner">
+                              <Zap className="w-8 h-8" />
+                            </div>
+                          </div>
+                          <div>
+                            <h4 className="text-sm font-black uppercase tracking-[0.4em] text-[color:var(--color-text-muted)]">Profil Evolutif (BudTender)</h4>
+                            <div className="flex items-center gap-2 mt-1.5">
+                              <span className="w-2 h-2 rounded-full bg-purple-500 animate-ping" />
+                              <p className="text-[10px] text-purple-500 font-black uppercase tracking-widest">IA en apprentissage actif</p>
+                            </div>
+                          </div>
                         </div>
-                        <div>
-                          <h4 className="text-xs font-black uppercase tracking-[0.3em] text-[color:var(--color-text-muted)]">Profil Evolutif (BudTender)</h4>
-                          <p className="text-[10px] text-purple-500/70 font-black uppercase mt-1">Traits identifiés automatiquement lors de vos échanges</p>
-                        </div>
+                        <p className="text-[10px] text-[color:var(--color-text-muted)] font-black uppercase tracking-tighter max-w-[280px] leading-relaxed md:text-right border-l-2 md:border-l-0 md:border-r-2 border-purple-500/30 pl-4 md:pl-0 md:pr-4">
+                          Ces traits sont synthétisés par {budtenderName} pour affiner vos recommandations botaniques.
+                        </p>
                       </div>
 
                       {Object.entries(prefs).filter(([k, v]) => v !== undefined && v !== null && !['id', 'user_id', 'updated_at', 'preferences'].includes(k)).length > 0 ? (
-                        <div className="flex flex-wrap gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 px-2">
                           {Object.entries(prefs)
                             .filter(([k, v]) => v !== undefined && v !== null && !['id', 'user_id', 'updated_at', 'preferences'].includes(k))
                             .map(([key, meta]) => {
@@ -509,76 +520,84 @@ export default function Profile() {
                                   ? Object.entries(value as object).map(([ik, iv]) => `${ik.replace(/_/g, ' ')}: ${iv}`).join('; ')
                                   : String(value);
 
-                              // Don't show legacy or hidden traits if confidence is too low
-                              if (confidence < 0.7) return null;
+                              if (confidence < 0.6) return null;
 
                               return (
-                                <div
+                                <motion.div
                                   key={key}
-                                  className="bg-[color:var(--color-card)]/80 border border-purple-500/20 rounded-[2rem] px-6 py-4 shadow-sm hover:border-purple-500/40 transition-all duration-500 group relative"
+                                  layout
+                                  initial={{ opacity: 0, y: 10 }}
+                                  animate={{ opacity: 1, y: 0 }}
+                                  className="group relative bg-[color:var(--color-card)]/50 backdrop-blur-md border border-purple-500/10 rounded-[2.5rem] p-7 shadow-sm hover:shadow-xl hover:shadow-purple-500/5 hover:border-purple-500/30 transition-all duration-500 flex flex-col justify-between min-h-[180px]"
                                 >
-                                  <div className="text-[9px] font-black uppercase tracking-[0.2em] text-purple-500/70 mb-2 flex items-center justify-between gap-4">
-                                    <div className="flex items-center gap-2">
-                                      <span className="w-1.5 h-1.5 rounded-full bg-purple-500" />
-                                      {key.replace(/_/g, ' ')}
-                                    </div>
-                                    <button 
-                                      onClick={() => removePref(key)}
-                                      className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-500/10 rounded-full text-red-500 transition-all"
-                                      title="Supprimer ce trait"
-                                    >
-                                      <X className="w-3 h-3" />
-                                    </button>
-                                  </div>
-                                  
-                                  <div className="flex items-end justify-between gap-4">
-                                    <div className="text-xs font-black uppercase tracking-tight text-[color:var(--color-text)]">
-                                      {vStr}
+                                  {/* Delete Trigger */}
+                                  <button 
+                                    onClick={() => removePref(key)}
+                                    className="absolute top-5 right-5 opacity-0 group-hover:opacity-100 p-2 hover:bg-red-500/10 rounded-full text-red-500 transition-all z-20"
+                                    title="Oublier ce trait"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+
+                                  <div className="space-y-4">
+                                    <div className="flex items-center gap-3">
+                                      <div className="w-8 h-8 rounded-xl bg-purple-500/10 flex items-center justify-center text-purple-500 border border-purple-500/20 group-hover:bg-purple-500 group-hover:text-white transition-all duration-500">
+                                        <Cpu className="w-4 h-4" />
+                                      </div>
+                                      <span className="text-[10px] font-black uppercase tracking-[0.2em] text-purple-500/80">
+                                        {key.replace(/_/g, ' ')}
+                                      </span>
                                     </div>
                                     
-                                    <button
-                                      onClick={() => navigate(`/catalogue?search=${encodeURIComponent(vStr)}`)}
-                                      className="p-2 rounded-xl bg-purple-500/10 text-purple-500 hover:bg-purple-500/20 transition-all flex items-center gap-1.5"
-                                      title="Voir les produits correspondants"
-                                    >
-                                      <Filter className="w-3 h-3" />
-                                      <span className="text-[8px] font-black uppercase">Filtrer</span>
-                                    </button>
+                                    <div className="text-lg font-black uppercase tracking-tight text-[color:var(--color-text)] leading-tight">
+                                      {vStr}
+                                    </div>
                                   </div>
 
-                                  {(updatedAt || confidence < 1) && (
-                                    <div className="mt-3 pt-2 border-t border-purple-500/5 flex items-center justify-between gap-4">
+                                  <div className="mt-8 space-y-4">
+                                    <div className="flex items-center justify-between gap-4">
                                       {updatedAt && (
-                                        <div className="flex items-center gap-1 text-purple-500/40">
-                                          <Clock className="w-2.5 h-2.5" />
-                                          <span className="text-[8px] font-black uppercase">{timeAgo(updatedAt)}</span>
+                                        <div className="flex items-center gap-1.5 text-purple-500/50">
+                                          <Clock className="w-3 h-3" />
+                                          <span className="text-[8px] font-black uppercase tracking-widest">{timeAgo(updatedAt)}</span>
                                         </div>
                                       )}
-                                      {confidence < 1 && (
-                                        <div className="flex items-center gap-1">
-                                          <div className="w-12 h-1 bg-purple-500/10 rounded-full overflow-hidden">
-                                            <div 
-                                              className="h-full bg-purple-500/40" 
-                                              style={{ width: `${confidence * 100}%` }}
-                                            />
-                                          </div>
-                                          <span className="text-[8px] font-black uppercase text-purple-500/40">{Math.round(confidence * 100)}%</span>
+                                      <div className="flex items-center gap-2">
+                                        <div className="w-16 h-1.5 bg-purple-500/5 rounded-full overflow-hidden border border-purple-500/10">
+                                          <motion.div 
+                                            initial={{ width: 0 }}
+                                            animate={{ width: `${confidence * 100}%` }}
+                                            className="h-full bg-gradient-to-r from-purple-400 to-purple-600" 
+                                          />
                                         </div>
-                                      )}
+                                        <span className="text-[9px] font-mono font-black text-purple-500/60">{Math.round(confidence * 100)}%</span>
+                                      </div>
                                     </div>
-                                  )}
-                                </div>
+
+                                    <button
+                                      onClick={() => navigate(`/catalogue?search=${encodeURIComponent(vStr)}`)}
+                                      className="w-full py-3 bg-purple-500/5 hover:bg-purple-500 text-purple-500 hover:text-white border border-purple-500/10 hover:border-purple-500 rounded-2xl transition-all duration-500 flex items-center justify-center gap-2 font-black uppercase text-[10px] tracking-widest group-hover:shadow-lg group-hover:shadow-purple-500/20"
+                                    >
+                                      <Filter className="w-3.5 h-3.5" />
+                                      Optimiser Catalogue
+                                    </button>
+                                  </div>
+                                </motion.div>
                               );
                             })}
                         </div>
                       ) : (
-                        <div className="p-8 border border-dashed border-[color:var(--color-border)] rounded-[2.5rem] bg-[color:var(--color-card)]/30 text-center">
-                          <p className="text-[10px] font-black uppercase tracking-widest text-[color:var(--color-text-muted)] italic">
-                            BudTender n'a pas encore extrait de traits spécifiques. Discutez avec lui pour enrichir votre profil.
+                        <div className="p-12 border-2 border-dashed border-purple-500/10 rounded-[3rem] bg-purple-500/5 text-center flex flex-col items-center gap-4 mx-4">
+                          <div className="w-16 h-16 rounded-full bg-purple-500/10 flex items-center justify-center text-purple-200">
+                             <BrainCircuit className="w-8 h-8 opacity-20" />
+                          </div>
+                          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-purple-500/40 max-w-sm leading-relaxed">
+                            {budtenderName} est prêt à apprendre. En discutant avec lui, il analysera vos goûts pour construire votre profil évolutif.
                           </p>
                         </div>
                       )}
                     </div>
+
 
                     {/* <div className="space-y-16 pt-4">
                       {quizSteps.map((step, idx) => (
