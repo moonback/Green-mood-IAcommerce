@@ -1,5 +1,5 @@
 import { motion, useScroll, useTransform, useInView } from 'motion/react';
-import { useRef } from 'react';
+import { useRef, memo } from 'react';
 import { Sparkles, Quote, Sprout, Wind, ShieldCheck, Microscope } from 'lucide-react';
 
 interface Props {
@@ -7,7 +7,7 @@ interface Props {
   text: string;
 }
 
-export default function ProductStory({ title, text }: Props) {
+const ProductStory = memo(({ title, text }: Props) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({
     target: containerRef,
@@ -145,4 +145,6 @@ export default function ProductStory({ title, text }: Props) {
       </div>
     </section>
   );
-}
+});
+
+export default ProductStory;

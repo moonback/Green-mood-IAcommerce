@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, memo } from 'react';
 import { motion } from 'motion/react';
 import {
   ShoppingBag, Shield, Truck, RefreshCw, Star, Minus, Plus,
@@ -25,7 +25,7 @@ const discoveryButtons = [
   { id: 'related', label: 'Similaires', icon: <Plus className="w-3.5 h-3.5 text-purple-400" /> },
 ] as const;
 
-export default function ProductHero({ product, quantity, onQuantityChange, onAddToCart, onOpenModal }: Props) {
+const ProductHero = memo(({ product, quantity, onQuantityChange, onAddToCart, onOpenModal }: Props) => {
   const { settings } = useSettingsStore();
   const [selectedImg, setSelectedImg] = useState(0);
 
@@ -274,4 +274,6 @@ export default function ProductHero({ product, quantity, onQuantityChange, onAdd
       </div>
     </section>
   );
-}
+});
+
+export default ProductHero;

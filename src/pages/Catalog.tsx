@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useCategories } from '../hooks/useQueries';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   Search, SlidersHorizontal, X, Sparkles, Info, ShieldCheck,
@@ -189,16 +190,17 @@ export default function Catalog() {
 
   const PRODUCTS_PER_PAGE = 16;
 
+  const { data: allCategories = [] } = useCategories();
+
   useEffect(() => {
     async function loadMetadata() {
-      const [{ data: cats }, { data: prods }] = await Promise.all([
-        supabase.from('categories').select('*').eq('is_active', true).order('sort_order'),
-        supabase.from('products').select('price, attributes, category_id').eq('is_active', true),
-      ]);
-      if (cats && prods) {
+      // Only fetch product metadata if we don't have it or if we want to determine bounds
+      const { data: prods } = await supabase.from('products').select('price, attributes, category_id').eq('is_active', true);
+      
+      if (allCategories.length && prods) {
         const activeCatIds = new Set(prods.map((p: any) => p.category_id).filter(Boolean));
 
-        const catMap = new Map((cats as Category[]).map(c => [c.id, c]));
+        const catMap = new Map(allCategories.map(c => [c.id, c]));
         const keptIds = new Set<string>();
 
         const keepWithAncestors = (catId: string) => {
@@ -208,20 +210,19 @@ export default function Catalog() {
           if (cat?.parent_id) keepWithAncestors(cat.parent_id);
         };
 
-        // Check each category: if it or any of its descendants has products, keep it and its ancestors
         const hasProducts = (categoryId: string): boolean => {
           if (activeCatIds.has(categoryId)) return true;
-          const children = (cats as Category[]).filter(c => c.parent_id === categoryId);
+          const children = allCategories.filter(c => c.parent_id === categoryId);
           return children.some(c => hasProducts(c.id));
         };
 
-        (cats as Category[]).forEach(c => {
+        allCategories.forEach(c => {
           if (hasProducts(c.id)) {
             keepWithAncestors(c.id);
           }
         });
 
-        const filteredCats = (cats as Category[]).filter(c => keptIds.has(c.id));
+        const filteredCats = allCategories.filter(c => keptIds.has(c.id));
         setCategories(filteredCats);
         setAllProductMetadata(prods);
 
@@ -232,12 +233,12 @@ export default function Catalog() {
 
         if (!searchParams.get('minPrice')) setPriceMin(minP);
         if (!searchParams.get('maxPrice')) setPriceMax(maxP);
-      } else if (cats) {
-        setCategories(cats as Category[]);
+      } else if (allCategories.length) {
+        setCategories(allCategories);
       }
     }
     loadMetadata();
-  }, []);
+  }, [allCategories]);
 
   useEffect(() => {
     const minParam = searchParams.get('minPrice');

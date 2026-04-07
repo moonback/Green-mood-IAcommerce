@@ -171,18 +171,21 @@ function enhanceProduct(base: BaseProduct): Product {
   } as Product;
 }
 
+import { useProductBySlug, useProductReviews, useRelatedProducts, useCategories } from '../hooks/useQueries';
+
 export default function ProductDetail() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
-  const { setActiveProduct } = useBudtenderStore();
+  const setActiveProduct = useBudtenderStore((s) => s.setActiveProduct);
+  const currentActiveId = useBudtenderStore((s) => s.activeProduct?.id);
 
-  const [product, setProduct] = useState<Product | null>(null);
-  const [related, setRelated] = useState<Product[]>([]);
-  const [reviews, setReviews] = useState<import('../types/premiumProduct').Review[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: product, isLoading: productLoading, error: productError } = useProductBySlug(slug);
+  const { data: reviews = [] } = useProductReviews(product?.id);
+  const { data: related = [] } = useRelatedProducts(product?.id);
+  const { data: allCategories = [] } = useCategories();
+
   const [quantity, setQuantity] = useState(1);
   const [recentlyViewed, setRecentlyViewed] = useState<Array<Pick<BaseProduct, 'id' | 'name' | 'slug' | 'image_url' | 'price'> & { avg_rating?: number; review_count?: number }>>([]);
-  const [allCategories, setAllCategories] = useState<Category[]>([]);
 
   // ── Premium font injection ──
   useEffect(() => {
@@ -213,72 +216,35 @@ export default function ProductDetail() {
   const openSidebar = useCartStore((s) => s.openSidebar);
   const addToast = useToastStore((s) => s.addToast);
 
+  // Sync with BudTender store (Cortex AI)
   useEffect(() => {
-    if (!slug) return;
-    // Close any open modal when switching products (e.g. via voice assistant)
-    setActiveModal(null);
-    (async () => {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from('products')
-        .select('*, category:categories(*), ratings:product_ratings(avg_rating, review_count)')
-        .eq('slug', slug)
-        .eq('is_active', true)
-        .eq('is_available', true)
-        .gt('stock_quantity', 0)
-        .single();
-
-      if (error || !data) { navigate('/catalogue', { replace: true }); return; }
-
-      const rawProduct = {
-        ...(data as BaseProduct),
-        avg_rating: (data as any).ratings?.[0]?.avg_rating ?? null,
-        review_count: (data as any).ratings?.[0]?.review_count ?? 0,
-      };
-      const enhanced = enhanceProduct(rawProduct as BaseProduct);
-      setProduct(enhanced);
-
-      const [{ data: reviewData }, { data: relatedData }, { data: catsData }] = await Promise.all([
-        supabase.from('reviews').select('id, rating, comment, created_at, profile:profiles(full_name)')
-          .eq('product_id', enhanced.id).eq('is_published', true).limit(8),
-        supabase.from('products').select('*, ratings:product_ratings(avg_rating, review_count)').neq('id', enhanced.id).eq('is_active', true).eq('is_available', true).gt('stock_quantity', 0).limit(3),
-        supabase.from('categories').select('id, parent_id, depth, name, slug').eq('is_active', true),
-      ]);
-
-      if (catsData) setAllCategories(catsData as Category[]);
-
-      const mappedReviews: import('../types/premiumProduct').Review[] = ((reviewData ?? []) as any[]).map((r) => {
-        const fullName = Array.isArray(r.profile) ? r.profile[0]?.full_name : r.profile?.full_name;
-        return {
-          id: r.id,
-          rating: r.rating,
-          comment: r.comment,
-          created_at: r.created_at,
-          author: fullName ?? 'Client vérifié'
-        };
-      });
-
-      setReviews(mappedReviews);
-      setRelated((relatedData as any[] | null)?.map(p => ({
-        ...p,
-        avg_rating: p.ratings?.[0]?.avg_rating ?? null,
-        review_count: p.ratings?.[0]?.review_count ?? 0,
-      })).map(enhanceProduct) ?? []);
-
-      // Update BudTender store for Cortex AI visibility
+    if (product && product.id !== currentActiveId) {
       setActiveProduct({
-        ...enhanced,
-        reviews: mappedReviews,
-        relatedProducts: (relatedData as BaseProduct[] | null)?.map(enhanceProduct) ?? []
+        ...product,
+        reviews,
+        relatedProducts: related
       } as any);
+    }
+  }, [product, reviews, related, setActiveProduct, currentActiveId]);
 
-      setLoading(false);
-    })();
-
+  // Handle cleanup separately when the entire component unmounts
+  useEffect(() => {
     return () => {
       setActiveProduct(null);
     };
-  }, [slug, navigate, setActiveProduct]);
+  }, [setActiveProduct]);
+
+  // Handle errors / not found
+  useEffect(() => {
+    if (productError) {
+      navigate('/catalogue', { replace: true });
+    }
+  }, [productError, navigate]);
+
+  // Close modal on slug change
+  useEffect(() => {
+    setActiveModal(null);
+  }, [slug]);
 
   useEffect(() => {
     if (!product) return;
@@ -319,7 +285,7 @@ export default function ProductDetail() {
     { name: product?.name ?? '', path: `/produit/${(product as unknown as BaseProduct)?.slug ?? ''}` },
   ]), [categoryAncestors, product]);
 
-  if (loading || !product) {
+  if (productLoading || !product) {
     return (
       <div className="min-h-screen bg-[color:var(--color-bg)]">
         <SectionSkeleton />
