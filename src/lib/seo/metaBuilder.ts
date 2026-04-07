@@ -3,7 +3,7 @@ import { Product } from '../types';
 import { useSettingsStore } from '../../store/settingsStore';
 
 export const SEO_SITE = {
-  get name() { return useSettingsStore.getState().settings.store_name || 'My Store'; },
+  get name() { return useSettingsStore.getState().settings.store_name || 'Green Mood'; },
   get url() { return useSettingsStore.getState().settings.store_url || window.location.origin; },
   locale: 'fr_FR',
   language: 'fr',
@@ -19,7 +19,7 @@ export const SEO_SITE = {
     }
   },
   get tiktok() { return useSettingsStore.getState().settings.social_tiktok || '#'; },
-  get author() { return useSettingsStore.getState().settings.store_name || 'My Store'; },
+  get author() { return useSettingsStore.getState().settings.store_name || 'Green Mood'; },
   get telephone() { return useSettingsStore.getState().settings.store_phone || ''; },
   get email() { return useSettingsStore.getState().settings.store_email || ''; },
   get instagram() { return useSettingsStore.getState().settings.social_instagram || '#'; },

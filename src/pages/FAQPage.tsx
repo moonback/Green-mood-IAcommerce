@@ -66,7 +66,7 @@ export default function FAQPage() {
   const [searchQuery, setSearchQuery] = useState("");
 
   const { settings } = useSettingsStore();
-  const storeName = settings.store_name || 'My Store';
+  const storeName = settings.store_name || 'Green Mood';
   const budtenderName = settings.budtender_name || 'Assistant';
   const currencyName = settings.loyalty_currency_name || 'Points';
   const faqs = getFaqs(currencyName);
@@ -215,17 +215,15 @@ export default function FAQPage() {
                 <button
                   key={cat.id}
                   onClick={() => { setActiveCategory(cat.id); setOpenIndex(null); }}
-                  className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
-                    isActive
+                  className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${isActive
                       ? "bg-[color:var(--color-primary)] text-[color:var(--color-primary-contrast)] shadow-[0_0_15px_rgba(var(--color-primary-rgb),0.3)]"
                       : "bg-[color:var(--color-card)]/60 border border-[color:var(--color-border)] text-[color:var(--color-text-muted)] hover:border-[color:var(--color-primary)]/30 hover:text-[color:var(--color-text)]"
-                  }`}
+                    }`}
                 >
                   {cat.icon}
                   {cat.label}
-                  <span className={`ml-0.5 px-1.5 py-0.5 rounded-md text-[8px] font-black ${
-                    isActive ? "bg-white/20" : "bg-[color:var(--color-bg-elevated)]"
-                  }`}>
+                  <span className={`ml-0.5 px-1.5 py-0.5 rounded-md text-[8px] font-black ${isActive ? "bg-white/20" : "bg-[color:var(--color-bg-elevated)]"
+                    }`}>
                     {count}
                   </span>
                 </button>
@@ -284,11 +282,10 @@ export default function FAQPage() {
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.04 }}
-                    className={`border rounded-2xl overflow-hidden transition-all duration-300 ${
-                      isOpen
+                    className={`border rounded-2xl overflow-hidden transition-all duration-300 ${isOpen
                         ? "border-[color:var(--color-primary)]/30 bg-[color:var(--color-card)] shadow-[0_0_20px_rgba(var(--color-primary-rgb),0.08)]"
                         : "border-[color:var(--color-border)] bg-[color:var(--color-card)]/50 hover:border-[color:var(--color-primary)]/20"
-                    }`}
+                      }`}
                   >
                     <button
                       onClick={() => setOpenIndex(isOpen ? null : globalIndex)}
@@ -296,27 +293,24 @@ export default function FAQPage() {
                     >
                       <div className="flex items-center gap-3 min-w-0">
                         {/* Left accent */}
-                        <div className={`w-1 h-8 rounded-full shrink-0 transition-all ${
-                          isOpen ? "bg-[color:var(--color-primary)]" : "bg-[color:var(--color-border)]"
-                        }`} />
+                        <div className={`w-1 h-8 rounded-full shrink-0 transition-all ${isOpen ? "bg-[color:var(--color-primary)]" : "bg-[color:var(--color-border)]"
+                          }`} />
                         <div className="min-w-0">
                           {catObj && catObj.id !== "all" && (
                             <span className="text-[8px] font-black uppercase tracking-widest text-[color:var(--color-primary)] mb-1 block">
                               {catObj.label}
                             </span>
                           )}
-                          <span className={`font-semibold text-sm leading-relaxed block ${
-                            isOpen ? "text-[color:var(--color-text)]" : "text-[color:var(--color-text-muted)]"
-                          }`}>
+                          <span className={`font-semibold text-sm leading-relaxed block ${isOpen ? "text-[color:var(--color-text)]" : "text-[color:var(--color-text-muted)]"
+                            }`}>
                             {faq.question.replace(/NeuroCart/gi, storeName)}
                           </span>
                         </div>
                       </div>
-                      <div className={`h-7 w-7 rounded-lg border flex items-center justify-center shrink-0 transition-all duration-300 ${
-                        isOpen
+                      <div className={`h-7 w-7 rounded-lg border flex items-center justify-center shrink-0 transition-all duration-300 ${isOpen
                           ? "bg-[color:var(--color-primary)] border-[color:var(--color-primary)] text-[color:var(--color-primary-contrast)]"
                           : "border-[color:var(--color-border)] text-[color:var(--color-text-subtle)]"
-                      }`}>
+                        }`}>
                         <ChevronDown className={`h-3.5 w-3.5 transition-transform duration-300 ${isOpen ? "rotate-180" : ""}`} />
                       </div>
                     </button>

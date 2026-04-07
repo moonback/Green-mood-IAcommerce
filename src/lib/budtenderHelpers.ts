@@ -121,7 +121,7 @@ export async function callAI(
 
     const settingsInStore = useSettingsStore.getState().settings;
     const budtenderName = settingsInStore.budtender_name || 'Assistant';
-    const storeName = settingsInStore.store_name || 'My Store';
+    const storeName = settingsInStore.store_name || 'Green Mood';
     const systemPromptMessage = {
         role: 'system',
         content: getQuizPrompt(answers, settings.quiz_steps, catalog, context, settings.custom_quiz_prompt, budtenderName, storeName)

@@ -55,7 +55,7 @@ const SHOP_STATS = [
 export default function Shop() {
   const containerRef = useRef(null);
   const { settings } = useSettingsStore();
-  const storeName = settings.store_name || 'My Store';
+  const storeName = settings.store_name || 'Green Mood';
   const { scrollYProgress } = useScroll({
     target: containerRef,
     offset: ["start start", "end end"]
@@ -165,12 +165,12 @@ export default function Shop() {
 
         {/* Scroll Indicator */}
         <motion.div
-            animate={{ y: [0, 10, 0] }}
-            transition={{ duration: 2, repeat: Infinity }}
-            className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-3 opacity-30 z-20"
+          animate={{ y: [0, 10, 0] }}
+          transition={{ duration: 2, repeat: Infinity }}
+          className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-3 opacity-30 z-20"
         >
-            <span className="text-[10px] font-bold uppercase tracking-[0.3em] rotate-90 mb-4">Défiler</span>
-            <div className="w-px h-12 bg-gradient-to-b from-[color:var(--color-primary)] to-transparent" />
+          <span className="text-[10px] font-bold uppercase tracking-[0.3em] rotate-90 mb-4">Défiler</span>
+          <div className="w-px h-12 bg-gradient-to-b from-[color:var(--color-primary)] to-transparent" />
         </motion.div>
       </section>
 
@@ -222,10 +222,10 @@ export default function Shop() {
 
                 {/* Floating Badge */}
                 <div className="absolute bottom-8 left-8 right-8 p-8 rounded-3xl bg-[color:var(--color-overlay)]/85 backdrop-blur-xl border border-[color:var(--color-border)] transform translate-y-4">
-                    <p className="text-[10px] font-black text-[color:var(--color-primary)] uppercase tracking-widest mb-2">Notre ADN</p>
-                    <p className="text-lg font-serif italic text-[color:var(--color-text)] leading-relaxed">
-                        "La technologie doit être au service de l'homme, pas l'inverse. Nous sélectionnons le meilleur du futur."
-                    </p>
+                  <p className="text-[10px] font-black text-[color:var(--color-primary)] uppercase tracking-widest mb-2">Notre ADN</p>
+                  <p className="text-lg font-serif italic text-[color:var(--color-text)] leading-relaxed">
+                    "La technologie doit être au service de l'homme, pas l'inverse. Nous sélectionnons le meilleur du futur."
+                  </p>
                 </div>
               </div>
 
@@ -241,8 +241,8 @@ export default function Shop() {
             >
               <div className="space-y-6">
                 <div className="flex items-center gap-4">
-                    <span className="w-8 h-[2px] bg-[color:var(--color-primary)]" />
-                    <span className="text-xs font-black uppercase tracking-[0.3em] text-[color:var(--color-text-subtle)]">Innovation 2024</span>
+                  <span className="w-8 h-[2px] bg-[color:var(--color-primary)]" />
+                  <span className="text-xs font-black uppercase tracking-[0.3em] text-[color:var(--color-text-subtle)]">Innovation 2024</span>
                 </div>
                 <h2 className="text-5xl md:text-7xl font-serif font-black text-[color:var(--color-text)] leading-[0.95] tracking-tighter">
                   LA TECH <br />
@@ -278,19 +278,19 @@ export default function Shop() {
       <section className="py-40 bg-[color:var(--color-card)]/20 relative overflow-hidden">
         {/* Background Text Overlay */}
         <div className="absolute top-0 left-0 w-full h-full flex items-center justify-center opacity-[0.02] pointer-events-none select-none">
-            <span className="text-[30vw] font-black tracking-tighter">TECH</span>
+          <span className="text-[30vw] font-black tracking-tighter">TECH</span>
         </div>
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="flex flex-col md:flex-row md:items-end justify-between mb-32 gap-8">
             <div className="max-w-2xl space-y-6">
-                <h2 className="text-5xl md:text-8xl font-serif font-black text-[color:var(--color-text)] tracking-tighter">LES PILIERS DE <br /><span className="text-[color:var(--color-primary)] italic">L'INNOVATION.</span></h2>
-                <p className="text-[color:var(--color-text-subtle)] text-lg md:text-xl font-light leading-relaxed">
-                    Chaque produit, chaque gadget est soumis à notre protocole de validation technologique.
-                </p>
+              <h2 className="text-5xl md:text-8xl font-serif font-black text-[color:var(--color-text)] tracking-tighter">LES PILIERS DE <br /><span className="text-[color:var(--color-primary)] italic">L'INNOVATION.</span></h2>
+              <p className="text-[color:var(--color-text-subtle)] text-lg md:text-xl font-light leading-relaxed">
+                Chaque produit, chaque gadget est soumis à notre protocole de validation technologique.
+              </p>
             </div>
             <div className="hidden lg:block text-right pb-4">
-                <Sparkles size={40} className="text-[color:var(--color-primary)] opacity-20" />
+              <Sparkles size={40} className="text-[color:var(--color-primary)] opacity-20" />
             </div>
           </div>
 
@@ -305,7 +305,7 @@ export default function Shop() {
                 className="bg-[color:var(--color-bg)] p-12 lg:p-20 hover:bg-[color:var(--color-card)]/30 transition-all group relative"
               >
                 <div className="absolute top-12 right-12 text-[color:var(--color-bg-elevated)] font-black text-6xl group-hover:text-[color:var(--color-primary)]/10 transition-colors pointer-events-none">
-                    {v.count}
+                  {v.count}
                 </div>
 
                 <div className="mb-10 text-[color:var(--color-primary)] group-hover:scale-110 transition-transform origin-left">
@@ -313,7 +313,7 @@ export default function Shop() {
                 </div>
                 <h3 className="text-4xl font-serif font-bold mb-6 text-[color:var(--color-text)] tracking-tight">{v.title}</h3>
                 <p className="text-[color:var(--color-text-muted)] text-lg font-light leading-relaxed max-w-sm">
-                    {v.desc}
+                  {v.desc}
                 </p>
 
                 <div className="mt-12 w-0 group-hover:w-full h-[2px] bg-[color:var(--color-primary)] transition-all duration-500" />
@@ -329,85 +329,85 @@ export default function Shop() {
         <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[1200px] h-[600px] bg-[color:var(--color-primary)]/5 blur-[150px] -z-10 rounded-full" />
 
         <div className="max-w-7xl mx-auto">
-            <div className="rounded-[4rem] bg-[color:var(--color-card)]/40 border border-[color:var(--color-border)] backdrop-blur-3xl overflow-hidden shadow-2xl">
-                <div className="grid grid-cols-1 lg:grid-cols-2">
-                    {/* Map/Visual Side */}
-                    <div className="relative h-[400px] lg:h-auto overflow-hidden">
-                        <img
-                            src="/images/lifestyle-relax.png"
-                            alt={`Showroom ${storeName}`}
-                            className="w-full h-full object-cover opacity-60 grayscale"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-r from-[color:var(--color-bg)]/80 to-transparent lg:hidden" />
-                        <div className="absolute inset-0 bg-[color:var(--color-bg)]/20" />
+          <div className="rounded-[4rem] bg-[color:var(--color-card)]/40 border border-[color:var(--color-border)] backdrop-blur-3xl overflow-hidden shadow-2xl">
+            <div className="grid grid-cols-1 lg:grid-cols-2">
+              {/* Map/Visual Side */}
+              <div className="relative h-[400px] lg:h-auto overflow-hidden">
+                <img
+                  src="/images/lifestyle-relax.png"
+                  alt={`Showroom ${storeName}`}
+                  className="w-full h-full object-cover opacity-60 grayscale"
+                />
+                <div className="absolute inset-0 bg-gradient-to-r from-[color:var(--color-bg)]/80 to-transparent lg:hidden" />
+                <div className="absolute inset-0 bg-[color:var(--color-bg)]/20" />
 
-                        <div className="absolute inset-x-0 bottom-0 p-12 bg-gradient-to-t from-[color:var(--color-bg)] via-[color:var(--color-bg)]/40 to-transparent">
-                            <motion.div
-                                initial={{ opacity: 0, y: 20 }}
-                                whileInView={{ opacity: 1, y: 0 }}
-                                className="flex items-center gap-6"
-                            >
-                                <PlayCircle size={60} className="text-[color:var(--color-text)] hover:text-[color:var(--color-primary)] transition-colors cursor-pointer" />
-                                <div className="text-[color:var(--color-text)]">
-                                    <p className="text-xs font-black uppercase tracking-[0.3em] mb-1">Démonstration High-Tech</p>
-                                    <p className="text-xl font-serif italic text-[color:var(--color-text-muted)]">Découvrez l'expérience {storeName}</p>
-                                </div>
-                            </motion.div>
-                        </div>
+                <div className="absolute inset-x-0 bottom-0 p-12 bg-gradient-to-t from-[color:var(--color-bg)] via-[color:var(--color-bg)]/40 to-transparent">
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    className="flex items-center gap-6"
+                  >
+                    <PlayCircle size={60} className="text-[color:var(--color-text)] hover:text-[color:var(--color-primary)] transition-colors cursor-pointer" />
+                    <div className="text-[color:var(--color-text)]">
+                      <p className="text-xs font-black uppercase tracking-[0.3em] mb-1">Démonstration High-Tech</p>
+                      <p className="text-xl font-serif italic text-[color:var(--color-text-muted)]">Découvrez l'expérience {storeName}</p>
                     </div>
-
-                    {/* Content Side */}
-                    <div className="p-12 lg:p-24 space-y-16">
-                        <div className="space-y-6">
-                            <h2 className="text-4xl md:text-7xl font-serif font-black text-[color:var(--color-text)] leading-[0.9] tracking-tighter">
-                                RENCONTRER <br />
-                                <span className="text-[color:var(--color-primary)]">L'INNOVATION.</span>
-                            </h2>
-                            <p className="text-[color:var(--color-text-muted)] font-light leading-relaxed text-lg">
-                                Notre showroom est le laboratoire du futur : un espace de démonstration où vous pouvez tester les dernières nouveautés tech en conditions réelles, accompagné de nos experts.
-                            </p>
-                        </div>
-
-                        <div className="space-y-10">
-                            <div className="flex gap-8 group">
-                                <div className="flex-none w-14 h-14 rounded-2xl bg-[color:var(--color-bg-elevated)] border border-[color:var(--color-border)] flex items-center justify-center text-[color:var(--color-primary)] group-hover:bg-[color:var(--color-primary)] group-hover:text-[color:var(--color-primary-contrast)] transition-all">
-                                    <MapPin size={24} />
-                                </div>
-                                <div>
-                                    <p className="text-[10px] font-black uppercase tracking-widest text-[color:var(--color-text-subtle)] mb-2">Showroom Paris</p>
-                                    <p className="text-xl font-medium text-[color:var(--color-text)]">42 Avenue de l'Innovation, 75008 Paris</p>
-                                </div>
-                            </div>
-
-                            <div className="flex gap-8 group">
-                                <div className="flex-none w-14 h-14 rounded-2xl bg-[color:var(--color-bg-elevated)] border border-[color:var(--color-border)] flex items-center justify-center text-[color:var(--color-primary)] group-hover:bg-[color:var(--color-primary)] group-hover:text-[color:var(--color-primary-contrast)] transition-all">
-                                    <Clock size={24} />
-                                </div>
-                                <div>
-                                    <p className="text-[10px] font-black uppercase tracking-widest text-[color:var(--color-text-subtle)] mb-2">Horaires d'accueil</p>
-                                    <p className="text-xl font-medium text-[color:var(--color-text)] whitespace-pre-line">Lun–Ven 9h00–18h00</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="flex flex-col sm:flex-row gap-6 pt-4">
-                            <Link
-                                to="/contact"
-                                className="px-10 py-5 bg-[color:var(--color-primary)] text-[color:var(--color-primary-contrast)] font-black rounded-2xl transition-all shadow-[0_20px_40px_color:var(--color-primary)/20)] hover:shadow-[0_20px_40px_color:var(--color-primary)/40)] hover:-translate-y-1 text-center"
-                            >
-                                Itinéraire Showroom
-                            </Link>
-                            <Link
-                                to="/catalogue"
-                                className="px-10 py-5 bg-[color:var(--color-bg-elevated)] border border-[color:var(--color-border)] text-[color:var(--color-text)] font-bold rounded-2xl hover:bg-[color:var(--color-bg-elevated)]/90 transition-all flex items-center justify-center gap-3"
-                            >
-                                <CalendarCheck size={20} className="text-[color:var(--color-text-subtle)]" />
-                                Catalogue Tech
-                            </Link>
-                        </div>
-                    </div>
+                  </motion.div>
                 </div>
+              </div>
+
+              {/* Content Side */}
+              <div className="p-12 lg:p-24 space-y-16">
+                <div className="space-y-6">
+                  <h2 className="text-4xl md:text-7xl font-serif font-black text-[color:var(--color-text)] leading-[0.9] tracking-tighter">
+                    RENCONTRER <br />
+                    <span className="text-[color:var(--color-primary)]">L'INNOVATION.</span>
+                  </h2>
+                  <p className="text-[color:var(--color-text-muted)] font-light leading-relaxed text-lg">
+                    Notre showroom est le laboratoire du futur : un espace de démonstration où vous pouvez tester les dernières nouveautés tech en conditions réelles, accompagné de nos experts.
+                  </p>
+                </div>
+
+                <div className="space-y-10">
+                  <div className="flex gap-8 group">
+                    <div className="flex-none w-14 h-14 rounded-2xl bg-[color:var(--color-bg-elevated)] border border-[color:var(--color-border)] flex items-center justify-center text-[color:var(--color-primary)] group-hover:bg-[color:var(--color-primary)] group-hover:text-[color:var(--color-primary-contrast)] transition-all">
+                      <MapPin size={24} />
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-widest text-[color:var(--color-text-subtle)] mb-2">Showroom Paris</p>
+                      <p className="text-xl font-medium text-[color:var(--color-text)]">42 Avenue de l'Innovation, 75008 Paris</p>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-8 group">
+                    <div className="flex-none w-14 h-14 rounded-2xl bg-[color:var(--color-bg-elevated)] border border-[color:var(--color-border)] flex items-center justify-center text-[color:var(--color-primary)] group-hover:bg-[color:var(--color-primary)] group-hover:text-[color:var(--color-primary-contrast)] transition-all">
+                      <Clock size={24} />
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-widest text-[color:var(--color-text-subtle)] mb-2">Horaires d'accueil</p>
+                      <p className="text-xl font-medium text-[color:var(--color-text)] whitespace-pre-line">Lun–Ven 9h00–18h00</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex flex-col sm:flex-row gap-6 pt-4">
+                  <Link
+                    to="/contact"
+                    className="px-10 py-5 bg-[color:var(--color-primary)] text-[color:var(--color-primary-contrast)] font-black rounded-2xl transition-all shadow-[0_20px_40px_color:var(--color-primary)/20)] hover:shadow-[0_20px_40px_color:var(--color-primary)/40)] hover:-translate-y-1 text-center"
+                  >
+                    Itinéraire Showroom
+                  </Link>
+                  <Link
+                    to="/catalogue"
+                    className="px-10 py-5 bg-[color:var(--color-bg-elevated)] border border-[color:var(--color-border)] text-[color:var(--color-text)] font-bold rounded-2xl hover:bg-[color:var(--color-bg-elevated)]/90 transition-all flex items-center justify-center gap-3"
+                  >
+                    <CalendarCheck size={20} className="text-[color:var(--color-text-subtle)]" />
+                    Catalogue Tech
+                  </Link>
+                </div>
+              </div>
             </div>
+          </div>
         </div>
       </section>
 
@@ -421,16 +421,16 @@ export default function Shop() {
             className="space-y-12"
           >
             <div className="relative inline-block">
-                <Sparkles size={40} className="text-[color:var(--color-primary)] mx-auto animate-bounce-slow" />
-                <div className="absolute inset-0 bg-[color:var(--color-primary)]/20 blur-2xl rounded-full" />
+              <Sparkles size={40} className="text-[color:var(--color-primary)] mx-auto animate-bounce-slow" />
+              <div className="absolute inset-0 bg-[color:var(--color-primary)]/20 blur-2xl rounded-full" />
             </div>
             <p className="text-3xl md:text-5xl font-serif font-light text-[color:var(--color-text-muted)] italic leading-tight tracking-tight">
               {`"L'excellence de ${storeName} réside dans la sélection rigoureuse de ce qui se fait de mieux en innovation."`}
             </p>
             <div className="flex items-center justify-center gap-4">
-                <span className="w-12 h-px bg-[color:var(--color-bg-elevated)]" />
-                <span className="text-[10px] font-black uppercase tracking-[0.4em] text-[color:var(--color-text-subtle)] leading-none">Manifeste {storeName}</span>
-                <span className="w-12 h-px bg-[color:var(--color-bg-elevated)]" />
+              <span className="w-12 h-px bg-[color:var(--color-bg-elevated)]" />
+              <span className="text-[10px] font-black uppercase tracking-[0.4em] text-[color:var(--color-text-subtle)] leading-none">Manifeste {storeName}</span>
+              <span className="w-12 h-px bg-[color:var(--color-bg-elevated)]" />
             </div>
           </motion.div>
         </div>
