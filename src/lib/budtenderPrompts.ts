@@ -94,7 +94,7 @@ Tu dois répondre EXCLUSIVEMENT avec un objet JSON valide au format suivant (NE 
 
 Si l'historique de la conversation est vide, commence par poser la première question pour découvrir l'objectif bien-être du client.
 
-Si tu avez besoin de plus d'informations :
+Si tu as besoin de plus d'informations :
 {
   "status": "question",
   "question": "Quelle sensation recherches-tu principalement aujourd'hui ?",
@@ -243,7 +243,8 @@ const _buildClientContext = (
     }
   }
 
-  ctx += `\n## PROTOCOLE DE MISE À JOUR DU PROFIL (IA ÉVOLUTIVE)
+  if (userName) {
+    ctx += `\n## PROTOCOLE DE MISE À JOUR DU PROFIL (IA ÉVOLUTIVE)
 Tu dois enrichir ce profil EN TEMPS RÉEL dès que tu captes une information STABLE et FIABLE.
 
 CLÉS STANDARDISÉES :
@@ -262,6 +263,7 @@ Si une information nouvelle contredit une information existante à haute confide
 1. NE DÉCLENCHE PAS l'outil immédiatement.
 2. Pose une question de validation subtile : "T'es plutôt un connaisseur ou tu découvres vraiment ?"
 3. Ne mets à jour que si le client confirme son changement de statut.`;
+  }
 
   if (cartItems && cartItems.length > 0) {
     const cartStr = cartItems.map((item: any) => `${item.product.name} ×${item.quantity}`).join(', ');
@@ -365,20 +367,24 @@ export const getVoicePrompt = (
 
   const finalPrompt = [
     _buildIdentity(budtenderName, storeName),
-    `## CONTEXTE CLIENT\n${clientContext}`,
-    `## RÉFÉRENCE TEMPORELLE (TEMPS RÉEL)\nNous sommes le : ${timeStr}`,
     VOICE_FORMAT_RULES,
-    customPrompt?.trim() ? `## INSTRUCTIONS SPÉCIFIQUES\n${customPrompt.trim()}` : '',
-    allowCloseSession ? "## FIN DE SESSION\nSi le client exprime explicitement le souhait de partir ou s'il n'a plus besoin d'aide, tu peux clore la session chaleureusement." : "",
     _buildAnalysisProtocol(),
     buildCoreVoiceSkillsContext(),
     buildOptionalVoiceSkillsInstruction(),
+    `## CONTEXTE CLIENT\n${clientContext}`,
+    `## RÉFÉRENCE TEMPORELLE (TEMPS RÉEL)\nNous sommes le : ${timeStr}`,
+    customPrompt?.trim() ? `## INSTRUCTIONS SPÉCIFIQUES\n${customPrompt.trim()}` : '',
+    allowCloseSession ? "## FIN DE SESSION\nSi le client exprime explicitement le souhait de partir ou s'il n'a plus besoin d'aide, tu peux clore la session chaleureusement." : "",
     `## CATALOGUE DISPONIBLE (RÉSUMÉ)\n${_buildCatalog(products)}`,
   ].filter(Boolean).join('\n\n');
 
   // Hard limit to 8000 characters to prevent WebSocket 1007 (Invalid Argument) error in Gemini Live.
   // We sanitize the string by removing potentially problematic non-printable characters or excessive whitespace.
-  const sanitized = finalPrompt.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F-\u009F]/g, '').replace(/\s+/g, ' ').trim();
+  const sanitized = finalPrompt
+    .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F-\u009F]/g, '')
+    .replace(/[ \t]+/g, ' ')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
 
   if (sanitized.length > 7990) {
     console.warn('[Voice][Prompt] Prompt too long (', sanitized.length, '), truncating to 7990 chars.');

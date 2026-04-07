@@ -16,6 +16,7 @@ export function minifySkillMarkdown(raw: string): string {
     .replace(/`([^`\n]+?)`/g, '$1')
     .replace(/^>\s.*/gm, '')
     .replace(/<!--[\s\S]*?-->/g, '')
+    .replace(/[\u{1F000}-\u{1FFFF}\u{2600}-\u{27FF}\u{2B00}-\u{2BFF}\u{FE00}-\u{FEFF}]/gu, '')
     .replace(/\n{2,}/g, '\n')
     .trim();
 }
@@ -35,8 +36,11 @@ function appendSkillBlock(context: string, skillKey: string, raw: string): strin
   return `${context}### ${skillKey.toUpperCase()}\n${content}\n\n`;
 }
 
+let _coreVoiceSkillsCache: string | null = null;
+
 /** Contenu injecté dans getVoicePrompt : skill.md puis vocal_actions.md uniquement */
 export function buildCoreVoiceSkillsContext(): string {
+  if (_coreVoiceSkillsCache) return _coreVoiceSkillsCache;
   const paths = Object.keys(coreVoiceSkillFiles).sort((a, b) => {
     const fa = a.split('/').pop() || '';
     const fb = b.split('/').pop() || '';
@@ -55,6 +59,7 @@ export function buildCoreVoiceSkillsContext(): string {
     context = appendSkillBlock(context, skillKey, raw);
   }
 
+  _coreVoiceSkillsCache = context;
   return context;
 }
 

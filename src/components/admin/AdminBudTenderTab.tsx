@@ -725,7 +725,7 @@ export default function AdminBudTenderTab() {
 
                     {/* ── MÉMOIRE ── */}
                     {activeTab === 'memory' && (
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        <div className="grid grid-cols-1 lg:grid-cols-1 gap-8">
                             <Section icon={Clock} title="Mémoire Cognitive" description="Permet à l'IA de se souvenir des préférences et de l'historique client." badge="Database Sync">
                                 <div className="flex items-center justify-between p-6 bg-zinc-950/40 rounded-3xl border border-white/5">
                                     <div>
@@ -742,39 +742,7 @@ export default function AdminBudTenderTab() {
                                 </div>
                             </Section>
 
-                            <Section icon={Zap} title="Seuils de Réapprovisionnement" description="Ajustez les cycles de consommation estimés par catégorie.">
-                                <div className={`space-y-6 ${!settings.memory_enabled ? 'opacity-30 grayscale pointer-events-none' : ''}`}>
-                                    <SliderField
-                                        label="Bornes d'Arcade"
-                                        value={settings.threshold_arcade}
-                                        min={7}
-                                        max={365}
-                                        step={1}
-                                        unit="jours"
-                                        onChange={(v) => update({ threshold_arcade: v })}
-                                        hint="Seuil recommandé pour une vérification de routine."
-                                    />
-                                    <SliderField
-                                        label="Flippers & Pinball"
-                                        value={settings.threshold_flippers}
-                                        min={7}
-                                        max={365}
-                                        step={1}
-                                        unit="jours"
-                                        onChange={(v) => update({ threshold_flippers: v })}
-                                        hint="Maintenance préventive des éléments mécaniques."
-                                    />
-                                    <SliderField
-                                        label="Autres (Simulateurs…)"
-                                        value={settings.threshold_others}
-                                        min={7}
-                                        max={365}
-                                        step={1}
-                                        unit="jours"
-                                        onChange={(v) => update({ threshold_others: v })}
-                                    />
-                                </div>
-                            </Section>
+
                         </div>
                     )}
 
