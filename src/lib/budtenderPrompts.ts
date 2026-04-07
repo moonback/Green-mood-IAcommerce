@@ -132,21 +132,18 @@ Réponds UNIQUEMENT en JSON.
 
 
 // ─── VOICE FORMAT RULES — constante réutilisable ─────────────────────────────
-const VOICE_FORMAT_RULES = `## RÈGLES AUDIO — OBLIGATOIRE
-INTERDIT : Markdown, Emojis, parenthèses techniques, URLs, SKU, codes. Pas de formules de clôture ("au revoir", "n'hésitez pas"). Jamais de listes à puces.
+const VOICE_FORMAT_RULES = `## RÈGLES DE RÉPONSE AUDIO (IMPORTANT)
+INTERDIT : Markdown (*, #), Emojis, parenthèses techniques, URLs, codes SKU. 
 OBLIGATOIRE : 
-- Phrases courtes (10-18 mots), 2-3 par réponse.
-- Chiffres en lettres ("vingt euros").
-- Ponctuation pour les pauses (virgules, points).
-- Connecteurs oraux ("Salut,", "Tu sais,","Bien sûr,","Absolument,","Parfait,","D'accord,","Compris,","Exactement,", etc).
-- Contractions ("c'est", "y'a", "j'ai", "j'suis", etc).
-- Varier légèrement l’intonation pour éviter un ton monotone.
-- Donner l’impression d’une conversation réelle, simple, claire et engageante.`;
+- Phrases courtes (10-18 mots), 2-3 par réponse maximum.
+- Chiffres en lettres ("vingt euros" au lieu de "20€").
+- Connecteurs oraux naturels ("Tu sais,", "D'accord,", "Parfait,").
+- Ton : Expert, chaleureux, complice. Pas de formules de politesse robotiques ("Comment puis-je vous aider au mieux aujourd'hui ?").`;
 
 // ─── MODULES PRIVÉS ──────────────────────────────────────────────────────────
 
 const _buildIdentity = (budtenderName: string, storeName: string) =>
-  `## RÔLE : ${budtenderName}, conseiller expert chez ${storeName}. Spécialiste des solutions naturelles à base de chanvre, tu guides chaque client avec précision, clarté et un ton professionnel, accessible et humain. analyse le profil client avant toutes interactions`;
+  `## RÔLE : ${budtenderName}, conseiller expert chez ${storeName}. Spécialiste CBD, tu guides chaque client avec précision et clarté. SI LE PROFIL CLIENT EST VIDE : Appelle impérativement 'load_voice_skill' avec l'ID "quiz" pour commencer la consultation.`;
 const _buildAnalysisProtocol = () => {
   return `## ANALYSE INTERNE (non visible)
 
@@ -182,15 +179,11 @@ const _buildClientContext = (
 
   if (loyaltyPoints !== undefined) {
     const currentTier = loyaltyTiers.find(t => loyaltyPoints >= t.min_points);
-    const nextTier = loyaltyTiers.find(t => loyaltyPoints < t.min_points);
     ctx += `- FIDÉLITÉ : ${loyaltyPoints} ${currencyName}`;
-    if (currentTier) ctx += ` — palier ${currentTier.name} (×${currentTier.multiplier} sur chaque achat)`;
-    if (nextTier) ctx += ` — encore ${nextTier.min_points - loyaltyPoints} ${currencyName} pour atteindre le palier ${nextTier.name}`;
-    ctx += `. Valeur : 100 ${currencyName} = 1€ de réduction.\n`;
-  } else if (loyaltyTiers && loyaltyTiers.length > 0) {
-    const tiersStr = loyaltyTiers.map(t => `${t.name} (≥${t.min_points} ${currencyName}, ×${t.multiplier})`).join(', ');
-    ctx += `- PROGRAMME FIDÉLITÉ : ${tiersStr}. Valeur : 100 ${currencyName} = 1€.\n`;
+    if (currentTier) ctx += ` (Statut ${currentTier.name})`;
+    ctx += `. (Règle : 1€ = 1 point. Pour les détails, charge "fidelite").\n`;
   }
+
 
   if (pastOrders && pastOrders.length > 0) {
     const ordersStr = pastOrders
@@ -240,18 +233,18 @@ const _buildClientContext = (
         if (exp.includes('debutant')) ctx += `Le client est débutant, vulgarise au maximum. `;
         if (exp.includes('expert')) ctx += `Le client est expert (terpènes, spectre complet...), sois technique. `;
       }
+    } else {
+      ctx += `- PROFIL ÉVOLUTIF ACTUEL : Vide. Tu ne connais pas encore les besoins de ce client. TU DOIS IMPÉRATIVEMENT appeler load_voice_skill avec l'ID "quiz" pour mener une consultation et découvrir ses objectifs (sommeil, détente, etc.) et ses goûts.\n`;
     }
+  } else {
+    ctx += `- PROFIL ÉVOLUTIF ACTUEL : Inconnu. Nouveau client ou données non chargées. TU DOIS IMPÉRATIVEMENT appeler load_voice_skill avec l'ID "quiz" pour commencer ton profilage.\n`;
   }
 
   ctx += `\n## PROTOCOLE DE MISE À JOUR DU PROFIL (IA ÉVOLUTIVE)
 Tu dois enrichir ce profil EN TEMPS RÉEL dès que tu captes une information STABLE et FIABLE.
 
-CLÉS STANDARDISÉES :
-- 'expertise' : Débutant, Intermédiaire, Passionné, Expert.
-- 'goût' : Boisé, Fruité, Terreux, Sucre, Mentholé, Agrumes, etc.
-- 'objectif' : Focus, Détente, Sommeil profond, Énergie, Récupération, Créativité.
-- 'format' : Fleurs, Vapotage, Huile, Infusion, Bonbons.
-- 'budget' : Économique, Standard, Premium.
+CLÉS DE PROFILAGE : 'expertise', 'goût', 'objectif', 'format', 'budget'.
+(Voir skill "quiz" pour plus de détails sur le profilage).
 
 FORMAT DE L'APPEL 'save_preferences' :
 Passe un objet { value: string, confidence: number } pour chaque clé.
@@ -270,13 +263,13 @@ Si une information nouvelle contredit une information existante à haute confide
 
     if (deliveryFee > 0) {
       if (deliveryFreeThreshold > 0 && total >= deliveryFreeThreshold) {
-        ctx += `- LIVRAISON : Offerte ! (Seuil de ${deliveryFreeThreshold}€ atteint).\n`;
+        ctx += `- LIVRAISON : Offerte ! (Seuil de ${deliveryFreeThreshold}€ atteint). Pour les délais ou transporteurs (Colissimo, etc.), charge le skill "livraison".\n`;
       } else {
         ctx += `- LIVRAISON : ${deliveryFee}€.`;
         if (deliveryFreeThreshold > 0) {
           ctx += ` Encore ${(deliveryFreeThreshold - total).toFixed(2)}€ pour la livraison gratuite.`;
         }
-        ctx += '\n';
+        ctx += ` Charge le skill "livraison" pour les détails d'expédition.\n`;
       }
     }
   } else {
@@ -286,7 +279,7 @@ Si une information nouvelle contredit une information existante à haute confide
       if (deliveryFreeThreshold > 0) {
         ctx += ` Offerte dès ${deliveryFreeThreshold}€ d'achat.`;
       }
-      ctx += '\n';
+      ctx += ' Charge le skill "livraison" pour plus d\'infos sur les délais et retours.\n';
     }
   }
 
