@@ -21,7 +21,7 @@ export function minifySkillMarkdown(raw: string): string {
 }
 
 const coreVoiceSkillFiles = import.meta.glob(
-  ['../skills/skill.md', '../skills/vocal_actions.md'],
+  ['../skills/skill.md'],
   { query: '?raw', eager: true, import: 'default' }
 ) as Record<string, string>;
 
@@ -35,20 +35,12 @@ function appendSkillBlock(context: string, skillKey: string, raw: string): strin
   return `${context}### ${skillKey.toUpperCase()}\n${content}\n\n`;
 }
 
-/** Contenu injecté dans getVoicePrompt : skill.md puis vocal_actions.md uniquement */
+/** Contenu injecté dans getVoicePrompt : skill.md (noyau) */
 export function buildCoreVoiceSkillsContext(): string {
-  const paths = Object.keys(coreVoiceSkillFiles).sort((a, b) => {
-    const fa = a.split('/').pop() || '';
-    const fb = b.split('/').pop() || '';
-    if (fa === 'skill.md') return -1;
-    if (fb === 'skill.md') return 1;
-    return fa.localeCompare(fb);
-  });
-
   let context =
     '## COMPÉTENCES SPÉCIALISÉES (SKILLS — NOYAU)\nTu possèdes les instructions suivantes, toujours actives :\n\n';
 
-  for (const path of paths) {
+  for (const path in coreVoiceSkillFiles) {
     const fileName = path.split('/').pop() || '';
     const skillKey = fileName.replace('.md', '');
     const raw = coreVoiceSkillFiles[path] as string;
