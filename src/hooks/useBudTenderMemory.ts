@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import { Product } from '../lib/types';
 import { useAuthStore } from '../store/authStore';
@@ -100,8 +101,6 @@ export function useBudTenderMemory() {
     const [isLoading, setIsLoading] = useState(true);
     const [isHistoryLoading, setIsHistoryLoading] = useState(false);
     const [activeDbId, setActiveDbId] = useState<string | null>(null);
-    const loadedHistoryForUserRef = useRef<Set<string>>(new Set());
-    const syncedSupabaseForUserRef = useRef<Set<string>>(new Set());
 
     const isLoggedIn = !!user;
     const userName = profile?.full_name
@@ -125,98 +124,99 @@ export function useBudTenderMemory() {
     }, []);
 
     // ── Fetch order history for logged-in users ──────────────────────────────
+    const { data: orderHistoryData } = useQuery({
+        queryKey: ['order-history', user?.id],
+        queryFn: async () => {
+            if (!user?.id) return { past: [], pastOrds: [], restock: [] };
+            
+            const { data: orders } = await supabase
+                .from('orders')
+                .select('id, created_at, status, total, order_items(product_id, product_name, unit_price, quantity, product:products(slug, image_url, category:categories(slug)))')
+                .eq('user_id', user.id)
+                .in('status', ['paid', 'processing', 'ready', 'shipped', 'delivered'])
+                .order('created_at', { ascending: false })
+                .limit(10);
+
+            if (!orders) return { past: [], pastOrds: [], restock: [] };
+
+            const settings = await fetchBudTenderSettings();
+            if (!settings.memory_enabled) {
+                return { past: [], pastOrds: [], restock: [] };
+            }
+
+            const now = Date.now();
+            const seen = new Set<string>();
+            const past: PastProduct[] = [];
+            const pastOrds: PastOrderSummary[] = [];
+            const restock: RestockCandidate[] = [];
+
+            for (const order of orders) {
+                const items = (order.order_items as unknown as OrderHistoryItem[]) ?? [];
+                const orderedAt = order.created_at as string;
+                const daysSince = (now - new Date(orderedAt).getTime()) / (1000 * 60 * 60 * 24);
+
+                pastOrds.push({
+                    id: order.id,
+                    date: orderedAt,
+                    total: order.total as number,
+                    status: order.status as string,
+                    items: items.map(i => ({
+                        product_name: i.product_name || i.product?.slug || 'Produit inconnu',
+                        quantity: i.quantity || 1,
+                        unit_price: i.unit_price
+                    }))
+                });
+
+                for (const item of items) {
+                    const catSlug = item.product?.category?.slug ?? null;
+                    const candidate: PastProduct = {
+                        product_id: item.product_id,
+                        product_name: item.product_name,
+                        slug: item.product?.slug ?? null,
+                        image_url: item.product?.image_url ?? null,
+                        price: item.unit_price,
+                        orderedAt,
+                        categorySlug: catSlug,
+                    };
+
+                    // Deduplicate — keep only most recent per product
+                    if (!seen.has(item.product_id)) {
+                        seen.add(item.product_id);
+                        past.push(candidate);
+                    }
+
+                    // Restock check
+                    const thresholdKey = (catSlug && CATEGORY_THRESHOLD_KEYS[catSlug]) ?? 'threshold_others';
+                    const threshold = settings[thresholdKey as keyof BudTenderSettings] as number;
+
+                    if (daysSince >= threshold && !restock.find(r => r.product_id === item.product_id)) {
+                        restock.push({ ...candidate, daysSince: Math.round(daysSince), threshold });
+                    }
+                }
+            }
+
+            return {
+                past: past.slice(0, 5),
+                pastOrds: pastOrds.slice(0, 3),
+                restock: restock.slice(0, 2)
+            };
+        },
+        enabled: !!user?.id,
+        staleTime: 1000 * 60 * 30, // Cache 30 minutes to reduce redundant calls
+    });
+
     useEffect(() => {
-        if (!user?.id) {
-            loadedHistoryForUserRef.current.clear();
+        if (!user) {
             setIsLoading(false);
             return;
         }
-
-        if (loadedHistoryForUserRef.current.has(user.id)) return;
-        loadedHistoryForUserRef.current.add(user.id);
-
-        const fetchHistory = async () => {
-            setIsLoading(true);
-            try {
-                const { data: orders } = await supabase
-                    .from('orders')
-                    .select('id, created_at, status, total, order_items(product_id, product_name, unit_price, quantity, product:products(slug, image_url, category:categories(slug)))')
-                    .eq('user_id', user.id)
-                    .in('status', ['paid', 'processing', 'ready', 'shipped', 'delivered'])
-                    .order('created_at', { ascending: false })
-                    .limit(10);
-
-                if (!orders) return;
-
-                const settings = await fetchBudTenderSettings();
-                if (!settings.memory_enabled) {
-                    setIsLoading(false);
-                    return;
-                }
-
-                const now = Date.now();
-                const seen = new Set<string>();
-                const past: PastProduct[] = [];
-                const pastOrds: PastOrderSummary[] = [];
-                const restock: RestockCandidate[] = [];
-
-                for (const order of orders) {
-                    const items = (order.order_items as unknown as OrderHistoryItem[]) ?? [];
-                    const orderedAt = order.created_at as string;
-                    const daysSince = (now - new Date(orderedAt).getTime()) / (1000 * 60 * 60 * 24);
-
-                    pastOrds.push({
-                        id: order.id,
-                        date: orderedAt,
-                        total: order.total as number,
-                        status: order.status as string,
-                        items: items.map(i => ({
-                            product_name: i.product_name || i.product?.slug || 'Produit inconnu',
-                            quantity: i.quantity || 1,
-                            unit_price: i.unit_price
-                        }))
-                    });
-
-                    for (const item of items) {
-                        const catSlug = item.product?.category?.slug ?? null;
-                        const candidate: PastProduct = {
-                            product_id: item.product_id,
-                            product_name: item.product_name,
-                            slug: item.product?.slug ?? null,
-                            image_url: item.product?.image_url ?? null,
-                            price: item.unit_price,
-                            orderedAt,
-                            categorySlug: catSlug,
-                        };
-
-                        // Deduplicate — keep only most recent per product
-                        if (!seen.has(item.product_id)) {
-                            seen.add(item.product_id);
-                            past.push(candidate);
-                        }
-
-                        // Restock check — map category slug to its threshold setting key
-                        const thresholdKey = (catSlug && CATEGORY_THRESHOLD_KEYS[catSlug]) ?? 'threshold_others';
-                        const threshold = settings[thresholdKey] as number;
-
-                        if (daysSince >= threshold && !restock.find(r => r.product_id === item.product_id)) {
-                            restock.push({ ...candidate, daysSince: Math.round(daysSince), threshold });
-                        }
-                    }
-                }
-
-                setPastProducts(past.slice(0, 5));
-                setPastOrders(pastOrds.slice(0, 3));
-                setRestockCandidates(restock.slice(0, 2)); // max 2 restock suggestions
-            } catch (err) {
-                if (import.meta.env.DEV) console.error('[BudTenderMemory]', err);
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
-        fetchHistory();
-    }, [user?.id]);
+        if (orderHistoryData) {
+            setPastProducts(orderHistoryData.past);
+            setPastOrders(orderHistoryData.pastOrds);
+            setRestockCandidates(orderHistoryData.restock);
+            setIsLoading(false);
+        }
+    }, [orderHistoryData, user]);
 
     // ─── Save preferences ─────────────────────────────────────────────────────
     const savePrefs = async (prefs: SavedPrefs) => {
@@ -453,57 +453,51 @@ export function useBudTenderMemory() {
     };
 
     // ── Load from Supabase on Login ───────────────────────────────────────────
+    const { data: dbSyncData } = useQuery({
+        queryKey: ['budtender-sync', user?.id],
+        queryFn: async () => {
+            if (!user?.id) return null;
+            
+            // 1. Fetch AI Preferences
+            const { data: prefsData } = await supabase
+                .from('user_ai_preferences')
+                .select('*')
+                .eq('user_id', user.id)
+                .maybeSingle();
+
+            // 2. Fetch Latest Chat Session
+            const { data: interactionData } = await supabase
+                .from('budtender_interactions')
+                .select('quiz_answers')
+                .eq('user_id', user.id)
+                .eq('interaction_type', 'chat_session')
+                .order('created_at', { ascending: false })
+                .limit(1)
+                .maybeSingle();
+
+            return {
+                prefs: prefsData?.preferences || null,
+                chat: interactionData?.quiz_answers?.messages as ChatMessage[] || null
+            };
+        },
+        enabled: !!user?.id,
+        staleTime: 1000 * 60 * 60, // Cache for 1 hour to heavily reduce repeated RPC overhead
+    });
+
     useEffect(() => {
-        if (!user?.id) {
-            syncedSupabaseForUserRef.current.clear();
-            return;
+        if (!dbSyncData) return;
+        
+        if (dbSyncData.prefs) {
+            setSavedPrefs(dbSyncData.prefs);
+            localStorage.setItem(LS_KEY, JSON.stringify(dbSyncData.prefs));
         }
-        if (syncedSupabaseForUserRef.current.has(user.id)) return;
-        syncedSupabaseForUserRef.current.add(user.id);
-
-        const syncWithSupabase = async () => {
-            try {
-                // 1. Fetch AI Preferences
-                const { data: prefsData } = await supabase
-                    .from('user_ai_preferences')
-                    .select('*')
-                    .eq('user_id', user.id)
-                    .maybeSingle();
-
-                if (prefsData) {
-                    const syncedPrefs: SavedPrefs = prefsData.preferences || {};
-                    if (import.meta.env.DEV) {
-                        console.log('[BudTenderMemory] Found preferences in DB:', syncedPrefs);
-                        console.log('[BudTenderMemory] Available keys:', Object.keys(syncedPrefs));
-                    }
-                    setSavedPrefs(syncedPrefs);
-                    localStorage.setItem(LS_KEY, JSON.stringify(syncedPrefs));
-                } else if (import.meta.env.DEV) {
-                    console.log('[BudTenderMemory] No record found in user_ai_preferences for user:', user.id);
-                }
-
-                // 2. Fetch Latest Chat Session
-                const { data: interactionData } = await supabase
-                    .from('budtender_interactions')
-                    .select('quiz_answers')
-                    .eq('user_id', user.id)
-                    .eq('interaction_type', 'chat_session')
-                    .order('created_at', { ascending: false })
-                    .limit(1)
-                    .maybeSingle();
-
-                if (interactionData && interactionData.quiz_answers?.messages) {
-                    const history = interactionData.quiz_answers.messages as ChatMessage[];
-                    setChatHistory(history);
-                    sessionStorage.setItem('playadvisor_chat_history_v1', JSON.stringify(history));
-                }
-            } catch {
-                // Likely no data yet or single() error, normal
-            }
-        };
-
-        syncWithSupabase();
-    }, [user?.id]);
+        
+        const chat = dbSyncData.chat;
+        if (chat && chat.length > 0) {
+            setChatHistory(chat);
+            sessionStorage.setItem('playadvisor_chat_history_v1', JSON.stringify(chat));
+        }
+    }, [dbSyncData]);
 
     return {
         isLoggedIn,
