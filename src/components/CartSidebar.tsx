@@ -248,7 +248,7 @@ export default function CartSidebar() {
                         {settings.loyalty_program_enabled && vipDiscount > 0 && (
                           <div className="flex justify-between text-[10px] font-bold text-yellow-500 bg-yellow-400/5 px-2 py-1 rounded-md border border-yellow-400/10">
                             <span className="flex items-center gap-1">
-                              <Crown className="w-2.5 h-2.5" /> Remise VIP
+                              <Crown className="w-2.5 h-2.5" /> Remise {currentTier?.name || 'VIP'}
                             </span>
                             <span>−{vipDiscount.toFixed(2)} €</span>
                           </div>
