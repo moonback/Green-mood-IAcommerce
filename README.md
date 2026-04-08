@@ -1,6 +1,7 @@
 <div align="center">
 <img src="public/header.png" alt="Green-mood — AI-First E-Commerce Platform" />
 <video src="public/video.mp4"></video>
+  
 # Green-mood E-commerce IA
 
 **Plateforme e-commerce AI-First spécialisée CBD & bien-être.**
