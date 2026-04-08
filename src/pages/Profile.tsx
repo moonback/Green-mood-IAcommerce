@@ -125,10 +125,8 @@ export default function Profile() {
   }, [profile]);
 
   useEffect(() => {
-    if (savedPrefs && Object.keys(savedPrefs).length > 0) {
-      if (import.meta.env.DEV) console.info('[Profile] Hydrating prefs from memory:', savedPrefs);
-      setPrefs(p => ({ ...p, ...savedPrefs }));
-    }
+    if (import.meta.env.DEV) console.info('[Profile] Hydrating prefs from memory:', savedPrefs);
+    setPrefs(savedPrefs || {});
   }, [savedPrefs]);
 
   useEffect(() => {
@@ -210,6 +208,15 @@ export default function Profile() {
         setIsSaving(false);
       }
     }
+  };
+
+  const handleRemovePref = async (key: string) => {
+    setPrefs((current) => {
+      const updated = { ...current };
+      delete updated[key as keyof SavedPrefs];
+      return updated;
+    });
+    await removePref(key);
   };
 
   const updatePref = (key: string, value: string) => {
@@ -532,7 +539,7 @@ export default function Profile() {
                                 >
                                   {/* Delete Trigger */}
                                   <button 
-                                    onClick={() => removePref(key)}
+                                    onClick={() => handleRemovePref(key)}
                                     className="absolute top-5 right-5 opacity-0 group-hover:opacity-100 p-2 hover:bg-red-500/10 rounded-full text-red-500 transition-all z-20"
                                     title="Oublier ce trait"
                                   >
