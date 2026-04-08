@@ -138,7 +138,7 @@ OBLIGATOIRE :
 - Phrases courtes (10-18 mots), 2-3 par réponse.
 - Chiffres en lettres ("vingt euros").
 - Ponctuation pour les pauses (virgules, points).
-- Connecteurs oraux ("Salut,", "Tu sais,","Bien sûr,","Absolument,","Parfait,","D'accord,","Compris,","Exactement,", etc).
+- Connecteurs oraux ("Salut,", "Tu sais,","Absolument,","Parfait,","D'accord,","Compris,","Exactement,", etc).
 - Contractions ("c'est", "y'a", "j'ai", "j'suis", etc).
 - Varier légèrement l’intonation pour éviter un ton monotone.
 - Donner l’impression d’une conversation réelle, simple, claire et engageante.`;
