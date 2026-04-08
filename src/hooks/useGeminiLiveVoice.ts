@@ -313,6 +313,7 @@ export function useGeminiLiveVoice({
   const [voiceState, setVoiceState] = useState<VoiceState>('idle');
   const [error, setError] = useState<string | null>(null);
   const [isMuted, setIsMuted] = useState(false);
+  const [toolActivity, setToolActivity] = useState<string | null>(null);
 
   const [compatibilityError] = useState<string | null>(() => {
     if (typeof window === 'undefined') return null;
@@ -404,6 +405,7 @@ export function useGeminiLiveVoice({
   const productCacheRef = useRef<Map<string, Product>>(new Map());
   const vectorSearchCacheRef = useRef<Map<string, VectorSearchCacheEntry>>(new Map());
   const vectorSearchInFlightRef = useRef<Map<string, Promise<Product[]>>>(new Map());
+  const toolActivityTimerRef = useRef<number | null>(null);
 
 
   const resetSilenceTimer = useCallback(() => {
@@ -812,6 +814,7 @@ export function useGeminiLiveVoice({
     if (inputTranscriptTimerRef.current) clearTimeout(inputTranscriptTimerRef.current);
     if (outputTranscriptTimerRef.current) clearTimeout(outputTranscriptTimerRef.current);
     if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+    if (toolActivityTimerRef.current) clearTimeout(toolActivityTimerRef.current);
     productCacheRef.current.clear();
     vectorSearchCacheRef.current.clear();
     vectorSearchInFlightRef.current.clear();
@@ -1000,7 +1003,23 @@ export function useGeminiLiveVoice({
     cleanup();
     setVoiceState('idle');
     setIsMuted(false);
+    setToolActivity(null);
   }, [cleanup]);
+
+  const setSearchingFeedback = useCallback((toolName: string) => {
+    const labels: Record<string, string> = {
+      search_catalog: 'Je recherche les meilleurs produits…',
+      search_knowledge: 'Je cherche l’information demandée…',
+      search_cannabis_conditions: 'Je consulte les données scientifiques…',
+      search_expert_data: 'Je vérifie les données expertes…',
+      track_order: 'Je vérifie le statut de commande…',
+    };
+    const label = labels[toolName];
+    if (!label) return;
+    setToolActivity(label);
+    if (toolActivityTimerRef.current) window.clearTimeout(toolActivityTimerRef.current);
+    toolActivityTimerRef.current = window.setTimeout(() => setToolActivity(null), 5000);
+  }, []);
 
   const playPcmChunk = useCallback((base64: string) => {
     // Guard: discard any audio chunks that arrive after an interruption
@@ -1422,6 +1441,7 @@ export function useGeminiLiveVoice({
               const callKey = `${c.name}:${c.id || 'no-id'}`;
               const dedupKey = `${c.name}:${JSON.stringify(safeArgs)}`;
               toolStartTimes.set(callKey, Date.now());
+              setSearchingFeedback(String(c.name || ''));
               console.info('[Voice][Tool] START', { name: c.name, id: c.id, args: safeArgs });
 
               try {
@@ -2276,6 +2296,7 @@ export function useGeminiLiveVoice({
                 }
               }
             }
+            setToolActivity(null);
           }
         }
       });
@@ -2299,7 +2320,7 @@ export function useGeminiLiveVoice({
       setError(userMessage);
       setVoiceState('error');
     }
-  }, [cleanup, compatibilityError, fetchEphemeralToken, findProduct, playPcmChunk, runVectorCatalogSearch, startMicCapture, stopAllPlayback, stopSession, resetSilenceTimer]);
+  }, [cleanup, compatibilityError, fetchEphemeralToken, findProduct, playPcmChunk, runVectorCatalogSearch, setSearchingFeedback, startMicCapture, stopAllPlayback, stopSession, resetSilenceTimer]);
 
   // Keep startSession accessible inside the onclose retry callback via ref
   useEffect(() => {
@@ -2313,5 +2334,5 @@ export function useGeminiLiveVoice({
 
   const isSupported = useMemo(() => !compatibilityError, [compatibilityError]);
 
-  return { voiceState, error, isMuted, isSupported, compatibilityError, startSession, stopSession, toggleMute };
+  return { voiceState, error, isMuted, isSupported, compatibilityError, toolActivity, startSession, stopSession, toggleMute };
 }
