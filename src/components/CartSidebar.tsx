@@ -74,7 +74,7 @@ export default function CartSidebar() {
             {/* Header */}
             <div className="px-6 lg:px-10 pt-5 pb-5 border-b border-[color:var(--color-border)] bg-[color:var(--color-bg)] relative overflow-hidden shrink-0">
               <div className="absolute top-0 right-0 w-48 h-48 bg-[color:var(--color-primary)]/5 blur-[80px] -translate-y-1/2 translate-x-1/2" />
-              
+
               <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                 <div className="flex flex-col sm:flex-row sm:items-center gap-x-6 gap-y-2">
                   <h2 className="text-2xl lg:text-3xl font-serif font-black tracking-tighter text-[color:var(--color-text)] uppercase italic leading-none">
@@ -96,7 +96,7 @@ export default function CartSidebar() {
                       <Package className="w-3 h-3 text-[color:var(--color-text-subtle)]" />
                       <span className="text-[8px] font-black uppercase tracking-[0.2em] text-[color:var(--color-text-subtle)] hidden sm:inline">Réception</span>
                     </div>
-                    
+
                     <div className="relative w-40 lg:w-48 grid grid-cols-2 gap-0.5 bg-[color:var(--color-bg)] border border-[color:var(--color-border)] rounded-lg p-0.5 shadow-inner">
                       <motion.div
                         layout
@@ -242,7 +242,7 @@ export default function CartSidebar() {
                         <div className="flex justify-between text-[10px] text-[color:var(--color-text-subtle)]">
                           <span>Livraison</span>
                           <span className={fee === 0 ? 'text-[color:var(--color-primary)] font-bold' : 'text-[color:var(--color-text)] font-medium'}>
-                            {fee === 0 ? 'Offerte' : `\${fee.toFixed(2)} €`}
+                            {fee === 0 ? 'Offerte' : `${fee.toFixed(2)} €`}
                           </span>
                         </div>
                         {settings.loyalty_program_enabled && vipDiscount > 0 && (
@@ -288,7 +288,7 @@ export default function CartSidebar() {
                             </div>
                           </div>
                         </Link>
-                        
+
                         <div className="flex items-center justify-center gap-4 py-1.5 border border-dashed border-[color:var(--color-border)] rounded-lg bg-[color:var(--color-bg-elevated)]/30">
                           <div className="flex items-center gap-1 text-[9px] font-bold text-[color:var(--color-text-subtle)] uppercase">
                             <ShieldCheck className="w-3 h-3 text-[color:var(--color-primary)]" />
