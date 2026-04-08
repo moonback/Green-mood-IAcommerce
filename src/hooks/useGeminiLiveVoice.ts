@@ -47,6 +47,7 @@ const MAX_PRODUCT_CACHE_SIZE = 100;
 const MAX_LIVE_TOOL_RESPONSE_JSON = 14_000;
 const VOICE_CATALOG_TOOL_MAX_ITEMS = 6;
 const VOICE_CATALOG_DESC_MAX = 120;
+const VOICE_CATALOG_ATTR_MAX = 3;
 
 function shrinkLiveToolResponse(response: Record<string, unknown>): Record<string, unknown> {
   const out: Record<string, unknown> = { ...response };
@@ -71,9 +72,34 @@ function formatVoiceCatalogToolLines(products: Product[]): string {
     .slice(0, VOICE_CATALOG_TOOL_MAX_ITEMS)
     .map((p) => {
       const d = (p.description || '').replace(/\s+/g, ' ').trim().slice(0, VOICE_CATALOG_DESC_MAX);
-      return `• ${p.name} | ${p.price}€${d ? ` | ${d}` : ''}`;
+      const attrs = extractVoiceAttributeSummary(p);
+      return `• ${p.name} | ${p.price}€${attrs ? ` | ${attrs}` : ''}${d ? ` | ${d}` : ''}`;
     })
     .join('\n');
+}
+
+function extractVoiceAttributeSummary(product: Product): string {
+  const attrs = product.attributes ?? {};
+  const values: string[] = [];
+
+  const pushValues = (input: unknown) => {
+    if (!Array.isArray(input)) return;
+    for (const raw of input) {
+      if (typeof raw !== 'string') continue;
+      const normalized = raw.replace(/\s+/g, ' ').trim();
+      if (!normalized) continue;
+      if (!values.includes(normalized)) values.push(normalized);
+      if (values.length >= VOICE_CATALOG_ATTR_MAX) break;
+    }
+  };
+
+  pushValues((attrs as any).benefits);
+  pushValues((attrs as any).effects);
+  pushValues((attrs as any).aromas);
+  pushValues((attrs as any).flavors);
+  pushValues((attrs as any).specs);
+
+  return values.join(', ');
 }
 
 function fallbackKeywordSearch(query: string, products: Product[]): Product[] {

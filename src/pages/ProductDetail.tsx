@@ -186,6 +186,17 @@ export default function ProductDetail() {
 
   const [quantity, setQuantity] = useState(1);
   const [recentlyViewed, setRecentlyViewed] = useState<Array<Pick<BaseProduct, 'id' | 'name' | 'slug' | 'image_url' | 'price'> & { avg_rating?: number; review_count?: number }>>([]);
+  const [otherWeights, setOtherWeights] = useState<Array<Pick<BaseProduct, 'id' | 'slug' | 'name' | 'weight_grams' | 'price' | 'stock_quantity' | 'is_available'>>>([]);
+
+  const normalizeVariantKey = (value: string) =>
+    value
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/\b\d+(?:[.,]\d+)?\s*(g|gr|gramme?s?|kg|ml)\b/g, '')
+      .replace(/[-_/|]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
 
   // ── Premium font injection ──
   useEffect(() => {
@@ -268,6 +279,39 @@ export default function ProductDetail() {
       setRecentlyViewed(next.filter((p) => p.id !== product.id).slice(0, 6));
     } catch { }
   }, [product]);
+
+  useEffect(() => {
+    if (!product?.category_id) return;
+    let isCancelled = false;
+
+    const loadOtherWeights = async () => {
+      const { data, error } = await supabase
+        .from('products')
+        .select('id, slug, name, weight_grams, price, stock_quantity, is_available, is_active')
+        .eq('category_id', product.category_id)
+        .eq('is_active', true)
+        .neq('id', product.id);
+
+      if (error) {
+        console.error('[ProductDetail] Impossible de récupérer les grammages alternatifs:', error);
+        return;
+      }
+
+      const currentKey = normalizeVariantKey(product.name);
+      const candidates = (data ?? [])
+        .filter((p) => normalizeVariantKey(p.name) === currentKey)
+        .sort((a, b) => (a.weight_grams ?? 0) - (b.weight_grams ?? 0));
+
+      if (!isCancelled) {
+        setOtherWeights(candidates);
+      }
+    };
+
+    loadOtherWeights();
+    return () => {
+      isCancelled = true;
+    };
+  }, [product?.id, product?.name, product?.category_id]);
 
   const subtotal = useMemo(() => (product ? (product.price * quantity).toFixed(2) : '0.00'), [product, quantity]);
 
@@ -355,6 +399,65 @@ export default function ProductDetail() {
           onBuyNow={handleBuyNow}
           onOpenModal={(type) => setActiveModal(type)}
         />
+        {otherWeights.length > 0 && (
+          <section className="mx-auto w-full max-w-[1400px] px-4 pb-8 sm:px-6 lg:px-8">
+            <div className="rounded-3xl border border-[color:var(--color-border)]/80 bg-gradient-to-br from-[color:var(--color-card)] to-[color:var(--color-bg-muted)]/80 p-5 sm:p-6 shadow-[0_12px_40px_-20px_rgba(0,0,0,0.55)]">
+              <div className="flex flex-wrap items-end justify-between gap-3">
+                <div className="space-y-1">
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[color:var(--color-primary)]">
+                    Variantes disponibles
+                  </p>
+                  <h3 className="text-sm sm:text-base font-black uppercase tracking-[0.08em] text-[color:var(--color-text)]">
+                    Autres grammages
+                  </h3>
+                  <p className="text-[11px] text-[color:var(--color-text-muted)]">
+                    Changez rapidement de format sans quitter la fiche produit.
+                  </p>
+                </div>
+                <div className="rounded-full border border-[color:var(--color-border)] px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-[color:var(--color-text-muted)]">
+                  {otherWeights.length + 1} formats
+                </div>
+              </div>
+
+              <div className="mt-4 flex flex-wrap gap-3">
+                {[product, ...otherWeights]
+                  .sort((a, b) => (a.weight_grams ?? 0) - (b.weight_grams ?? 0))
+                  .map((item) => {
+                    const isCurrent = item.id === product.id;
+                    const disabled = item.is_available === false || item.stock_quantity <= 0;
+                    return (
+                      <Link
+                        key={item.id}
+                        to={`/catalogue/${item.slug}`}
+                        className={`group min-w-[120px] rounded-2xl border px-3 py-2.5 transition duration-200 ${isCurrent
+                          ? 'border-[color:var(--color-primary)] bg-[color:var(--color-primary)]/10 shadow-[0_0_0_1px_rgba(255,255,255,0.02)]'
+                          : 'border-[color:var(--color-border)] bg-[color:var(--color-card)]/50 hover:border-[color:var(--color-primary)]/40 hover:bg-[color:var(--color-card)]/80'
+                          } ${disabled ? 'opacity-55' : ''}`}
+                        aria-current={isCurrent ? 'page' : undefined}
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <span className={`text-xs font-black tracking-wide ${isCurrent ? 'text-[color:var(--color-primary)]' : 'text-[color:var(--color-text)]'}`}>
+                            {item.weight_grams ? `${item.weight_grams}g` : item.name}
+                          </span>
+                          {isCurrent && (
+                            <span className="rounded-full bg-[color:var(--color-primary)]/15 px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.14em] text-[color:var(--color-primary)]">
+                              Actuel
+                            </span>
+                          )}
+                        </div>
+                        <div className="mt-1.5 flex items-center justify-between gap-2">
+                          <span className="text-[11px] font-bold text-[color:var(--color-text-muted)]">{item.price.toFixed(2)}€</span>
+                          <span className={`text-[10px] font-bold uppercase tracking-[0.12em] ${disabled ? 'text-rose-400' : 'text-emerald-400'}`}>
+                            {disabled ? 'Rupture' : 'En stock'}
+                          </span>
+                        </div>
+                      </Link>
+                    );
+                  })}
+              </div>
+            </div>
+          </section>
+        )}
       </main>
 
       {/* ── Modals ── */}
