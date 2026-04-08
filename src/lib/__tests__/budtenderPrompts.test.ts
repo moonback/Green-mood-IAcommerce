@@ -69,7 +69,7 @@ describe('getVoicePrompt (Gemini Live)', () => {
     const prompt = getVoicePrompt([], {});
     expect(prompt).toContain('## RÔLE :');
     expect(prompt).toContain('## RÈGLES AUDIO — OBLIGATOIRE');
-    expect(prompt).toContain('INTERDIT :');
+    expect(prompt).toContain('Interdit:');
   });
 
   it('includes client loyalty and tier information', () => {
@@ -156,6 +156,23 @@ describe('getVoicePrompt (Gemini Live)', () => {
 
       const promptClose = getVoicePrompt([], {}, null, [], [], 0, 0, [], undefined, undefined, 'Bot', [], true);
       expect(promptClose).toContain('## FIN DE SESSION');
+  });
+
+  it('keeps voice prompt under hard limit even with large context', () => {
+    const hugePrefs = Object.fromEntries(
+      Array.from({ length: 120 }).map((_, i) => [`pref_${i}`, `value_${i}_${'x'.repeat(80)}`])
+    );
+    const hugeProducts = Array.from({ length: 120 }).map((_, i) => ({
+      id: String(i),
+      name: `Produit ${i}`,
+      price: i + 1,
+      description: `Description ${'d'.repeat(140)}`,
+      category: { name: 'Fleurs' },
+    })) as any;
+
+    const prompt = getVoicePrompt(hugeProducts, hugePrefs, 'Client');
+    expect(prompt.length).toBeLessThanOrEqual(7600);
+    expect(prompt).not.toContain('... (truncated for stability)');
   });
 });
 
