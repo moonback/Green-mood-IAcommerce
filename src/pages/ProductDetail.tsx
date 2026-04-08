@@ -186,6 +186,17 @@ export default function ProductDetail() {
 
   const [quantity, setQuantity] = useState(1);
   const [recentlyViewed, setRecentlyViewed] = useState<Array<Pick<BaseProduct, 'id' | 'name' | 'slug' | 'image_url' | 'price'> & { avg_rating?: number; review_count?: number }>>([]);
+  const [otherWeights, setOtherWeights] = useState<Array<Pick<BaseProduct, 'id' | 'slug' | 'name' | 'weight_grams' | 'price' | 'stock_quantity' | 'is_available'>>>([]);
+
+  const normalizeVariantKey = (value: string) =>
+    value
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/\b\d+(?:[.,]\d+)?\s*(g|gr|gramme?s?|kg|ml)\b/g, '')
+      .replace(/[-_/|]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
 
   // ── Premium font injection ──
   useEffect(() => {
@@ -268,6 +279,39 @@ export default function ProductDetail() {
       setRecentlyViewed(next.filter((p) => p.id !== product.id).slice(0, 6));
     } catch { }
   }, [product]);
+
+  useEffect(() => {
+    if (!product?.category_id) return;
+    let isCancelled = false;
+
+    const loadOtherWeights = async () => {
+      const { data, error } = await supabase
+        .from('products')
+        .select('id, slug, name, weight_grams, price, stock_quantity, is_available, is_active')
+        .eq('category_id', product.category_id)
+        .eq('is_active', true)
+        .neq('id', product.id);
+
+      if (error) {
+        console.error('[ProductDetail] Impossible de récupérer les grammages alternatifs:', error);
+        return;
+      }
+
+      const currentKey = normalizeVariantKey(product.name);
+      const candidates = (data ?? [])
+        .filter((p) => normalizeVariantKey(p.name) === currentKey)
+        .sort((a, b) => (a.weight_grams ?? 0) - (b.weight_grams ?? 0));
+
+      if (!isCancelled) {
+        setOtherWeights(candidates);
+      }
+    };
+
+    loadOtherWeights();
+    return () => {
+      isCancelled = true;
+    };
+  }, [product?.id, product?.name, product?.category_id]);
 
   const subtotal = useMemo(() => (product ? (product.price * quantity).toFixed(2) : '0.00'), [product, quantity]);
 
@@ -355,6 +399,38 @@ export default function ProductDetail() {
           onBuyNow={handleBuyNow}
           onOpenModal={(type) => setActiveModal(type)}
         />
+        {otherWeights.length > 0 && (
+          <section className="mx-auto w-full max-w-[1400px] px-4 pb-8 sm:px-6 lg:px-8">
+            <div className="rounded-2xl border border-[color:var(--color-border)] bg-[color:var(--color-card)]/70 p-4 sm:p-5">
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[color:var(--color-primary)]">
+                Autres grammages disponibles
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2.5">
+                {[product, ...otherWeights]
+                  .sort((a, b) => (a.weight_grams ?? 0) - (b.weight_grams ?? 0))
+                  .map((item) => {
+                    const isCurrent = item.id === product.id;
+                    const disabled = item.is_available === false || item.stock_quantity <= 0;
+                    return (
+                      <Link
+                        key={item.id}
+                        to={`/catalogue/${item.slug}`}
+                        className={`rounded-xl border px-3 py-2 text-xs font-bold transition ${isCurrent
+                          ? 'border-[color:var(--color-primary)] bg-[color:var(--color-primary)]/10 text-[color:var(--color-primary)]'
+                          : 'border-[color:var(--color-border)] text-[color:var(--color-text)] hover:border-[color:var(--color-primary)]/40'
+                          } ${disabled ? 'opacity-50' : ''}`}
+                        aria-current={isCurrent ? 'page' : undefined}
+                      >
+                        <span>{item.weight_grams ? `${item.weight_grams}g` : item.name}</span>
+                        <span className="ml-1.5 text-[color:var(--color-text-muted)]">· {item.price.toFixed(2)}€</span>
+                        {disabled && <span className="ml-1 text-[10px] uppercase">Rupture</span>}
+                      </Link>
+                    );
+                  })}
+              </div>
+            </div>
+          </section>
+        )}
       </main>
 
       {/* ── Modals ── */}
