@@ -845,15 +845,15 @@ export default function Catalog() {
                 )}
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-3">
                 {/* Sort */}
-                <div className="relative">
-                  <ArrowUpDown className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-[color:var(--color-text-subtle)] pointer-events-none" />
+                <div className="relative group/sort">
+                  <ArrowUpDown className="absolute left-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[color:var(--color-text-subtle)] group-hover/sort:text-green-neon transition-colors pointer-events-none z-10" />
                   <select
                     id="sort-select"
                     value={sortBy}
                     onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
-                    className="appearance-none bg-[color:var(--color-card)] border border-[color:var(--color-border)] rounded-xl pl-8 pr-4 py-2 text-[11px] font-bold uppercase tracking-wider text-[color:var(--color-text-muted)] focus:outline-none cursor-pointer h-9 hover:border-green-neon/35 transition-all shadow-sm"
+                    className="appearance-none bg-[color:var(--color-card)]/60 backdrop-blur-xl border border-[color:var(--color-border)]/40 rounded-2xl pl-10 pr-5 py-2.5 text-[10px] font-black uppercase tracking-[0.15em] text-[color:var(--color-text-muted)] focus:outline-none cursor-pointer h-11 hover:border-green-neon/50 hover:bg-[color:var(--color-card)]/80 transition-all shadow-sm drop-shadow-md"
                   >
                     <option value="featured">Populaires</option>
                     <option value="price_asc">Prix Croissant</option>
@@ -864,24 +864,24 @@ export default function Catalog() {
                 </div>
 
                 {/* View density */}
-                <div className="flex items-center bg-[color:var(--color-card)] border border-[color:var(--color-border)] rounded-xl overflow-hidden h-9 shadow-sm">
+                <div className="flex items-center bg-[color:var(--color-card)]/60 backdrop-blur-xl border border-[color:var(--color-border)]/40 rounded-2xl overflow-hidden h-11 shadow-sm drop-shadow-md p-1">
                   <button
                     id="view-grid-btn"
                     onClick={() => setDisplayDensity('cozy')}
-                    className={`w-9 h-9 flex items-center justify-center transition-all ${displayDensity === 'cozy' ? 'bg-[color:var(--color-bg-elevated)] text-[color:var(--color-text)]' : 'text-[color:var(--color-text-muted)] hover:text-[color:var(--color-text)]'
+                    className={`w-9 h-full rounded-xl flex items-center justify-center transition-all duration-300 ${displayDensity === 'cozy' ? 'bg-[color:var(--color-bg-elevated)] text-[color:var(--color-text)] shadow-[0_4px_12px_rgba(0,0,0,0.1)]' : 'text-[color:var(--color-text-muted)] hover:text-[color:var(--color-text)] hover:bg-[color:var(--color-bg-elevated)]/50'
                       }`}
                     title="Vue grille"
                   >
-                    <LayoutGrid className="w-3.5 h-3.5" />
+                    <LayoutGrid className="w-4 h-4" />
                   </button>
                   <button
                     id="view-list-btn"
                     onClick={() => setDisplayDensity('compact')}
-                    className={`w-9 h-9 flex items-center justify-center transition-all ${displayDensity === 'compact' ? 'bg-[color:var(--color-bg-elevated)] text-[color:var(--color-text)]' : 'text-[color:var(--color-text-muted)] hover:text-[color:var(--color-text)]'
+                    className={`w-9 h-full rounded-xl flex items-center justify-center transition-all duration-300 ${displayDensity === 'compact' ? 'bg-[color:var(--color-bg-elevated)] text-[color:var(--color-text)] shadow-[0_4px_12px_rgba(0,0,0,0.1)]' : 'text-[color:var(--color-text-muted)] hover:text-[color:var(--color-text)] hover:bg-[color:var(--color-bg-elevated)]/50'
                       }`}
                     title="Vue compacte"
                   >
-                    <LayoutList className="w-3.5 h-3.5" />
+                    <LayoutList className="w-4 h-4" />
                   </button>
                 </div>
               </div>

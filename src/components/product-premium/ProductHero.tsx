@@ -71,7 +71,7 @@ const ProductHero = memo(({ product, quantity, onQuantityChange, onAddToCart, on
           <div className="space-y-4">
             {/* Image Container */}
             <motion.div
-              className="group relative aspect-square overflow-hidden rounded-2xl border border-[color:var(--color-border)] bg-[color:var(--color-card)]/30 shadow-lg backdrop-blur-sm cursor-crosshair"
+              className="group relative aspect-square overflow-hidden rounded-[2rem] border border-[color:var(--color-border)]/40 bg-[color:var(--color-card)]/60 shadow-[0_20px_60px_rgba(0,0,0,0.15)] backdrop-blur-2xl cursor-crosshair transition-all duration-700 hover:shadow-[0_40px_80px_rgba(15,28,22,0.2)] hover:border-green-neon/30"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               onMouseEnter={() => setIsZooming(true)}
@@ -138,7 +138,7 @@ const ProductHero = memo(({ product, quantity, onQuantityChange, onAddToCart, on
                 <div className="h-px flex-1 bg-gradient-to-r from-[color:var(--color-primary)]/40 to-transparent" />
               </div>
 
-              <h1 className="text-3xl lg:text-4xl font-bold text-[color:var(--color-text)] tracking-tight" style={{ fontFamily: "'DM Serif Display', serif" }}>
+              <h1 className="text-4xl lg:text-5xl font-bold text-[color:var(--color-text)] tracking-tight drop-shadow-sm" style={{ fontFamily: "'DM Serif Display', serif" }}>
                 {product.name}
               </h1>
 
@@ -190,9 +190,9 @@ const ProductHero = memo(({ product, quantity, onQuantityChange, onAddToCart, on
                 {product.productSpecs.slice(0, 4).map((spec) => (
                   <div
                     key={spec.name}
-                    className="group relative flex items-center gap-3 rounded-xl bg-[color:var(--color-card)]/40 border border-[color:var(--color-border)] p-2.5 transition-all hover:border-[color:var(--color-primary)]/40 hover:bg-[color:var(--color-bg-elevated)]"
+                    className="group relative flex items-center gap-3 rounded-2xl bg-[color:var(--color-card)]/40 border border-[color:var(--color-border)]/60 p-3 transition-all duration-300 hover:border-green-neon/30 hover:bg-[color:var(--color-bg-elevated)] hover:shadow-[0_8px_30px_rgba(15,28,22,0.12)]"
                   >
-                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[color:var(--color-bg-elevated)] border border-[color:var(--color-border)] text-[color:var(--color-primary)] transition-transform group-hover:scale-110 group-hover:bg-[color:var(--color-primary)]/10 shadow-sm">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[color:var(--color-bg)] border border-[color:var(--color-border)]/80 text-[color:var(--color-primary)] transition-transform duration-500 group-hover:scale-110 group-hover:border-green-neon/50 group-hover:text-green-neon group-hover:shadow-[0_0_15px_rgba(var(--theme-neon-rgb),0.3)] shadow-sm">
                       <span className="text-sm">{spec.icon}</span>
                     </div>
                     <div className="flex flex-col min-w-0">
@@ -214,7 +214,9 @@ const ProductHero = memo(({ product, quantity, onQuantityChange, onAddToCart, on
             )}
 
             {/* CTA Box (Buy Zone) */}
-            <div className="mt-2 rounded-2xl border border-[color:var(--color-border)] bg-gradient-to-br from-[color:var(--color-card)] to-[color:var(--color-bg)] p-4 shadow-xl">
+            <div className="mt-4 rounded-[2.5rem] border border-[color:var(--color-border)]/50 bg-[color:var(--color-card)]/80 p-5 shadow-[0_20px_50px_rgba(0,0,0,0.2)] backdrop-blur-xl relative overflow-hidden transition-all duration-500 hover:border-green-neon/30 hover:shadow-[0_30px_60px_rgba(15,28,22,0.2)]">
+              {/* Subtle background glow */}
+              <div className="absolute top-0 right-0 w-64 h-64 bg-green-neon/5 blur-[80px] rounded-full pointer-events-none" />
               <div className="flex flex-wrap items-center justify-between gap-4">
 
                 {/* Price Section */}
@@ -253,9 +255,9 @@ const ProductHero = memo(({ product, quantity, onQuantityChange, onAddToCart, on
                   <button
                     onClick={() => onAddToCart(selectedFrequency)}
                     disabled={!inStock}
-                    className="relative group overflow-hidden flex items-center gap-3 rounded-xl bg-[color:var(--color-primary)] px-6 py-3 font-black text-[color:var(--color-primary-contrast)] uppercase tracking-widest text-xs shadow-lg transition-transform active:scale-95 disabled:opacity-50"
+                    className="relative group overflow-hidden flex items-center gap-3 rounded-2xl bg-[color:var(--color-primary)] px-6 min-h-[48px] font-black text-black uppercase tracking-[0.15em] text-[11px] shadow-[0_8px_20px_rgba(var(--theme-neon-rgb),0.3)] transition-all duration-300 hover:shadow-[0_12px_25px_rgba(var(--theme-neon-rgb),0.5)] active:scale-95 disabled:opacity-50"
                   >
-                    <div className="absolute inset-0 bg-black/10 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
+                    <div className="absolute inset-0 bg-white/20 translate-y-[100%] group-hover:translate-y-0 transition-transform duration-300" />
                     <ShoppingBag className="w-4 h-4 relative z-10" />
                     <span className="relative z-10">{selectedFrequency ? 'S\'abonner' : 'Commander'}</span>
                   </button>
@@ -279,7 +281,7 @@ const ProductHero = memo(({ product, quantity, onQuantityChange, onAddToCart, on
                 <button
                   key={btn.id}
                   onClick={() => onOpenModal(btn.id as any)}
-                  className="flex items-center gap-2 rounded-xl bg-[color:var(--color-card)] border border-[color:var(--color-border)] px-3 py-2 transition-all hover:bg-[color:var(--color-bg-elevated)] hover:border-[color:var(--color-primary)] active:scale-95 group"
+                  className="flex items-center gap-2 rounded-xl bg-[color:var(--color-card)]/[0.3] backdrop-blur-md border border-[color:var(--color-border)]/50 px-3 py-2 transition-all hover:bg-[color:var(--color-bg-elevated)] hover:border-[color:var(--color-primary)]/50 hover:shadow-[0_4px_12px_rgba(0,0,0,0.1)] active:scale-95 group"
                 >
                   <span className="opacity-70 group-hover:opacity-100 transition-opacity">{btn.icon}</span>
                   <span className="text-[9px] font-black uppercase tracking-widest text-[color:var(--color-text-muted)] group-hover:text-[color:var(--color-text)] transition-colors">{btn.label}</span>
