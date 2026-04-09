@@ -43,10 +43,12 @@ export default function PremiumRelatedProducts({ products }: Props) {
               >
                 <Link
                   to={`/catalogue/${product.slug}`}
-                  className="group block rounded-[1.5rem] border border-[color:var(--color-border)] bg-[color:var(--color-card)]/50 overflow-hidden hover:border-[color:var(--color-primary)]/40 hover:shadow-xl transition-all duration-300 backdrop-blur-sm"
+                  className="group block rounded-[2.5rem] border border-[color:var(--color-border)]/40 bg-[color:var(--color-card)]/60 overflow-hidden hover:border-green-neon/30 hover:shadow-[0_20px_60px_rgba(15,28,22,0.15)] transition-all duration-500 backdrop-blur-2xl relative"
                 >
+                  <div className="absolute inset-0 bg-gradient-to-b from-transparent to-green-neon/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none z-0" />
+                  
                   {/* Image */}
-                  <div className="relative overflow-hidden aspect-[1.4/1] bg-[color:var(--color-bg-muted)]">
+                  <div className="relative overflow-hidden aspect-[1.4/1] bg-transparent z-10">
                     <img
                       src={getProductImageSrc(product.image_url)}
                       loading="lazy"
@@ -63,7 +65,7 @@ export default function PremiumRelatedProducts({ products }: Props) {
                   </div>
 
                   {/* Info */}
-                  <div className="p-4 space-y-2.5">
+                  <div className="p-5 space-y-3 relative z-10">
                     <h4 className="text-[13px] font-black text-[color:var(--color-text)] group-hover:text-[color:var(--color-primary)] transition-colors leading-tight uppercase truncate">
                       {product.name}
                     </h4>
@@ -80,9 +82,11 @@ export default function PremiumRelatedProducts({ products }: Props) {
                       )}
                     </div>
 
-                    <div className="flex items-center justify-between pt-2.5 border-t border-[color:var(--color-border)]/50">
-                      <p className="text-base font-black text-[color:var(--color-primary)]">{product.price.toFixed(2)} €</p>
-                      <ArrowRight className="w-3.5 h-3.5 text-[color:var(--color-text-muted)] group-hover:text-[color:var(--color-primary)] transition-all transform group-hover:translate-x-0.5" />
+                    <div className="flex items-center justify-between pt-3 border-t border-[color:var(--color-border)]/40 mt-1">
+                      <p className="text-xl font-black text-[color:var(--color-text)]">{product.price.toFixed(2)} <span className="text-[color:var(--color-primary)] text-lg glow-neon">€</span></p>
+                      <div className="w-8 h-8 rounded-full bg-[color:var(--color-bg-elevated)] flex items-center justify-center border border-[color:var(--color-border)] group-hover:bg-[color:var(--color-primary)] group-hover:border-[color:var(--color-primary)] transition-colors duration-300">
+                         <ArrowRight className="w-3.5 h-3.5 text-[color:var(--color-text-subtle)] group-hover:text-black transition-colors" />
+                      </div>
                     </div>
                   </div>
                 </Link>

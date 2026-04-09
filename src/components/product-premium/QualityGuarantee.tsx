@@ -33,14 +33,15 @@ export default function QualityGuarantee() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: idx * 0.07, duration: 0.4 }}
-              className="group flex flex-col sm:flex-row items-center sm:items-start gap-4 rounded-2xl border border-[color:var(--color-border)] bg-[color:var(--color-card)] p-5 hover:border-[color:var(--color-primary)]/30 hover:bg-[color:var(--color-primary)]/5 transition-all shadow-sm hover:shadow-md cursor-default"
+              className="group flex flex-col sm:flex-row items-center sm:items-start gap-4 rounded-[2rem] border border-[color:var(--color-border)]/40 bg-[color:var(--color-card)]/60 backdrop-blur-xl p-6 hover:border-green-neon/30 hover:bg-[color:var(--color-bg-elevated)] transition-all duration-300 shadow-[0_4px_15px_rgba(0,0,0,0.05)] hover:shadow-[0_15px_40px_rgba(15,28,22,0.1)] cursor-default overflow-hidden relative"
             >
-              <div className="w-12 h-12 rounded-xl bg-[color:var(--color-primary)]/10 border border-[color:var(--color-primary)]/20 flex items-center justify-center text-[color:var(--color-primary)] flex-shrink-0 group-hover:scale-110 group-hover:bg-[color:var(--color-primary)]/20 transition-all shadow-sm">
+              <div className="absolute top-0 right-0 w-24 h-24 bg-[color:var(--color-primary)]/5 blur-[30px] rounded-full pointer-events-none group-hover:scale-150 group-hover:bg-[color:var(--color-primary)]/10 transition-all duration-700" />
+              <div className="relative z-10 w-14 h-14 rounded-2xl bg-[color:var(--color-bg-elevated)] border border-[color:var(--color-border)]/60 flex items-center justify-center text-[color:var(--color-primary)] flex-shrink-0 group-hover:scale-110 group-hover:border-green-neon/50 group-hover:text-green-neon group-hover:shadow-[0_0_15px_rgba(var(--theme-neon-rgb),0.3)] transition-all duration-500 shadow-sm">
                 {badge.icon}
               </div>
-              <div className="text-center sm:text-left">
+              <div className="text-center sm:text-left relative z-10">
                 <p className="text-sm font-black text-[color:var(--color-text)] group-hover:text-[color:var(--color-primary)] transition-colors uppercase tracking-tight">{badge.label}</p>
-                <p className="text-[11px] text-[color:var(--color-text-muted)] mt-1 leading-relaxed font-medium group-hover:text-[color:var(--color-text-subtle)] transition-colors">{badge.desc}</p>
+                <p className="text-[11px] text-[color:var(--color-text-muted)] mt-1.5 leading-relaxed font-medium group-hover:text-[color:var(--color-text-subtle)] transition-colors">{badge.desc}</p>
               </div>
             </motion.div>
           ))}

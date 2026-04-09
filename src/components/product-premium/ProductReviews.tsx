@@ -56,8 +56,9 @@ export default function ProductReviews({ reviews }: Props) {
         ) : (
           <div className="grid gap-10 lg:grid-cols-[300px_1fr]">
             {/* ── Summary card ── */}
-            <div className="rounded-2xl border border-[color:var(--color-border)] bg-[color:var(--color-card)] p-6 space-y-5 h-fit shadow-sm">
-              <div className="text-center">
+            <div className="rounded-[2.5rem] border border-[color:var(--color-border)]/50 bg-[color:var(--color-card)]/60 backdrop-blur-2xl p-8 space-y-6 h-fit shadow-[0_20px_40px_rgba(0,0,0,0.1)] relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-amber-400/10 blur-[50px] pointer-events-none" />
+              <div className="text-center relative z-10">
                 <p className="text-6xl text-[color:var(--color-text)]" style={{ fontFamily: "'DM Serif Display', Georgia, serif" }}>{average.toFixed(1)}</p>
                 <div className="flex justify-center mt-2 gap-0.5">
                   {ratingToStars(Math.round(average)).map((filled, i) => (
@@ -93,7 +94,7 @@ export default function ProductReviews({ reviews }: Props) {
             </div>
 
             {/* ── Review cards ── */}
-            <div className="grid gap-4 sm:grid-cols-2 content-start">
+            <div className="grid gap-5 sm:grid-cols-2 content-start">
               {reviews.slice(0, 4).map((review, idx) => (
                 <motion.article
                   key={review.id}
@@ -101,9 +102,10 @@ export default function ProductReviews({ reviews }: Props) {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ delay: idx * 0.08 }}
-                  className="relative rounded-2xl border border-[color:var(--color-border)] bg-[color:var(--color-card)] p-5 space-y-3 overflow-hidden shadow-sm hover:border-[color:var(--color-primary)]/30 transition-all font-medium group"
+                  className="relative rounded-[2rem] border border-[color:var(--color-border)]/40 bg-[color:var(--color-card)]/50 p-6 space-y-4 overflow-hidden shadow-lg backdrop-blur-xl hover:shadow-[0_15px_40px_rgba(0,0,0,0.12)] hover:border-amber-400/30 transition-all duration-500 group"
                 >
-                  <Quote className="absolute top-4 right-4 w-8 h-8 text-[color:var(--color-text)]/5 group-hover:text-[color:var(--color-primary)]/10 transition-colors" />
+                  <div className="absolute -top-10 -right-10 w-24 h-24 bg-amber-400/5 blur-[40px] pointer-events-none group-hover:bg-amber-400/10 transition-colors duration-500" />
+                  <Quote className="absolute top-4 right-4 w-8 h-8 text-[color:var(--color-text)]/5 group-hover:text-amber-400/20 transition-colors duration-500" />
 
                   <div className="flex gap-0.5">
                     {ratingToStars(review.rating).map((filled, i) => (

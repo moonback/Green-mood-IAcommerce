@@ -99,8 +99,8 @@ const ProductStory = memo(({ title, text }: Props) => {
             transition={{ duration: 1, delay: 0.2 }}
             className="flex flex-col justify-center"
           >
-            <div className="bg-[color:var(--color-card)]/40 border border-[color:var(--color-border)] rounded-[2.5rem] p-8 lg:p-10 backdrop-blur-3xl shadow-[var(--shadow-card)] relative overflow-hidden group">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-[color:var(--color-primary)]/10 blur-[60px] -z-10 group-hover:scale-150 transition-transform duration-1000" />
+            <div className="bg-[color:var(--color-card)]/60 border border-[color:var(--color-border)]/50 rounded-[2.5rem] p-8 lg:p-10 backdrop-blur-3xl shadow-[0_20px_50px_rgba(0,0,0,0.1)] hover:shadow-[0_30px_60px_rgba(15,28,22,0.15)] hover:border-green-neon/30 transition-all duration-700 relative overflow-hidden group">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-[color:var(--color-primary)]/10 blur-[60px] -z-10 group-hover:scale-150 group-hover:bg-green-neon/15 transition-all duration-1000" />
 
               <div className="flex items-center gap-3 mb-8">
                 <Microscope className="h-5 w-5 text-[color:var(--color-primary)]" />
@@ -124,12 +124,12 @@ const ProductStory = memo(({ title, text }: Props) => {
                 ))}
               </div>
 
-              <div className="mt-10 p-5 rounded-2xl bg-[color:var(--color-card)]/60 border border-[color:var(--color-border)] flex items-center justify-between gap-4">
+              <div className="mt-10 p-5 rounded-2xl bg-[color:var(--color-bg-elevated)] border border-[color:var(--color-border)]/50 flex items-center justify-between gap-4 shadow-inner">
                 <div className="space-y-1">
-                  <span className="text-[8px] font-black uppercase text-green-neon">Score BudTender</span>
-                  <div className="flex gap-0.5">
+                  <span className="text-[8px] font-black uppercase text-green-neon glow-neon">Score BudTender</span>
+                  <div className="flex gap-1 mt-1">
                     {[...Array(5)].map((_, i) => (
-                      <div key={i} className="h-1.5 w-1.5 rounded-full bg-green-neon" />
+                      <div key={i} className="h-1.5 w-1.5 rounded-full bg-green-neon drop-shadow-[0_0_5px_var(--theme-neon)] group-hover:scale-125 transition-transform duration-500" style={{ transitionDelay: `${i * 100}ms` }} />
                     ))}
                   </div>
                 </div>

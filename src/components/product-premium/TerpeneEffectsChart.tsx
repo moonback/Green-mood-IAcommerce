@@ -129,15 +129,15 @@ const CustomTooltip = ({ active, payload }: any) => {
   const item = payload[0]?.payload as { subject: EffectKey; value: number };
   const meta = EFFECT_META[item.subject];
   return (
-    <div className="rounded-xl border border-white/10 bg-black/95 backdrop-blur-xl px-2.5 py-2 shadow-2xl">
-      <div className="flex items-center gap-1.5 mb-0.5">
-        <span className="text-xs">{meta.icon}</span>
-        <p className="text-[10px] font-black uppercase tracking-widest text-white">
+    <div className="rounded-2xl border border-[color:var(--color-border)]/50 bg-[color:var(--color-card)]/95 backdrop-blur-2xl px-3 py-2.5 shadow-2xl">
+      <div className="flex items-center gap-2 mb-1">
+        <span className="text-sm">{meta.icon}</span>
+        <p className="text-[9px] font-black uppercase tracking-[0.2em] text-[color:var(--color-text)]">
           {item.subject}
         </p>
       </div>
-      <p className="text-lg font-black text-white leading-tight">
-        {item.value}<span className="text-[10px] text-white/40 ml-0.5">/100</span>
+      <p className="text-xl font-black text-[color:var(--color-primary)] leading-none mt-1">
+        {item.value}<span className="text-[10px] text-[color:var(--color-text-muted)] ml-0.5">/100</span>
       </p>
     </div>
   );
@@ -189,22 +189,22 @@ export default function TerpeneEffectsChart({ specs, productMetrics, cbdPercenta
       initial={{ opacity: 0, y: 16 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
-      className="relative border-y border-white/5 bg-zinc-950/20 py-8 sm:py-12 overflow-hidden"
+      className="relative border-y border-[color:var(--color-border)]/50 bg-[color:var(--color-bg)] py-12 sm:py-16 overflow-hidden"
     >
-      <div className="pointer-events-none absolute -top-40 left-1/2 -translate-x-1/2 w-[600px] h-full rounded-full bg-[color:var(--color-primary)]/5 blur-[100px]" />
+      <div className="pointer-events-none absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[800px] rounded-full bg-[color:var(--color-primary)]/5 blur-[120px]" />
 
       <div className="relative mx-auto max-w-6xl px-4">
         {/* ── Top Header ── */}
         <div className="mb-8 flex flex-col items-center sm:flex-row sm:justify-between gap-4">
           <div className="text-center sm:text-left">
             <h3
-              className="text-2xl sm:text-3xl text-white mb-1"
+              className="text-3xl sm:text-4xl text-[color:var(--color-text)] mb-1"
               style={{ fontFamily: "'DM Serif Display', serif" }}
             >
               Profil terpènes & CBD
             </h3>
-            <p className="text-[11px] text-white/40 font-medium uppercase tracking-[0.1em]">
-               Lecture bien-être des terpènes et du spectre cannabinoïde (chanvre légal)
+            <p className="text-[10px] text-[color:var(--color-text-muted)] font-black uppercase tracking-[0.2em]">
+               Lecture bien-être des terpènes et du spectre cannabinoïde
             </p>
           </div>
 
@@ -223,10 +223,10 @@ export default function TerpeneEffectsChart({ specs, productMetrics, cbdPercenta
           
           {/* Column 1: Radar & Detail (5/12) */}
           <div className="lg:col-span-5 flex flex-col gap-6">
-            <div className="relative aspect-square w-full max-w-[320px] mx-auto bg-white/[0.02] rounded-full border border-white/5 p-4">
+            <div className="relative aspect-square w-full max-w-[340px] mx-auto bg-[color:var(--color-card)]/40 rounded-[2.5rem] border border-[color:var(--color-border)]/50 p-6 shadow-xl backdrop-blur-xl">
               <ResponsiveContainer width="100%" height="100%">
                 <RadarChart data={radarData} margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
-                  <PolarGrid stroke="rgba(255,255,255,0.05)" />
+                  <PolarGrid stroke="rgba(16,185,129,0.15)" />
                   <PolarAngleAxis
                     dataKey="subject"
                     tick={({ x, y, payload }: any) => {
@@ -255,19 +255,19 @@ export default function TerpeneEffectsChart({ specs, productMetrics, cbdPercenta
             </div>
 
             {/* Detailed Contributors */}
-            <div className="rounded-2xl border border-white/5 bg-white/[0.02] p-4">
-              <div className="flex items-center gap-2 mb-3">
-                <Zap className="w-3 h-3 text-white/40" />
-                <span className="text-[10px] font-black uppercase tracking-widest text-white/60">Contributeurs actifs</span>
+            <div className="rounded-[2rem] border border-[color:var(--color-border)]/40 bg-[color:var(--color-card)]/60 backdrop-blur-xl p-5 shadow-sm">
+              <div className="flex items-center gap-2 mb-4">
+                <Zap className="w-3.5 h-3.5 text-[color:var(--color-primary)]" />
+                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[color:var(--color-text)]">Contributeurs actifs</span>
               </div>
-              <div className="flex flex-wrap gap-1.5">
+              <div className="flex flex-wrap gap-2">
                 {contributors.map(c => (
-                  <span key={c} className="px-2.5 py-1 rounded-lg bg-white/5 border border-white/5 text-[10px] font-bold text-white/80 transition-colors hover:bg-white/10 hover:text-white">
+                  <span key={c} className="px-3 py-1.5 rounded-xl bg-[color:var(--color-bg-elevated)] border border-[color:var(--color-border)] text-[10px] font-bold text-[color:var(--color-text-muted)] transition-colors hover:bg-[color:var(--color-primary)]/10 hover:text-[color:var(--color-primary)] hover:border-[color:var(--color-primary)]/30">
                     {c}
                   </span>
                 ))}
               </div>
-              <p className="mt-3 text-[10px] text-white/30 italic leading-snug">
+              <p className="mt-4 text-[10px] text-[color:var(--color-text-subtle)] font-medium italic leading-relaxed">
                 Effet d'entourage entre terpènes et cannabinoïdes : illustration indicative du ressenti, sans effet psychoactif au sens du THC.
               </p>
             </div>
@@ -277,21 +277,21 @@ export default function TerpeneEffectsChart({ specs, productMetrics, cbdPercenta
           <div className="lg:col-span-7 flex flex-col gap-6">
             
             {/* Spectrum & Balance */}
-            <div className="rounded-2xl border border-white/5 bg-white/[0.03] p-5">
-              <div className="flex justify-between items-end mb-4">
+            <div className="rounded-[2rem] border border-[color:var(--color-border)]/40 bg-[color:var(--color-card)]/60 p-6 backdrop-blur-xl shadow-sm">
+              <div className="flex justify-between items-end mb-5">
                 <div>
-                  <p className="text-[10px] font-black uppercase tracking-widest text-white/40 mb-1">Équilibre Dominant</p>
-                  <h4 className={`text-xl font-black uppercase tracking-tight ${isRelaxant ? 'text-[#10b981]' : 'text-[#f59e0b]'}`}>
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[color:var(--color-text-muted)] mb-1">Équilibre Dominant</p>
+                  <h4 className={`text-2xl font-black uppercase tracking-tight ${isRelaxant ? 'text-[#10b981]' : 'text-[#f59e0b]'}`}>
                     {spectrumLabel}
                   </h4>
                 </div>
                 <div className="text-right">
-                  <p className="text-[9px] font-bold text-white/30 uppercase tracking-widest">Intensité</p>
-                  <p className="text-sm font-black text-white">{Math.abs(spectrumPos - 50) * 2}% <span className="text-[10px] text-white/40 font-medium">Dominant</span></p>
+                  <p className="text-[9px] font-bold text-[color:var(--color-text-subtle)] uppercase tracking-[0.15em]">Intensité</p>
+                  <p className="text-base font-black text-[color:var(--color-text)]">{Math.abs(spectrumPos - 50) * 2}% <span className="text-[10px] text-[color:var(--color-text-muted)] font-bold">Dominant</span></p>
                 </div>
               </div>
 
-              <div className="relative h-2 rounded-full bg-white/5 overflow-hidden ring-1 ring-white/5">
+              <div className="relative h-2.5 rounded-full bg-[color:var(--color-bg-muted)] overflow-hidden ring-1 ring-[color:var(--color-border)]">
                 <div 
                   className="absolute inset-0 transition-all duration-1000"
                   style={{ background: 'linear-gradient(to right, #10b981, #d1fae5 45%, #fef3c7 55%, #f59e0b)' }} 
