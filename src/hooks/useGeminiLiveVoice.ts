@@ -490,7 +490,7 @@ export function useGeminiLiveVoice({
     // L3 – ALL words present
     const cleanWords = (s: string) => normalizeStr(s).split(/\s+/).filter(w => w.length > 1);
     const words = cleanWords(q);
-    
+
     if (words.length > 0) {
       found = allKnown.find(i => {
         const itemWords = cleanWords(i.name);
@@ -778,7 +778,7 @@ export function useGeminiLiveVoice({
     if (options?.preserveViewedProducts) {
       preserveViewedProductsOnCleanupRef.current = true;
     }
-    
+
     // Calculate and log duration if session was active
     if (startTimeRef.current && interactionIdRef.current) {
       const durationSeconds = Math.round((Date.now() - startTimeRef.current) / 1000);
@@ -953,7 +953,7 @@ export function useGeminiLiveVoice({
     if (!sessionRef.current || isManualCloseRef.current || !savedPrefs) return;
     const prevSignature = JSON.stringify(prevSavedPrefsRef.current || {});
     const isDifferent = savedPrefsSignature !== prevSignature;
-    
+
     if (isDifferent) {
       const renderValue = (val: any): string => {
         if (Array.isArray(val)) return val.join(', ');
@@ -963,7 +963,7 @@ export function useGeminiLiveVoice({
         }
         return String(val);
       };
-      
+
       const entries = Object.entries(savedPrefs)
         .filter(([k, v]) => {
           if (!v || ['id', 'user_id', 'updated_at', 'preferences'].includes(k)) return false;
@@ -1510,16 +1510,16 @@ export function useGeminiLiveVoice({
                     }
                   };
                 }
-                
+
                 if (c.name === 'get_current_time') {
                   const now = new Date();
-                  const result = now.toLocaleString('fr-FR', { 
-                    weekday: 'long', 
-                    year: 'numeric', 
-                    month: 'long', 
-                    day: 'numeric', 
-                    hour: '2-digit', 
-                    minute: '2-digit' 
+                  const result = now.toLocaleString('fr-FR', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
                   });
                   return { name: c.name, id: c.id, response: { result } };
                 }
@@ -1604,13 +1604,13 @@ export function useGeminiLiveVoice({
                   const p = await findProduct(prodName);
                   if (p && onRemoveItemRef.current) {
                     onRemoveItemRef.current(p, qty);
-                    return { 
-                      name: c.name, 
-                      id: c.id, 
-                      response: { 
-                        result: `CONFIRMATION : ${p.name} a été retiré du panier. Vérification système : ACTION_SUCCESS. Le panier est à jour.`, 
-                        status: 'verified' 
-                      } 
+                    return {
+                      name: c.name,
+                      id: c.id,
+                      response: {
+                        result: `CONFIRMATION : ${p.name} a été retiré du panier. Vérification système : ACTION_SUCCESS. Le panier est à jour.`,
+                        status: 'verified'
+                      }
                     };
                   }
                   return { name: c.name, id: c.id, response: { error: `Produit "${prodName}" non trouvé dans le panier.` } };
@@ -1622,13 +1622,13 @@ export function useGeminiLiveVoice({
                   const p = await findProduct(prodName);
                   if (p && onUpdateQuantityRef.current) {
                     onUpdateQuantityRef.current(p, qty);
-                    return { 
-                      name: c.name, 
-                      id: c.id, 
-                      response: { 
-                        result: `CONFIRMATION : La quantité de ${p.name} a été mise à jour à ${qty}. Vérification système : ACTION_SUCCESS. Le panier est à jour.`, 
-                        status: 'verified' 
-                      } 
+                    return {
+                      name: c.name,
+                      id: c.id,
+                      response: {
+                        result: `CONFIRMATION : La quantité de ${p.name} a été mise à jour à ${qty}. Vérification système : ACTION_SUCCESS. Le panier est à jour.`,
+                        status: 'verified'
+                      }
                     };
                   }
                   return { name: c.name, id: c.id, response: { error: `Produit "${prodName}" non trouvé dans le panier.` } };
@@ -1945,19 +1945,19 @@ export function useGeminiLiveVoice({
                 if (c.name === 'save_preferences') {
                   if (onSavePrefsRef.current) {
                     const raw = args.new_prefs || args.new_pref || (args.prefs ? args.prefs : args);
-                    
+
                     // The raw data from AI might be { expertise: "Débutant" } 
                     // or { expertise: { value: "Débutant", confidence: 0.9 } }
                     // We want to pass it to onSavePrefs which will then be handled by useBudTenderMemory.updatePrefs
-                    
+
                     let finalPrefs = raw;
                     if (typeof raw === 'string') {
-                       try {
-                          if (raw.includes(':')) {
-                             const [k, v] = raw.split(':').map(s => s.trim());
-                             finalPrefs = { [k]: v };
-                          }
-                       } catch { /* ignore */ }
+                      try {
+                        if (raw.includes(':')) {
+                          const [k, v] = raw.split(':').map(s => s.trim());
+                          finalPrefs = { [k]: v };
+                        }
+                      } catch { /* ignore */ }
                     }
 
                     onSavePrefsRef.current(finalPrefs);
@@ -2049,7 +2049,7 @@ export function useGeminiLiveVoice({
                       return { name: c.name, id: c.id, response: { error: "La gestion des favoris est temporairement indisponible dans cette interface." } };
                     }
                   }
-                  
+
                   const missingLabel = prodName || prodId || 'inconnu';
                   return { name: c.name, id: c.id, response: { error: `Produit "${missingLabel}" non trouvé.` } };
                 }
@@ -2105,32 +2105,32 @@ export function useGeminiLiveVoice({
                   const pB = await findProduct(nameB);
                   if (!pA) return { name: c.name, id: c.id, response: { error: `Produit "${nameA}" introuvable dans le catalogue.` } };
                   if (!pB) return { name: c.name, id: c.id, response: { error: `Produit "${nameB}" introuvable dans le catalogue.` } };
-                  
+
                   if (onCompareProductsRef.current) {
                     onCompareProductsRef.current([pA, pB]);
                   }
-                  
+
                   const diff = pB.price - pA.price;
                   const priceLine = diff === 0
                     ? `Même prix (${pA.price}€).`
                     : diff > 0
                       ? `${pA.name} est ${Math.abs(diff).toFixed(2)}€ moins cher.`
                       : `${pB.name} est ${Math.abs(diff).toFixed(2)}€ moins cher.`;
-                  
+
                   const comparison = [
                     `📊 TABLEAU DE COMPARAISON AFFICHÉ : ${pA.name} vs ${pB.name}`,
                     `${pA.name} : ${pA.price}€ | Description: ${pA.description || 'N/A'}`,
                     `${pB.name} : ${pB.price}€ | Description: ${pB.description || 'N/A'}`,
                     `Verdict prix : ${priceLine}`
                   ].join('\n');
-                  
-                  return { 
-                    name: c.name, 
-                    id: c.id, 
-                    response: { 
-                      result: comparison, 
-                      note: 'Le tableau comparatif est apparu à l\'écran du client. Invite-le à le regarder et commente les points clés (prix, effets, arômes) pour l\'aider à choisir.' 
-                    } 
+
+                  return {
+                    name: c.name,
+                    id: c.id,
+                    response: {
+                      result: comparison,
+                      note: 'Le tableau comparatif est apparu à l\'écran du client. Invite-le à le regarder et commente les points clés (prix, effets, arômes) pour l\'aider à choisir.'
+                    }
                   };
                 }
 

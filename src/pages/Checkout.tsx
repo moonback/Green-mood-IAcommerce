@@ -181,6 +181,7 @@ export default function Checkout() {
 
     setIsSubmitting(true);
     setError('');
+    console.info('[Checkout] Environment check:', { isDev: import.meta.env.DEV, mode: import.meta.env.MODE });
 
     try {
       const pointsRedeemed = usePoints && profile
