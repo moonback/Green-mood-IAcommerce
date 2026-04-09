@@ -43,6 +43,7 @@ const BARGE_IN_NOISE_MIN = 0.02;             // clamp: never below 0.02
 const BARGE_IN_NOISE_MAX = 0.12;             // clamp: never above 0.12 (loud environments)
 const BARGE_IN_RECALIBRATE_INTERVAL_MS = 60_000; // recalibrate every 60s
 const MAX_PRODUCT_CACHE_SIZE = 100;
+const VECTOR_SEARCH_CACHE_TTL_MS = 60 * 1000;
 /** Au-delà, l'API Live ferme souvent le WS avec 1007 (payload invalide / trop gros). */
 const MAX_LIVE_TOOL_RESPONSE_JSON = 14_000;
 const VOICE_CATALOG_TOOL_MAX_ITEMS = 6;
@@ -227,6 +228,8 @@ interface Options {
   proactiveGreeting?: string;            // Am6: used when voice is triggered proactively
 }
 
+type VectorSearchCacheEntry = { ts: number; results: Product[] };
+
 let audioWorkerSingleton: Worker | null = null;
 function getAudioWorker(): Worker {
   if (!audioWorkerSingleton && typeof window !== 'undefined') {
@@ -310,6 +313,7 @@ export function useGeminiLiveVoice({
   const [voiceState, setVoiceState] = useState<VoiceState>('idle');
   const [error, setError] = useState<string | null>(null);
   const [isMuted, setIsMuted] = useState(false);
+  const [toolActivity, setToolActivity] = useState<string | null>(null);
 
   const [compatibilityError] = useState<string | null>(() => {
     if (typeof window === 'undefined') return null;
@@ -399,6 +403,9 @@ export function useGeminiLiveVoice({
   const messageQueueRef = useRef<string[]>([]);
   const silenceTimerRef = useRef<number | null>(null);
   const productCacheRef = useRef<Map<string, Product>>(new Map());
+  const vectorSearchCacheRef = useRef<Map<string, VectorSearchCacheEntry>>(new Map());
+  const vectorSearchInFlightRef = useRef<Map<string, Promise<Product[]>>>(new Map());
+  const toolActivityTimerRef = useRef<number | null>(null);
 
 
   const resetSilenceTimer = useCallback(() => {
@@ -583,6 +590,64 @@ export function useGeminiLiveVoice({
     return typeof WebSocket === 'undefined' || ws.readyState === WebSocket.OPEN;
   }, []);
 
+  const promptContextSignature = useMemo(() => JSON.stringify({
+    p: products.length,
+    cart: cartItems.map(i => `${i.product.id}:${i.quantity}`),
+    viewed: recentlyViewed.slice(0, 8).map(v => v.id),
+    prefsUpdatedAt: (savedPrefs as any)?.updated_at || '',
+    activeProductId: activeProduct?.id || '',
+    prompt: customPrompt?.trim() || '',
+    userName: userName || '',
+    loyaltyPoints: loyaltyPoints ?? null,
+    tiers: (globalSettings.loyalty_tiers || []).map((t: any) => `${t.name}:${t.min_points}:${t.multiplier}`),
+    store: globalSettings.store_name || 'Eco CBD',
+    bot: globalSettings.budtender_name || 'BudTender',
+  }), [
+    products.length,
+    cartItems,
+    recentlyViewed,
+    savedPrefs,
+    activeProduct?.id,
+    customPrompt,
+    userName,
+    loyaltyPoints,
+    globalSettings.loyalty_tiers,
+    globalSettings.store_name,
+    globalSettings.budtender_name,
+  ]);
+
+  const runVectorCatalogSearch = useCallback(async (query: string): Promise<Product[]> => {
+    const normalized = query.toLowerCase().trim();
+    if (!normalized) return [];
+    const now = Date.now();
+    const cached = vectorSearchCacheRef.current.get(normalized);
+    if (cached && now - cached.ts < VECTOR_SEARCH_CACHE_TTL_MS) {
+      return cached.results;
+    }
+    const inFlight = vectorSearchInFlightRef.current.get(normalized);
+    if (inFlight) return inFlight;
+
+    const searchPromise = (async () => {
+      const embedding = await generateEmbedding(query);
+      const { data, error: rpcError } = await matchProductsRpc<Product>({
+        embedding,
+        matchThreshold: 0.1,
+        matchCount: 10
+      });
+      if (rpcError) throw rpcError;
+      const results = (data as Product[]) || [];
+      vectorSearchCacheRef.current.set(normalized, { ts: Date.now(), results });
+      return results;
+    })();
+
+    vectorSearchInFlightRef.current.set(normalized, searchPromise);
+    try {
+      return await searchPromise;
+    } finally {
+      vectorSearchInFlightRef.current.delete(normalized);
+    }
+  }, []);
+
   const buildSystemPrompt = useCallback((): string => {
     const effectiveCustomPrompt = [globalSettings.budtender_base_prompt?.trim(), customPrompt?.trim()].filter(Boolean).join('\n\n');
     const prompt = getVoicePrompt(
@@ -595,7 +660,7 @@ export function useGeminiLiveVoice({
     );
     console.info('[Voice][Prompt] System instruction generated (length:', prompt.length, ')');
     return prompt;
-  }, [userName, deliveryFee, deliveryFreeThreshold, savedPrefs, pastProducts, pastOrders, cartItems, customPrompt, loyaltyPoints, globalSettings.budtender_name, globalSettings.loyalty_tiers, allowCloseSession, recentlyViewed, globalSettings.store_name, globalSettings.budtender_base_prompt, globalSettings.loyalty_currency_name, activeProduct]);
+  }, [promptContextSignature, userName, deliveryFee, deliveryFreeThreshold, savedPrefs, pastProducts, pastOrders, cartItems, customPrompt, loyaltyPoints, globalSettings.budtender_name, globalSettings.loyalty_tiers, allowCloseSession, recentlyViewed, globalSettings.store_name, globalSettings.budtender_base_prompt, globalSettings.loyalty_currency_name, activeProduct]);
 
   const fetchEphemeralToken = useCallback(async (forceRefresh: boolean = false): Promise<{ token: string }> => {
     const now = Date.now();
@@ -648,9 +713,6 @@ export function useGeminiLiveVoice({
           const expireTimeRaw = data?.expireTime ? Date.parse(data.expireTime as string) : NaN;
           const expireAtMs = Number.isFinite(expireTimeRaw) ? expireTimeRaw : (Date.now() + 60_000);
           cachedTokenRef.current = { token, expireAtMs, promptHash: cacheKey } as any;
-
-          // Clear the cache IMMEDIATELY so it's not reused if we need another token soon (like on a retry)
-          cachedTokenRef.current = null;
           return { token };
         } catch (err: any) {
           tokenErrorMessage = err?.message || 'Token Gemini manquant';
@@ -752,7 +814,10 @@ export function useGeminiLiveVoice({
     if (inputTranscriptTimerRef.current) clearTimeout(inputTranscriptTimerRef.current);
     if (outputTranscriptTimerRef.current) clearTimeout(outputTranscriptTimerRef.current);
     if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+    if (toolActivityTimerRef.current) clearTimeout(toolActivityTimerRef.current);
     productCacheRef.current.clear();
+    vectorSearchCacheRef.current.clear();
+    vectorSearchInFlightRef.current.clear();
     loadedVoiceSkillsRef.current.clear();
 
     if (!preserveViewedProductsOnCleanupRef.current) {
@@ -831,9 +896,14 @@ export function useGeminiLiveVoice({
   // Sync cart state mid-session (utilise désormais la message queue)
   const prevCartItemsRef = useRef(cartItems);
   const lastSyncTextRef = useRef('');
+  const cartSignature = useMemo(
+    () => cartItems.map(i => `${i.product.id}:${i.quantity}`).join('|'),
+    [cartItems]
+  );
   useEffect(() => {
     if (!sessionRef.current || isManualCloseRef.current) return;
-    const isDifferent = JSON.stringify(cartItems) !== JSON.stringify(prevCartItemsRef.current);
+    const prevSignature = prevCartItemsRef.current.map(i => `${i.product.id}:${i.quantity}`).join('|');
+    const isDifferent = cartSignature !== prevSignature;
     if (isDifferent) {
       const cartStr = cartItems.length > 0
         ? cartItems.map(i => `${i.quantity}x ${i.product.name}`).join(', ')
@@ -850,7 +920,7 @@ export function useGeminiLiveVoice({
       }
       prevCartItemsRef.current = cartItems;
     }
-  }, [cartItems, queueClientMessage]);
+  }, [cartItems, cartSignature, queueClientMessage]);
 
   // Sync active product state mid-session (utilise désormais la message queue)
   const prevActiveProductRef = useRef(activeProduct);
@@ -875,11 +945,14 @@ export function useGeminiLiveVoice({
 
   // Sync AI preferences (Profil Évolutif) mid-session
   const prevSavedPrefsRef = useRef(savedPrefs);
+  const savedPrefsSignature = useMemo(
+    () => JSON.stringify(savedPrefs || {}),
+    [savedPrefs]
+  );
   useEffect(() => {
     if (!sessionRef.current || isManualCloseRef.current || !savedPrefs) return;
-    
-    // Check for deep differences
-    const isDifferent = JSON.stringify(savedPrefs) !== JSON.stringify(prevSavedPrefsRef.current);
+    const prevSignature = JSON.stringify(prevSavedPrefsRef.current || {});
+    const isDifferent = savedPrefsSignature !== prevSignature;
     
     if (isDifferent) {
       const renderValue = (val: any): string => {
@@ -909,7 +982,7 @@ export function useGeminiLiveVoice({
       }
       prevSavedPrefsRef.current = savedPrefs;
     }
-  }, [savedPrefs, queueClientMessage]);
+  }, [savedPrefs, savedPrefsSignature, queueClientMessage]);
 
   // Global unhandledrejection suppressor for SDK's internal uncatchable fire-and-forget WS throws.
   // When the WS enters CLOSING state (readyState 2) before onclose fires, the SDK synchronously throws 
@@ -930,7 +1003,23 @@ export function useGeminiLiveVoice({
     cleanup();
     setVoiceState('idle');
     setIsMuted(false);
+    setToolActivity(null);
   }, [cleanup]);
+
+  const setSearchingFeedback = useCallback((toolName: string) => {
+    const labels: Record<string, string> = {
+      search_catalog: 'Je recherche les meilleurs produits…',
+      search_knowledge: 'Je cherche l’information demandée…',
+      search_cannabis_conditions: 'Je consulte les données scientifiques…',
+      search_expert_data: 'Je vérifie les données expertes…',
+      track_order: 'Je vérifie le statut de commande…',
+    };
+    const label = labels[toolName];
+    if (!label) return;
+    setToolActivity(label);
+    if (toolActivityTimerRef.current) window.clearTimeout(toolActivityTimerRef.current);
+    toolActivityTimerRef.current = window.setTimeout(() => setToolActivity(null), 5000);
+  }, []);
 
   const playPcmChunk = useCallback((base64: string) => {
     // Guard: discard any audio chunks that arrive after an interruption
@@ -1352,6 +1441,7 @@ export function useGeminiLiveVoice({
               const callKey = `${c.name}:${c.id || 'no-id'}`;
               const dedupKey = `${c.name}:${JSON.stringify(safeArgs)}`;
               toolStartTimes.set(callKey, Date.now());
+              setSearchingFeedback(String(c.name || ''));
               console.info('[Voice][Tool] START', { name: c.name, id: c.id, args: safeArgs });
 
               try {
@@ -1677,7 +1767,14 @@ export function useGeminiLiveVoice({
                 if (c.name === 'search_catalog') {
                   const query = (args.query || '').trim();
                   if (!query) {
-                    return { name: c.name, id: c.id, response: { error: 'Recherche impossible : le paramètre "query" est vide.' } };
+                    return {
+                      name: c.name,
+                      id: c.id,
+                      response: {
+                        note: 'Aucune recherche exécutée: requête vide. Pose une question courte au client pour préciser le besoin avant de relancer search_catalog.',
+                        skipped: true,
+                      }
+                    };
                   }
 
                   const fallbackResults = fallbackKeywordSearch(query, productsRef.current);
@@ -1704,13 +1801,7 @@ export function useGeminiLiveVoice({
                   }
 
                   try {
-                    const embedding = await generateEmbedding(query);
-                    const { data, error: rpcError } = await matchProductsRpc<Product>({
-                      embedding,
-                      matchThreshold: 0.1,
-                      matchCount: 10
-                    });
-                    if (rpcError) throw rpcError;
+                    const data = await runVectorCatalogSearch(query);
                     if (data && data.length > 0) searchResultsRef.current = data as Product[];
                     const results = formatVoiceCatalogToolLines(data as Product[]);
                     return { name: c.name, id: c.id, response: { results, note: 'Ce sont les produits les plus pertinents du catalogue complet.' } };
@@ -2205,6 +2296,7 @@ export function useGeminiLiveVoice({
                 }
               }
             }
+            setToolActivity(null);
           }
         }
       });
@@ -2228,7 +2320,7 @@ export function useGeminiLiveVoice({
       setError(userMessage);
       setVoiceState('error');
     }
-  }, [cleanup, buildSystemPrompt, compatibilityError, globalSettings.budtender_voice_name, playPcmChunk, startMicCapture, stopAllPlayback, stopSession, resetSilenceTimer]);
+  }, [cleanup, compatibilityError, fetchEphemeralToken, findProduct, playPcmChunk, runVectorCatalogSearch, setSearchingFeedback, startMicCapture, stopAllPlayback, stopSession, resetSilenceTimer]);
 
   // Keep startSession accessible inside the onclose retry callback via ref
   useEffect(() => {
@@ -2242,5 +2334,5 @@ export function useGeminiLiveVoice({
 
   const isSupported = useMemo(() => !compatibilityError, [compatibilityError]);
 
-  return { voiceState, error, isMuted, isSupported, compatibilityError, startSession, stopSession, toggleMute };
+  return { voiceState, error, isMuted, isSupported, compatibilityError, toolActivity, startSession, stopSession, toggleMute };
 }

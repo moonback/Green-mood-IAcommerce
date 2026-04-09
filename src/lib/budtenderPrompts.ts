@@ -131,33 +131,22 @@ Réponds UNIQUEMENT en JSON.
 
 
 
-// ─── VOICE FORMAT RULES — constante réutilisable ─────────────────────────────
+const VOICE_PROMPT_MAX_CHARS = 7600;
+const VOICE_CONTEXT_MAX_CHARS = 2200;
+
 const VOICE_FORMAT_RULES = `## RÈGLES AUDIO — OBLIGATOIRE
-INTERDIT : Markdown, Emojis, parenthèses techniques, URLs, SKU, codes. Pas de formules de clôture ("au revoir", "n'hésitez pas"). Jamais de listes à puces.
-OBLIGATOIRE : 
-- Phrases courtes (10-18 mots), 2-3 par réponse.
-- Chiffres en lettres ("vingt euros").
-- Ponctuation pour les pauses (virgules, points).
-- Connecteurs oraux ("Salut,", "Tu sais,","Absolument,","Parfait,","D'accord,","Compris,","Exactement,", etc).
-- Contractions ("c'est", "y'a", "j'ai", "j'suis", etc).
-- Varier légèrement l’intonation pour éviter un ton monotone.
-- Donner l’impression d’une conversation réelle, simple, claire et engageante.`;
+Interdit: markdown, emojis, URLs, codes techniques, listes.
+Réponds oralement en Français: 2-3 phrases courtes, ton naturel, clair et chaleureux.
+Chiffres en lettres, pauses via virgules/points, et conclure par une question utile si pertinent.`;
 
 // ─── MODULES PRIVÉS ──────────────────────────────────────────────────────────
 
 const _buildIdentity = (budtenderName: string, storeName: string) =>
-  `## RÔLE : ${budtenderName}, conseiller expert chez ${storeName}. Spécialiste des solutions naturelles à base de chanvre, tu guides chaque client avec précision, clarté et un ton professionnel, accessible et humain. analyse le profil client avant toutes interactions`;
+  `## RÔLE : ${budtenderName}, conseiller expert chez ${storeName}. Personnalise chaque réponse selon le profil client avant de proposer.`;
 const _buildAnalysisProtocol = () => {
   return `## ANALYSE INTERNE (non visible)
-
-1. Identifier l’intention réelle du client.
-2. Détecter l’émotion dominante.
-3. Prendre en compte le contexte (profil, historique, panier).
-4. Choisir la meilleure stratégie (réponse directe ou utilisation d’un outil).
-5. Construire une accroche naturelle et engageante.
-
-RÈGLE CLÉ :
-Exploiter les informations du client de manière implicite et fluide, sans les mentionner explicitement.`;
+1) Identifier intention + émotion. 2) Utiliser contexte (profil, historique, panier).
+3) Choisir réponse directe ou outil. 4) Répondre simplement sans exposer ton raisonnement interne.`;
 };
 
 const _buildClientContext = (
@@ -322,6 +311,22 @@ Si une information nouvelle contredit une information existante à haute confide
   return ctx;
 };
 
+const _trimContextForVoice = (raw: string, maxLen: number) => {
+  const lines = raw
+    .split('\n')
+    .map(l => l.trim())
+    .filter(Boolean);
+  const kept: string[] = [];
+  let used = 0;
+  for (const line of lines) {
+    const candidate = line.length > 280 ? `${line.slice(0, 277)}…` : line;
+    if (used + candidate.length + 1 > maxLen) break;
+    kept.push(candidate);
+    used += candidate.length + 1;
+  }
+  return kept.join('\n');
+};
+
 const _buildCatalog = (products: Product[], limit = 10) =>
   products
     .slice(0, limit)
@@ -350,11 +355,12 @@ export const getVoicePrompt = (
   currencyName: string = 'Credit',
   activeProduct?: (PremiumProduct & { reviews: PremiumReview[]; relatedProducts?: Product[] }) | null
 ) => {
-  const clientContext = _buildClientContext(
+  const rawClientContext = _buildClientContext(
     userName, loyaltyPoints, loyaltyTiers, currencyName,
     pastOrders, pastProducts, recentlyViewed, savedPrefs, cartItems, activeProduct,
     deliveryFee, deliveryFreeThreshold
   );
+  const clientContext = _trimContextForVoice(rawClientContext, VOICE_CONTEXT_MAX_CHARS);
   const now = new Date();
   const timeStr = now.toLocaleString('fr-FR', {
     weekday: 'long',
@@ -365,7 +371,7 @@ export const getVoicePrompt = (
     minute: '2-digit'
   });
 
-  const finalPrompt = [
+  let finalPrompt = [
     _buildIdentity(budtenderName, storeName),
     VOICE_FORMAT_RULES,
     _buildAnalysisProtocol(),
@@ -378,17 +384,33 @@ export const getVoicePrompt = (
     `## CATALOGUE DISPONIBLE (RÉSUMÉ)\n${_buildCatalog(products)}`,
   ].filter(Boolean).join('\n\n');
 
-  // Hard limit to 8000 characters to prevent WebSocket 1007 (Invalid Argument) error in Gemini Live.
-  // We sanitize the string by removing potentially problematic non-printable characters or excessive whitespace.
-  const sanitized = finalPrompt
+  let sanitized = finalPrompt
     .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F-\u009F]/g, '')
     .replace(/[ \t]+/g, ' ')
     .replace(/\n{3,}/g, '\n\n')
     .trim();
 
-  if (sanitized.length > 7990) {
-    console.warn('[Voice][Prompt] Prompt too long (', sanitized.length, '), truncating to 7990 chars.');
-    return sanitized.slice(0, 7990) + '... (truncated for stability)';
+  if (sanitized.length > VOICE_PROMPT_MAX_CHARS) {
+    finalPrompt = [
+      _buildIdentity(budtenderName, storeName),
+      VOICE_FORMAT_RULES,
+      _buildAnalysisProtocol(),
+      buildCoreVoiceSkillsContext(),
+      `## CONTEXTE CLIENT\n${_trimContextForVoice(rawClientContext, 1200)}`,
+      customPrompt?.trim() ? `## INSTRUCTIONS SPÉCIFIQUES\n${customPrompt.trim().slice(0, 450)}` : '',
+      `## CATALOGUE DISPONIBLE (RÉSUMÉ)\n${_buildCatalog(products, 6)}`,
+    ].filter(Boolean).join('\n\n');
+
+    sanitized = finalPrompt
+      .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F-\u009F]/g, '')
+      .replace(/[ \t]+/g, ' ')
+      .replace(/\n{3,}/g, '\n\n')
+      .trim();
+  }
+
+  if (sanitized.length > VOICE_PROMPT_MAX_CHARS) {
+    console.warn('[Voice][Prompt] Prompt too long (', sanitized.length, '), trimming to', VOICE_PROMPT_MAX_CHARS);
+    return sanitized.slice(0, VOICE_PROMPT_MAX_CHARS);
   }
   return sanitized;
 };

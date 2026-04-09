@@ -188,7 +188,7 @@ export default function VoiceAdvisor({
     const { resolvedTheme } = useTheme();
     const isLightTheme = resolvedTheme === 'light';
 
-    const { voiceState, error, isMuted, isSupported, compatibilityError, startSession, stopSession, toggleMute } =
+    const { voiceState, error, isMuted, isSupported, compatibilityError, toolActivity, startSession, stopSession, toggleMute } =
         useGeminiLiveVoice({
             products,
             pastProducts,
@@ -367,7 +367,7 @@ export default function VoiceAdvisor({
                                 </p>
                                 {!compatibilityError && !error && (
                                     <p className={`text-[10px] mt-1 leading-relaxed ${isLightTheme ? 'text-slate-400' : 'text-zinc-400'}`} aria-live="polite">
-                                        {statusHint}
+                                        {toolActivity || statusHint}
                                     </p>
                                 )}
                             </div>
