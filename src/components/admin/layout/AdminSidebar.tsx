@@ -71,7 +71,8 @@ export type Tab =
   | 'loyalty'
   | 'ads'
   | 'blog'
-  | 'ai_models';
+  | 'ai_models'
+  | 'subscriptions_kanban';
 
 export interface NavItem {
   key: Tab;
@@ -94,7 +95,8 @@ export const sidebarCategories = [
     color: '#10b981',
     items: [
       { key: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-      { key: 'kanban', label: 'Kanban', icon: Columns },
+      { key: 'kanban', label: 'Kanban Ord.', icon: Columns },
+      { key: 'subscriptions_kanban', label: 'Abonnement (Kanban)', icon: Columns },
       { key: 'analytics', label: 'Analytique', icon: LineChart },
       { key: 'accounting', label: 'Comptabilité', icon: Calculator },
     ],

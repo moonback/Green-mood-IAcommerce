@@ -40,6 +40,7 @@ import AdminCannabisConditionsTab from '../components/admin/AdminCannabisConditi
 import AdminAdsTab from '../components/admin/AdminAdsTab';
 import AdminBlogTab from '../components/admin/AdminBlogTab';
 import AdminAIModelsTab from '../components/admin/AdminAIModelsTab';
+import AdminSubscriptionKanbanTab from '../components/admin/AdminSubscriptionKanbanTab';
 
 export default function Admin() {
   const [tab, setTab] = useState<Tab>('dashboard');
@@ -53,6 +54,7 @@ export default function Admin() {
   const [customers, setCustomers] = useState<Profile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isKanbanFullScreen, setIsKanbanFullScreen] = useState(true);
+  const [isSubKanbanFullScreen, setIsSubKanbanFullScreen] = useState(true);
 
   const [isVoiceOpen, setIsVoiceOpen] = useState(false);
   const didInitRef = useRef(false);
@@ -65,6 +67,9 @@ export default function Admin() {
   useEffect(() => {
     if (tab === 'kanban') {
       setIsKanbanFullScreen(true);
+    }
+    if (tab === 'subscriptions_kanban') {
+      setIsSubKanbanFullScreen(true);
     }
   }, [tab]);
 
@@ -195,6 +200,7 @@ export default function Admin() {
         break;
       case 'orders':
       case 'kanban':
+      case 'subscriptions_kanban':
         await loadOrders();
         break;
       case 'stock':
@@ -230,7 +236,7 @@ export default function Admin() {
       currentTab={tab}
       onTabChange={setTab}
       onSignOut={signOut}
-      showLayout={tab !== 'pos' && !(tab === 'kanban' && isKanbanFullScreen)}
+      showLayout={tab !== 'pos' && !(tab === 'kanban' && isKanbanFullScreen) && !(tab === 'subscriptions_kanban' && isSubKanbanFullScreen)}
     >
       <AnimatePresence mode="wait">
         <motion.div
@@ -301,6 +307,13 @@ export default function Admin() {
               onRefresh={loadOrders} 
               isFullScreen={isKanbanFullScreen}
               onToggleFullScreen={() => setIsKanbanFullScreen(!isKanbanFullScreen)}
+              onBack={() => setTab('dashboard')}
+            />
+          )}
+          {tab === 'subscriptions_kanban' && (
+            <AdminSubscriptionKanbanTab
+              isFullScreen={isSubKanbanFullScreen}
+              onToggleFullScreen={() => setIsSubKanbanFullScreen(!isSubKanbanFullScreen)}
               onBack={() => setTab('dashboard')}
             />
           )}

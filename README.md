@@ -130,7 +130,7 @@ Le cœur différenciant du projet. Un conseiller expert CBD disponible 24h/24 di
 | **Fidélité** | Taux points, paliers, historique transactions |
 | **Parrainage** | Suivi filleuls, attributions, statistiques |
 | **Recommandations** | Cross-selling IA, similarité vectorielle par profil terpénique, associations produits |
-| **Abonnements** | Gestion commandes récurrentes, fréquences |
+| **Abonnements (Kanban)** | Gestion visuelle des préparations quotidiennes, vue Jour/Mois, sélecteur de date, validation en 1 clic |
 | **Avis** | Modération, réponses, approbation |
 | **Blog RAG** | Génération guides SEO depuis base de connaissances |
 | **Base de connaissances** | Import PDF, import Obsidian (.md), CRUD articles, vectorisation auto |
@@ -980,8 +980,25 @@ Voir le fichier [LICENSE](LICENSE) pour les conditions d'utilisation.
 
 ---
 
+## Focus : Gestion des Abonnements (Kanban)
+
+L'administration intègre désormais un module de gestion des abonnements ultra-moderne conçu pour la logistique quotidienne.
+
+### Fonctionnalités Clés
+- **Vue Kanban Dynamique** : Visualisez vos préparations par jour ou par mois.
+- **Workflow de Validation** : Validez une livraison en un clic. Le système génère automatiquement la commande Stripe/Interne, met à jour les stocks et calcule la prochaine date de livraison selon la fréquence (Hebdo, Mensuel, etc.).
+- **Planification Flexible** :
+    - **Sélecteur de date** : Choisissez n'importe quelle date de départ pour votre planning.
+    - **Glisser-Déposer** : Reprogrammez une livraison ou mettez un abonnement en pause par simple drag-and-drop.
+- **Preview Logistique** : Survolez l'indicateur "Prévision Demain" pour voir instantanément le récapitulatif des produits et quantités à préparer pour la journée suivante.
+- **Mode Plein Écran** : Interface immersive pour une gestion dédiée en entrepôt ou tablette.
+
+---
+
 <div align="center">
 
 **Green-mood** — Plateforme e-commerce AI-First | React 19 + Supabase + Gemini Live
+
+*Projet sous licence MIT — Développé avec passion pour l'e-commerce du futur.*
 
 </div>
