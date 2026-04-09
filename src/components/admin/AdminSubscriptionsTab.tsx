@@ -34,12 +34,24 @@ export default function AdminSubscriptionsTab() {
 
   async function loadSubscriptions() {
     setIsLoading(true);
-    const { data } = await supabase
-      .from('subscriptions')
-      .select('*, product:products(id, name, price, image_url), profile:profiles(id, full_name)')
-      .order('next_delivery_date', { ascending: true });
-    setSubscriptions((data as SubWithRelations[]) ?? []);
-    setIsLoading(false);
+    try {
+      const { data, error } = await supabase
+        .from('subscriptions')
+        .select('*, product:products(id, name, price, image_url), profile:profiles(id, full_name)')
+        .order('next_delivery_date', { ascending: true });
+      
+      if (error) {
+        console.error('[AdminSubscriptions] Error fetching subscriptions:', error);
+        addToast({ type: 'error', message: 'Erreur lors de la récupération des abonnements.' });
+      } else {
+        console.log('[AdminSubscriptions] Data fetched:', data);
+        setSubscriptions((data as SubWithRelations[]) ?? []);
+      }
+    } catch (err) {
+      console.error('[AdminSubscriptions] Unexpected error:', err);
+    } finally {
+      setIsLoading(false);
+    }
   }
 
   async function handleTriggerDelivery(sub: SubWithRelations) {

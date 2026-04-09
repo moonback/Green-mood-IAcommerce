@@ -178,7 +178,7 @@ export default function AdminSidebar({
   onSignOut,
 }: AdminSidebarProps) {
   const { settings } = useSettingsStore();
-  const [openCategories, setOpenCategories] = useState<string[]>(['overview', 'sales']);
+  const [openCategories, setOpenCategories] = useState<string[]>(['overview', 'sales', 'clients']);
 
   const filteredCategories = useMemo(
     () =>

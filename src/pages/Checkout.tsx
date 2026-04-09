@@ -279,6 +279,34 @@ export default function Checkout() {
 
     if (user) {
       await fetchProfile(user.id);
+
+      // Create subscriptions for items with a frequency
+      const subscriptionItems = items.filter(item => item.subscriptionFrequency);
+      if (subscriptionItems.length > 0) {
+        const subscriptionsToInsert = subscriptionItems.map(item => {
+          const nextDate = new Date();
+          if (item.subscriptionFrequency === 'weekly') nextDate.setDate(nextDate.getDate() + 7);
+          else if (item.subscriptionFrequency === 'biweekly') nextDate.setDate(nextDate.getDate() + 14);
+          else if (item.subscriptionFrequency === 'monthly') nextDate.setMonth(nextDate.getMonth() + 1);
+
+          return {
+            user_id: user.id,
+            product_id: item.product.id,
+            quantity: item.quantity,
+            frequency: item.subscriptionFrequency,
+            status: 'active',
+            next_delivery_date: nextDate.toISOString().split('T')[0]
+          };
+        });
+
+        const { error: subError } = await supabase
+          .from('subscriptions')
+          .insert(subscriptionsToInsert);
+        
+        if (subError) {
+          console.error('Erreur lors de la création de l\'abonnement:', subError);
+        }
+      }
     }
 
     trackEvent('purchase', '/checkout', { order_id: pendingOrderId, total: tot });

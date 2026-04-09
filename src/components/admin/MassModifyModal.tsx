@@ -42,6 +42,9 @@ export default function MassModifyModal({
     const [updateStock, setUpdateStock] = useState(false);
     const [stockQuantity, setStockQuantity] = useState<number | ''>('');
 
+    const [updateSubscribable, setUpdateSubscribable] = useState(false);
+    const [isSubscribable, setIsSubscribable] = useState(false);
+
     const handleSubmit = async (e: FormEvent) => {
         e.preventDefault();
         if (selectedIds.length === 0) return;
@@ -52,6 +55,7 @@ export default function MassModifyModal({
         if (updateStatus) updates.is_active = isActive;
         if (updateFeatured) updates.is_featured = isFeatured;
         if (updateStock && stockQuantity !== '') updates.stock_quantity = stockQuantity;
+        if (updateSubscribable) updates.is_subscribable = isSubscribable;
 
         if (Object.keys(updates).length === 0) {
             addToast({ type: 'info', message: 'Veuillez sélectionner au moins un champ à modifier.' });
@@ -229,10 +233,33 @@ export default function MassModifyModal({
                             )}
                         </div>
 
+                        {/* Subscribable */}
+                        <div className="p-3 border border-zinc-800 rounded-xl bg-zinc-900/50">
+                            <label className={LABEL}>
+                                <input
+                                    type="checkbox"
+                                    checked={updateSubscribable}
+                                    onChange={(e) => setUpdateSubscribable(e.target.checked)}
+                                    className="rounded border-zinc-700 bg-zinc-800 text-emerald-400 focus:ring-emerald-500"
+                                />
+                                Changer "Abonnable"
+                            </label>
+                            {updateSubscribable && (
+                                <select
+                                    value={isSubscribable ? 'true' : 'false'}
+                                    onChange={(e) => setIsSubscribable(e.target.value === 'true')}
+                                    className={`${INPUT} mt-2`}
+                                >
+                                    <option value="true">Activé</option>
+                                    <option value="false">Désactivé</option>
+                                </select>
+                            )}
+                        </div>
+
                         <div className="pt-4 flex gap-3">
                             <button
                                 type="submit"
-                                disabled={isSaving || (!updateCategory && !updatePrice && !updateStatus && !updateFeatured && !updateStock)}
+                                disabled={isSaving || (!updateCategory && !updatePrice && !updateStatus && !updateFeatured && !updateStock && !updateSubscribable)}
                                 className="flex-1 flex items-center justify-center gap-2 bg-emerald-500 hover:bg-green-600 disabled:opacity-50 text-white font-bold py-3 rounded-xl transition-all"
                             >
                                 {isSaving ? 'En cours...' : (

@@ -40,13 +40,24 @@ export default function Subscriptions() {
 
   async function loadSubscriptions() {
     if (!user) return;
-    const { data } = await supabase
-      .from('subscriptions')
-      .select('*, product:products(id, name, slug, image_url, price)')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false });
-    setSubscriptions((data as Subscription[]) ?? []);
-    setIsLoading(false);
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('subscriptions')
+        .select('*, product:products(id, name, slug, image_url, price)')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+      
+      if (error) {
+        console.error('[Subscriptions] Error fetching:', error);
+      } else {
+        setSubscriptions((data as Subscription[]) ?? []);
+      }
+    } catch (err) {
+      console.error('[Subscriptions] Unexpected error:', err);
+    } finally {
+      setIsLoading(false);
+    }
   }
 
   async function handleTogglePause(sub: Subscription) {

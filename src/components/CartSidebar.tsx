@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
-import { X, Trash2, Package, Truck, ShoppingBag, ArrowRight, Minus, Plus, ShieldCheck, Crown, Coins } from 'lucide-react';
-import { AnimatePresence, motion } from 'motion/react';
+import { X, Trash2, Package, Truck, ShoppingBag, ArrowRight, Minus, Plus, ShieldCheck, Crown, Coins, RefreshCw } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
+import { SubscriptionFrequency } from '../lib/types';
 import { applyProductImageFallback, getProductImageSrc } from '../lib/productImage';
 import { useCartStore } from '../store/cartStore';
 import { useSettingsStore } from '../store/settingsStore';
@@ -175,49 +176,60 @@ export default function CartSidebar() {
                                 <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-10 transition-opacity" />
                               </div>
 
-                              <div className="flex-1 min-w-0 flex flex-col justify-between">
-                                <div className="space-y-0.5">
-                                  <div className="flex justify-between items-start gap-2">
-                                    <div className="min-w-0">
-                                      <p className="text-[8px] font-black text-[color:var(--color-primary)] uppercase tracking-widest leading-none mb-1">
-                                        {item.product.category?.name || 'Exception'}
-                                      </p>
-                                      <h3 className="text-xs font-bold text-[color:var(--color-text)] truncate leading-tight">
-                                        {item.product.name}
-                                      </h3>
+                                <div className="flex-1 min-w-0 flex flex-col justify-between">
+                                  <div className="space-y-0.5">
+                                    <div className="flex justify-between items-start gap-2">
+                                      <div className="min-w-0">
+                                        <div className="flex items-center gap-2 mb-1">
+                                          <p className="text-[8px] font-black text-[color:var(--color-primary)] uppercase tracking-widest leading-none">
+                                            {item.product.category?.name || 'Exception'}
+                                          </p>
+                                          {item.subscriptionFrequency && (
+                                            <span className="flex items-center gap-1 text-[7px] font-black uppercase bg-emerald-400/10 text-emerald-400 px-1.5 py-0.5 rounded-full border border-emerald-400/20">
+                                              <RefreshCw className="w-2 h-2" />
+                                              {item.subscriptionFrequency === 'weekly' ? 'Hebdo' : item.subscriptionFrequency === 'biweekly' ? '15 jours' : 'Mensuel'}
+                                            </span>
+                                          )}
+                                        </div>
+                                        <h3 className="text-xs font-bold text-[color:var(--color-text)] truncate leading-tight">
+                                          {item.product.name}
+                                        </h3>
+                                      </div>
+                                      <button
+                                        onClick={() => removeItem(item.product.id, item.subscriptionFrequency)}
+                                        className="w-6 h-6 flex items-center justify-center rounded-md hover:bg-red-500/10 text-[color:var(--color-text-muted)] hover:text-red-500 transition-all shrink-0"
+                                      >
+                                        <Trash2 className="w-3.5 h-3.5" />
+                                      </button>
                                     </div>
-                                    <button
-                                      onClick={() => removeItem(item.product.id)}
-                                      className="w-6 h-6 flex items-center justify-center rounded-md hover:bg-red-500/10 text-[color:var(--color-text-muted)] hover:text-red-500 transition-all shrink-0"
-                                    >
-                                      <Trash2 className="w-3.5 h-3.5" />
-                                    </button>
                                   </div>
-                                </div>
 
-                                <div className="flex items-center justify-between gap-2 mt-2">
-                                  <div className="flex items-center p-0.5 rounded-lg bg-[color:var(--color-bg-elevated)] border border-[color:var(--color-border)]">
-                                    <button
-                                      onClick={() => updateQuantity(item.product.id, Math.max(1, item.quantity - 1))}
-                                      className="w-6 h-6 flex items-center justify-center rounded-md hover:bg-[color:var(--color-bg)] text-[color:var(--color-text-muted)] transition-colors"
-                                    >
-                                      <Minus className="w-2.5 h-2.5" />
-                                    </button>
-                                    <span className="w-7 text-center text-[11px] font-black text-[color:var(--color-text)]">{item.quantity}</span>
-                                    <button
-                                      onClick={() => updateQuantity(item.product.id, item.quantity + 1)}
-                                      className="w-6 h-6 flex items-center justify-center rounded-md hover:bg-[color:var(--color-bg)] text-[color:var(--color-text-muted)] transition-colors"
-                                    >
-                                      <Plus className="w-2.5 h-2.5" />
-                                    </button>
-                                  </div>
-                                  <div className="text-right">
-                                    <p className="text-[13px] font-bold text-[color:var(--color-text)]">
-                                      {(item.product.price * item.quantity).toFixed(2)} €
-                                    </p>
+                                  <div className="flex items-center justify-between gap-2 mt-2">
+                                    <div className="flex items-center p-0.5 rounded-lg bg-[color:var(--color-bg-elevated)] border border-[color:var(--color-border)]">
+                                      <button
+                                        onClick={() => updateQuantity(item.product.id, Math.max(1, item.quantity - 1), item.subscriptionFrequency)}
+                                        className="w-6 h-6 flex items-center justify-center rounded-md hover:bg-[color:var(--color-bg)] text-[color:var(--color-text-muted)] transition-colors"
+                                      >
+                                        <Minus className="w-2.5 h-2.5" />
+                                      </button>
+                                      <span className="w-7 text-center text-[11px] font-black text-[color:var(--color-text)]">{item.quantity}</span>
+                                      <button
+                                        onClick={() => updateQuantity(item.product.id, item.quantity + 1, item.subscriptionFrequency)}
+                                        className="w-6 h-6 flex items-center justify-center rounded-md hover:bg-[color:var(--color-bg)] text-[color:var(--color-text-muted)] transition-colors"
+                                      >
+                                        <Plus className="w-2.5 h-2.5" />
+                                      </button>
+                                    </div>
+                                    <div className="text-right">
+                                      {item.subscriptionFrequency && (
+                                        <p className="text-[9px] font-bold text-emerald-400 -mb-1">Abonnement</p>
+                                      )}
+                                      <p className="text-[13px] font-bold text-[color:var(--color-text)]">
+                                        {(item.product.price * (1 - (item.subscriptionFrequency === 'weekly' ? 0.15 : item.subscriptionFrequency === 'biweekly' ? 0.10 : item.subscriptionFrequency === 'monthly' ? 0.05 : 0)) * item.quantity).toFixed(2)} €
+                                      </p>
+                                    </div>
                                   </div>
                                 </div>
-                              </div>
                             </motion.div>
                           ))}
                         </AnimatePresence>

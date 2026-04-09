@@ -194,6 +194,7 @@ export interface StockMovement {
 export interface CartItem {
   product: Product;
   quantity: number;
+  subscriptionFrequency?: SubscriptionFrequency;
 }
 
 // ─── Payment Types ────────────────────────────────────────────────────────────

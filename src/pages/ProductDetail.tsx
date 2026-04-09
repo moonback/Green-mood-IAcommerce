@@ -3,7 +3,7 @@ import { useNavigate, useParams, Link } from 'react-router-dom';
 import { ArrowLeft, ChevronRight, ShoppingBag, Star, BookOpen, Sparkles } from 'lucide-react';
 import { motion } from 'motion/react';
 import { supabase } from '../lib/supabase';
-import type { Category, Product as BaseProduct } from '../lib/types';
+import type { Category, Product as BaseProduct, SubscriptionFrequency } from '../lib/types';
 import { getCategoryAncestors } from '../lib/categoryTree';
 import { useCartStore } from '../store/cartStore';
 import { useToastStore } from '../store/toastStore';
@@ -337,20 +337,19 @@ export default function ProductDetail() {
     );
   }
 
-  const handleAddToCart = () => {
+  const handleAddToCart = (frequency?: SubscriptionFrequency | null) => {
     const isOrderable = product.is_available !== false && product.stock_quantity > 0;
     if (!isOrderable) {
       addToast({ type: 'error', message: 'Produit en rupture de stock.' });
       return;
     }
-    addItem(product);
-    if (quantity > 1) updateQuantity(product.id, quantity);
+    addItem(product, quantity, frequency ?? undefined);
     openSidebar();
     addToast({ type: 'success', message: `${product.name} ajouté au panier` });
   };
 
-  const handleBuyNow = () => {
-    handleAddToCart();
+  const handleBuyNow = (frequency?: SubscriptionFrequency | null) => {
+    handleAddToCart(frequency);
     navigate('/commande');
   };
 

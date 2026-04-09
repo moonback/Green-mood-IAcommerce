@@ -8,12 +8,15 @@ import { applyProductImageFallback, getProductImageSrc } from '../../lib/product
 import type { Product } from '../../types/premiumProduct';
 import { useSettingsStore } from '../../store/settingsStore';
 
+import SubscriptionSelector from '../SubscriptionSelector';
+import type { SubscriptionFrequency } from '../../lib/types';
+
 interface Props {
   product: Product;
   quantity: number;
   onQuantityChange: (value: number) => void;
-  onAddToCart: () => void;
-  onBuyNow: () => void;
+  onAddToCart: (frequency?: SubscriptionFrequency | null) => void;
+  onBuyNow: (frequency?: SubscriptionFrequency | null) => void;
   onOpenModal: (type: 'specs' | 'performance' | 'story' | 'reviews' | 'related') => void;
 }
 
@@ -28,6 +31,7 @@ const discoveryButtons = [
 const ProductHero = memo(({ product, quantity, onQuantityChange, onAddToCart, onOpenModal }: Props) => {
   const { settings } = useSettingsStore();
   const [selectedImg, setSelectedImg] = useState(0);
+  const [selectedFrequency, setSelectedFrequency] = useState<SubscriptionFrequency | null>(null);
 
   // States for the image zoom feature
   const [isZooming, setIsZooming] = useState(false);
@@ -44,6 +48,16 @@ const ProductHero = memo(({ product, quantity, onQuantityChange, onAddToCart, on
   const inStock = (product as any).stock_quantity > 0 && (product as any).is_available !== false;
   const avgRating: number | null = (product as any).avg_rating ?? null;
   const reviewCount: number = (product as any).review_count ?? 0;
+
+  // Calculate price with subscription discount
+  const getSubDiscount = (freq: SubscriptionFrequency | null) => {
+    if (freq === 'weekly') return 0.15;
+    if (freq === 'biweekly') return 0.10;
+    if (freq === 'monthly') return 0.05;
+    return 0;
+  };
+
+  const currentPrice = product.price * (1 - getSubDiscount(selectedFrequency));
 
   return (
     <section className="relative overflow-hidden bg-[color:var(--color-bg)] py-4 sm:py-6">
@@ -152,11 +166,6 @@ const ProductHero = memo(({ product, quantity, onQuantityChange, onAddToCart, on
                     CBD {Number(product.cbd_percentage).toFixed(1)}%
                   </span>
                 )}
-                {(product.thc_max != null) && (
-                  <span className="rounded-md border border-[color:var(--color-border)] bg-[color:var(--color-card)]/60 px-2 py-0.5 text-[9px] font-black uppercase tracking-widest text-[color:var(--color-text-muted)]">
-                    THC ≤ {Number(product.thc_max).toFixed(2)}%
-                  </span>
-                )}
               </div>
             </div>
 
@@ -165,6 +174,15 @@ const ProductHero = memo(({ product, quantity, onQuantityChange, onAddToCart, on
               className="text-sm text-[color:var(--color-text-muted)] leading-relaxed line-clamp-4 max-w-xl opacity-80"
               dangerouslySetInnerHTML={{ __html: product.shortDescription }}
             />
+
+            {/* Subscription Selector */}
+            {settings.subscriptions_enabled && (
+              <SubscriptionSelector
+                isSubscribable={product.is_subscribable}
+                selectedFrequency={selectedFrequency}
+                onFrequencyChange={setSelectedFrequency}
+              />
+            )}
 
             {/* Specs Grid — Premium & Professional */}
             {(product.productSpecs || []).length > 0 && (
@@ -202,12 +220,12 @@ const ProductHero = memo(({ product, quantity, onQuantityChange, onAddToCart, on
                 {/* Price Section */}
                 <div className="flex flex-col">
                   <div className="flex items-baseline gap-1">
-                    <span className="text-3xl font-black text-[color:var(--color-text)]">{product.price.toFixed(2)}</span>
+                    <span className="text-3xl font-black text-[color:var(--color-text)]">{currentPrice.toFixed(2)}</span>
                     <span className="text-lg font-bold text-[color:var(--color-primary)]">€</span>
                   </div>
-                  {quantity > 1 && (
+                  {(quantity > 1 || selectedFrequency) && (
                     <span className="text-[10px] text-[color:var(--color-text-muted)] uppercase tracking-widest">
-                      Total: <span className="text-[color:var(--color-text)] font-bold">{(product.price * quantity).toFixed(2)}€</span>
+                      Total: <span className="text-[color:var(--color-text)] font-bold">{(currentPrice * quantity).toFixed(2)}€</span>
                     </span>
                   )}
                 </div>
@@ -233,13 +251,13 @@ const ProductHero = memo(({ product, quantity, onQuantityChange, onAddToCart, on
 
                   {/* Add Button */}
                   <button
-                    onClick={onAddToCart}
+                    onClick={() => onAddToCart(selectedFrequency)}
                     disabled={!inStock}
                     className="relative group overflow-hidden flex items-center gap-3 rounded-xl bg-[color:var(--color-primary)] px-6 py-3 font-black text-[color:var(--color-primary-contrast)] uppercase tracking-widest text-xs shadow-lg transition-transform active:scale-95 disabled:opacity-50"
                   >
                     <div className="absolute inset-0 bg-black/10 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
                     <ShoppingBag className="w-4 h-4 relative z-10" />
-                    <span className="relative z-10">Commander</span>
+                    <span className="relative z-10">{selectedFrequency ? 'S\'abonner' : 'Commander'}</span>
                   </button>
                 </div>
               </div>

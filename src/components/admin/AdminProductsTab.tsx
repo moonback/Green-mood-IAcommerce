@@ -779,6 +779,12 @@ export default function AdminProductsTab({ products, categories, onRefresh }: Ad
                                                 >
                                                     {product.is_active ? 'Actif' : 'Masqué'}
                                                 </span>
+                                                {product.is_subscribable && (
+                                                    <span className="text-[10px] font-bold uppercase tracking-tight px-2 py-0.5 rounded-lg border text-purple-400 bg-purple-900/20 border-purple-800/50 flex items-center gap-1">
+                                                        <RefreshCw className="w-2.5 h-2.5" />
+                                                        ABO
+                                                    </span>
+                                                )}
                                             </div>
                                         </td>
                                         <td className="px-5 py-4">
@@ -880,9 +886,17 @@ export default function AdminProductsTab({ products, categories, onRefresh }: Ad
                                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                                 />
                                 <div className="absolute top-2 right-2 flex flex-col gap-2">
-                                    <span className={`px-2 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider backdrop-blur-md border ${product.is_active ? 'bg-green-950/40 text-green-400 border-green-800/50' : 'bg-zinc-950/40 text-zinc-400 border-zinc-800'}`}>
-                                        {product.is_active ? 'En ligne' : 'Masqué'}
-                                    </span>
+                                    <div className="flex items-center gap-1.5 flex-wrap">
+                                        <span className={`px-2 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider backdrop-blur-md border ${product.is_active ? 'bg-green-950/40 text-green-400 border-green-800/50' : 'bg-zinc-950/40 text-zinc-400 border-zinc-800'}`}>
+                                            {product.is_active ? 'En ligne' : 'Masqué'}
+                                        </span>
+                                        {product.is_subscribable && (
+                                            <span className="px-2 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider bg-purple-500 text-white border border-purple-600 flex items-center gap-1">
+                                                <RefreshCw className="w-2.5 h-2.5" />
+                                                ABO
+                                            </span>
+                                        )}
+                                    </div>
                                     {product.is_featured && !product.is_bundle && (
                                         <span className="px-2 py-1 rounded-lg text-[10px] font-bold uppercase bg-yellow-400 text-black border border-yellow-500 flex items-center gap-1">
                                             <Star className="w-3 h-3 fill-current" />

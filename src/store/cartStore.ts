@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { CartItem, DeliveryType, Product } from '../lib/types';
+import { CartItem, DeliveryType, Product, SubscriptionFrequency } from '../lib/types';
 import { trackEvent } from '../lib/analytics';
 
 import { useSettingsStore } from './settingsStore';
@@ -10,9 +10,9 @@ interface CartStore {
   isOpen: boolean;
   deliveryType: DeliveryType;
   // actions
-  addItem: (product: Product, quantity?: number) => void;
-  removeItem: (productId: string) => void;
-  updateQuantity: (productId: string, quantity: number) => void;
+  addItem: (product: Product, quantity?: number, subscriptionFrequency?: SubscriptionFrequency) => void;
+  removeItem: (productId: string, subscriptionFrequency?: SubscriptionFrequency) => void;
+  updateQuantity: (productId: string, quantity: number, subscriptionFrequency?: SubscriptionFrequency) => void;
   clearCart: () => void;
   toggleSidebar: () => void;
   openSidebar: () => void;
@@ -36,49 +36,54 @@ export const useCartStore = create<CartStore>()(
       deliveryType: 'click_collect',
       usePoints: false,
 
-      addItem: (product, quantity = 1) => {
+      addItem: (product, quantity = 1, subscriptionFrequency) => {
         const isOrderable = product.is_available !== false && (product.stock_quantity ?? 0) > 0;
         if (!isOrderable) return;
 
         set((state) => {
-          const existing = state.items.find((i) => i.product.id === product.id);
+          const existing = state.items.find(
+            (i) => i.product.id === product.id && i.subscriptionFrequency === subscriptionFrequency
+          );
           const nextQty = (existing?.quantity ?? 0) + quantity;
           const safeQty = Math.min(nextQty, Math.max(1, product.stock_quantity ?? 1));
 
           if (existing) {
             return {
               items: state.items.map((i) =>
-                i.product.id === product.id
+                i.product.id === product.id && i.subscriptionFrequency === subscriptionFrequency
                   ? { ...i, quantity: safeQty }
                   : i
               ),
             };
           }
-          return { items: [...state.items, { product, quantity: Math.min(quantity, product.stock_quantity ?? quantity) }] };
+          return { items: [...state.items, { product, quantity: Math.min(quantity, product.stock_quantity ?? quantity), subscriptionFrequency }] };
         });
         trackEvent('cart_add', window.location.pathname, {
           product_id: product.id,
           product_name: product.name,
           quantity,
           unit_price: product.price,
+          subscription: subscriptionFrequency,
         });
       },
 
-      removeItem: (productId) => {
+      removeItem: (productId, subscriptionFrequency) => {
         set((state) => ({
-          items: state.items.filter((i) => i.product.id !== productId),
+          items: state.items.filter(
+            (i) => !(i.product.id === productId && i.subscriptionFrequency === subscriptionFrequency)
+          ),
         }));
       },
 
-      updateQuantity: (productId, quantity) => {
+      updateQuantity: (productId, quantity, subscriptionFrequency) => {
         if (quantity <= 0) {
-          get().removeItem(productId);
+          get().removeItem(productId, subscriptionFrequency);
           return;
         }
 
         set((state) => ({
           items: state.items.map((i) =>
-            i.product.id === productId
+            i.product.id === productId && i.subscriptionFrequency === subscriptionFrequency
               ? { ...i, quantity: Math.min(quantity, Math.max(1, i.product.stock_quantity ?? quantity)) }
               : i
           ),
