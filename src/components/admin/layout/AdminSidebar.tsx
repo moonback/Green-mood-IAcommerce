@@ -95,8 +95,8 @@ export const sidebarCategories = [
     color: '#10b981',
     items: [
       { key: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-      { key: 'kanban', label: 'Kanban Ord.', icon: Columns },
-      { key: 'subscriptions_kanban', label: 'Abonnement (Kanban)', icon: Columns },
+      { key: 'kanban', label: 'Suivi Commandes', icon: Columns },
+      { key: 'subscriptions_kanban', label: 'Suivi Abonnements', icon: Columns },
       { key: 'analytics', label: 'Analytique', icon: LineChart },
       { key: 'accounting', label: 'Comptabilité', icon: Calculator },
     ],

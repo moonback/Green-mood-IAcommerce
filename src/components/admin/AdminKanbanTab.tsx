@@ -109,7 +109,7 @@ export default function AdminKanbanTab({ orders, onRefresh, isFullScreen, onTogg
                             <LayoutDashboard className="w-6 h-6 text-black" />
                         </div>
                         <div>
-                            <h2 className="text-xl font-bold text-white tracking-tight">Tableau de Bord Kanban</h2>
+                            <h2 className="text-xl font-bold text-white tracking-tight">Suivi des Commandes</h2>
                             <p className="text-sm text-zinc-400">Gérez le flux de vos commandes en temps réel</p>
                         </div>
                     </div>
@@ -449,8 +449,8 @@ function OrderDetailSidepanel({ order, onClose, onUpdateStatus }: { order: Order
                         </div>
                         <div className="bg-white/5 rounded-2xl p-4 border border-white/5">
                             <p className="text-sm text-white font-medium mb-1">
-                                {order.delivery_type === 'delivery' ? 'Expédition à domicile' : 
-                                 order.delivery_type === 'click_collect' ? 'Retrait en magasin' : 'Achat direct'}
+                                {order.delivery_type === 'delivery' ? 'Expédition à domicile' :
+                                    order.delivery_type === 'click_collect' ? 'Retrait en magasin' : 'Achat direct'}
                             </p>
                             <p className="text-sm text-zinc-400 leading-relaxed">
                                 {order.address ? (
@@ -525,7 +525,7 @@ function OrderDetailSidepanel({ order, onClose, onUpdateStatus }: { order: Order
                                     <span className="text-2xl font-black text-green-primary">{order.total.toFixed(2)} €</span>
                                 </div>
                             </div>
-                            
+
                             <div className={`p-3 rounded-xl flex items-center gap-3 ${order.payment_status === 'paid' ? 'bg-green-500/10 border border-green-500/20' : 'bg-yellow-500/10 border border-yellow-500/20'}`}>
                                 {order.payment_status === 'paid' ? <CheckCircle2 className="w-5 h-5 text-green-400" /> : <Clock className="w-5 h-5 text-yellow-400" />}
                                 <div>

@@ -95,7 +95,7 @@ export default function AdminSubscriptionKanbanTab({ isFullScreen, onToggleFullS
                 ...days.map((d, i) => {
                     const isToday = d.toDateString() === new Date().toDateString();
                     const isTomorrow = d.toDateString() === new Date(new Date().setDate(new Date().getDate() + 1)).toDateString();
-                    
+
                     return {
                         id: `day_${i}`,
                         title: isToday ? 'Aujourd\'hui' : isTomorrow ? 'Demain' : d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric' }),
@@ -229,7 +229,7 @@ export default function AdminSubscriptionKanbanTab({ isFullScreen, onToggleFullS
         if (colId === 'paused') {
             return filteredSubscriptions.filter(s => s.status === 'paused');
         }
-        
+
         const col = kanbanColumns.find(c => c.id === colId);
         if (col && col.date) {
             if (viewType === 'day') {
@@ -247,7 +247,7 @@ export default function AdminSubscriptionKanbanTab({ isFullScreen, onToggleFullS
 
     const handleTriggerDelivery = async (sub: SubWithRelations) => {
         if (!sub.product) return;
-        
+
         try {
             const productPrice = Number(sub.product.price);
             const totalAmount = productPrice * sub.quantity;
@@ -328,7 +328,7 @@ export default function AdminSubscriptionKanbanTab({ isFullScreen, onToggleFullS
                         </div>
                         <div>
                             <div className="flex items-center gap-3">
-                                <h2 className="text-xl font-bold text-white tracking-tight">Gestion des Abonnements</h2>
+                                <h2 className="text-xl font-bold text-white tracking-tight">Suivi des Abonnements</h2>
                                 <div className="flex items-center bg-white/5 rounded-xl p-1 border border-white/10">
                                     <button
                                         onClick={() => setViewType('day')}
@@ -405,7 +405,7 @@ export default function AdminSubscriptionKanbanTab({ isFullScreen, onToggleFullS
                         <span className="text-sm font-bold text-emerald-500">{stats.dueToday}</span>
                     </div>
                     <div className="w-px h-6 bg-white/10" />
-                    
+
                     {/* Tomorrow Preview Widget */}
                     <div className="relative group/preview">
                         <div className="flex flex-col cursor-help">
@@ -415,7 +415,7 @@ export default function AdminSubscriptionKanbanTab({ isFullScreen, onToggleFullS
                                 <span className="text-[10px] bg-blue-500/10 text-blue-400 px-1.5 py-0.5 rounded font-bold">{stats.revenueTomorrow.toFixed(2)} €</span>
                             </div>
                         </div>
-                        
+
                         {/* Hover Preview Content */}
                         <div className="absolute top-full left-0 mt-2 w-64 bg-zinc-950 border border-white/10 rounded-2xl p-4 shadow-2xl opacity-0 translate-y-2 invisible group-hover/preview:opacity-100 group-hover/preview:translate-y-0 group-hover/preview:visible transition-all z-[150] backdrop-blur-xl">
                             <h5 className="text-xs font-bold text-white uppercase tracking-wider mb-3 flex items-center gap-2">
@@ -576,13 +576,12 @@ function SubscriptionCard({ subscription, onDragStart, onDragEnd, onClick, isDra
                         #{subscription.id.slice(0, 8)}
                     </span>
                 </div>
-                <div className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                    subscription.frequency === 'weekly' ? 'bg-blue-500/10 text-blue-400' :
-                    subscription.frequency === 'biweekly' ? 'bg-purple-500/10 text-purple-400' :
-                    'bg-pink-500/10 text-pink-400'
-                }`}>
+                <div className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${subscription.frequency === 'weekly' ? 'bg-blue-500/10 text-blue-400' :
+                        subscription.frequency === 'biweekly' ? 'bg-purple-500/10 text-purple-400' :
+                            'bg-pink-500/10 text-pink-400'
+                    }`}>
                     {subscription.frequency === 'weekly' ? 'Hebdo' :
-                     subscription.frequency === 'biweekly' ? 'Bi-mensuel' : 'Mensuel'}
+                        subscription.frequency === 'biweekly' ? 'Bi-mensuel' : 'Mensuel'}
                 </div>
             </div>
 
@@ -712,10 +711,9 @@ function SubscriptionDetailSidepanel({ subscription, onClose, onUpdateStatus, on
                             <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest bg-white/5 px-2 py-0.5 rounded">
                                 #{subscription.id.slice(0, 8)}
                             </span>
-                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                                subscription.status === 'active' ? 'bg-emerald-500/20 text-emerald-400' : 
-                                subscription.status === 'paused' ? 'bg-orange-500/20 text-orange-400' : 'bg-red-500/20 text-red-400'
-                            }`}>
+                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${subscription.status === 'active' ? 'bg-emerald-500/20 text-emerald-400' :
+                                    subscription.status === 'paused' ? 'bg-orange-500/20 text-orange-400' : 'bg-red-500/20 text-red-400'
+                                }`}>
                                 {subscription.status.toUpperCase()}
                             </span>
                         </div>
