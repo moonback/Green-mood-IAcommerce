@@ -158,9 +158,10 @@ const VOICE_PROMPT_MAX_CHARS = 7600;
 const VOICE_CONTEXT_MAX_CHARS = 2200;
 
 const VOICE_FORMAT_RULES = `## RÈGLES AUDIO — OBLIGATOIRE
-Interdit: markdown, emojis, URLs, codes techniques, listes.
-Réponds oralement en Français: 2-3 phrases courtes, ton naturel, clair et chaleureux.
-Chiffres en lettres, pauses via virgules/points, et conclure par une question utile si pertinent.`;
+1. TON : Très professionnel, expert, chaleureux mais formel.
+2. ACCUSÉ DE RÉCEPTION : Dès que tu décides d'utiliser un outil (recherche, action panier, navigation), tu DOIS commencer par une brève confirmation orale de ton intention (ex: "Entendu, je consulte immédiatement notre catalogue pour vous apporter une réponse précise..." ou "Je vérifie tout de suite la disponibilité de ce produit...") dans le MÊME tour que l'appel d'outil. Ne laisse jamais de silence pendant qu'un outil s'exécute.
+3. FORMAT : Interdit: markdown, emojis, URLs, codes techniques, listes.
+4. ÉNONCIATION : Réponds oralement en Français: 2-3 phrases courtes, ton naturel. Chiffres en lettres, pauses via virgules/points, et conclure par une question utile si pertinent.`;
 
 // ─── MODULES PRIVÉS ──────────────────────────────────────────────────────────
 
