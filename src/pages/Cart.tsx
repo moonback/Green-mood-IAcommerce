@@ -90,38 +90,104 @@ export default function Cart() {
       <div className="min-h-screen bg-[color:var(--color-bg)] text-[color:var(--color-text)] flex flex-col items-center justify-center px-4 overflow-hidden relative font-sans">
         <SEO title={`Mon Panier — L'Expérience ${settings.store_name}`} description={`Votre panier d'achats ${settings.store_name}.`} />
 
-        {/* Background Glow */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-[color:var(--color-primary)]/5 rounded-full blur-[120px] -z-10" />
+        {/* Background Gradients */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-[color:var(--color-primary)]/5 rounded-full blur-[160px] -z-10 animate-pulse" />
+        <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] bg-emerald-500/5 rounded-full blur-[120px] -z-10" />
 
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center space-y-8"
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.8, ease: "easeOut" }}
+          className="max-w-4xl w-full grid grid-cols-1 md:grid-cols-2 gap-12 items-center bg-[color:var(--color-card)]/30 border border-[color:var(--color-border)] rounded-[3rem] p-8 md:p-12 backdrop-blur-3xl shadow-2xl relative overflow-hidden"
         >
-          <div className="w-24 h-24 rounded-[2rem] bg-[color:var(--color-bg-elevated)] border border-[color:var(--color-border)] flex items-center justify-center mx-auto relative group backdrop-blur-xl">
-            <div className="absolute inset-0 bg-[color:var(--color-primary)]/10 rounded-[2rem] blur-xl group-hover:bg-[color:var(--color-primary)]/20 transition-all" />
-            <ShoppingBag className="w-10 h-10 text-[color:var(--color-text-subtle)] group-hover:text-[color:var(--color-primary)] transition-colors relative z-10" />
+          {/* Subtle reflection effect */}
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[color:var(--color-primary)]/20 to-transparent" />
+
+          {/* Left Side: Visual */}
+          <div className="relative aspect-square rounded-[2rem] overflow-hidden group shadow-2xl border border-white/5">
+            <motion.img
+              initial={{ scale: 1.1 }}
+              animate={{ scale: 1 }}
+              transition={{ duration: 20, repeat: Infinity, repeatType: "reverse" }}
+              src="/images/products-flower.png"
+              alt="Zen empty cart"
+              className="w-full h-full object-cover grayscale-[0.2] brightness-75 group-hover:brightness-90 transition-all duration-700"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-[color:var(--color-bg)]/80 via-transparent to-transparent" />
+
+            <div className="absolute bottom-8 left-8 right-8 text-center sm:text-left">
+              <p className="text-[10px] font-black uppercase tracking-[0.4em] text-[color:var(--color-primary)] mb-2">Patience & Découverte</p>
+              <h2 className="text-xl font-bold text-white tracking-tight leading-tight">Votre panier attend de <br /><span className="italic font-serif text-emerald-300">précieux</span> choix.</h2>
+            </div>
           </div>
-          <div className="space-y-4">
-            <h1 className="text-3xl md:text-4xl font-black tracking-tight">Votre panier est vide</h1>
-            <p className="text-[color:var(--color-text-muted)] max-w-md mx-auto font-light leading-relaxed">
-              Vous hésitez entre plusieurs produits ? PlayAdvisor peut vous recommander la meilleure option en moins de 2 minutes.
-            </p>
+
+          {/* Right Side: Content & Actions */}
+          <div className="space-y-10">
+            <div className="space-y-4">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20">
+                <ShoppingBag className="w-3.5 h-3.5 text-emerald-400" />
+                <span className="text-[10px] font-black uppercase tracking-widest text-emerald-400 leading-none">Panier Vide</span>
+              </div>
+              <h1 className="text-4xl md:text-5xl font-black uppercase tracking-tighter leading-none text-white">
+                Un espace <br /><span className="text-[color:var(--color-primary)] italic font-serif">à remplir.</span>
+              </h1>
+              <p className="text-sm text-[color:var(--color-text-subtle)] font-medium leading-relaxed">
+                Le chemin vers le bien-être commence souvent par une simple question. Nos experts et notre intelligence artificielle sont là pour vous guider.
+              </p>
+            </div>
+
+            <div className="flex flex-col gap-4">
+              <Link
+                to="/assistant"
+                className="group relative flex items-center justify-between bg-emerald-500 text-slate-950 font-black text-[11px] uppercase tracking-widest px-8 py-5 rounded-2xl hover:scale-[1.02] active:scale-[0.98] transition-all shadow-[0_12px_40px_rgba(16,185,129,0.3)] overflow-hidden"
+              >
+                <div className="absolute inset-0 bg-white/20 -translate-x-full group-hover:translate-x-0 transition-transform duration-500" />
+                <span className="relative z-10 flex items-center gap-3">
+                  <Sparkles className="w-4 h-4" />
+                  Consulter le BudTender
+                </span>
+                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform relative z-10" />
+              </Link>
+
+              <Link
+                to="/catalogue"
+                className="flex items-center justify-center gap-3 bg-white/5 border border-white/10 text-white font-black text-[11px] uppercase tracking-widest px-8 py-5 rounded-2xl hover:bg-white/10 hover:border-white/20 transition-all font-sans"
+              >
+                Découvrir la Boutique
+              </Link>
+            </div>
+
+            <div className="pt-8 border-t border-white/5 grid grid-cols-2 gap-6">
+              <div className="space-y-1">
+                <p className="text-[10px] font-black uppercase tracking-widest text-white/40">Besoin d'aide ?</p>
+                <p className="text-[11px] text-white/60 font-medium">Réponse en <span className="text-emerald-400">10s</span> via WhatsApp</p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-[10px] font-black uppercase tracking-widest text-white/40">Livraison</p>
+                <p className="text-[11px] text-white/60 font-medium"><span className="text-emerald-400">Offerte</span> dès 40€ d'achat</p>
+              </div>
+            </div>
           </div>
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Link
-              to="/assistant"
-              className="inline-flex items-center justify-center gap-2 bg-[color:var(--color-primary)] text-[color:var(--color-primary-contrast)] font-black text-xs uppercase tracking-wider px-7 py-4 rounded-2xl hover:brightness-110 transition-all shadow-[0_0_24px_rgba(16,185,129,0.25)]"
-            >
-              <Sparkles className="w-4 h-4" />
-              Demander à PlayAdvisor
-            </Link>
-            <Link
-              to="/catalogue"
-              className="inline-flex items-center justify-center gap-2 bg-[color:var(--color-bg-elevated)] border border-[color:var(--color-border)] text-[color:var(--color-text)] font-black text-xs uppercase tracking-wider px-7 py-4 rounded-2xl hover:bg-[color:var(--color-bg-elevated)]/90 transition-all"
-            >
-              Découvrir le catalogue
-            </Link>
+        </motion.div>
+
+        {/* Floating Icons decoration */}
+        <motion.div
+          animate={{ y: [0, -10, 0] }}
+          transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute bottom-[15%] left-[10%] opacity-20 hidden lg:block"
+        >
+          <div className="p-4 rounded-3xl bg-white/5 border border-white/10 rotate-12">
+            <Package className="w-8 h-8 text-white" />
+          </div>
+        </motion.div>
+
+        <motion.div
+          animate={{ y: [0, 10, 0] }}
+          transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+          className="absolute top-[20%] right-[10%] opacity-20 hidden lg:block"
+        >
+          <div className="p-4 rounded-3xl bg-white/5 border border-white/10 -rotate-12">
+            <ShieldCheck className="w-8 h-8 text-white" />
           </div>
         </motion.div>
       </div>
@@ -336,9 +402,9 @@ export default function Cart() {
                   Logistique certifiée {settings.store_name}
                 </p>
                 <div className="flex justify-center gap-4 opacity-20 grayscale">
-                   <CreditCard className="w-6 h-6" />
-                   <Package className="w-6 h-6" />
-                   <ShieldCheck className="w-6 h-6" />
+                  <CreditCard className="w-6 h-6" />
+                  <Package className="w-6 h-6" />
+                  <ShieldCheck className="w-6 h-6" />
                 </div>
               </div>
             </div>
