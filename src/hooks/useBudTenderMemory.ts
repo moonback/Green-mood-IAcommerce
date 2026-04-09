@@ -16,6 +16,7 @@ export interface PrefValue {
 
 export interface SavedPrefs {
     [key: string]: PrefValue | any;
+    semantic_insights?: string[];
 }
 
 export interface ChatMessage {
@@ -87,6 +88,8 @@ const FALLBACK_THRESHOLDS: Record<string, number> = {
 const FALLBACK_DEFAULT = 45;
 
 const LS_KEY = 'budtender_prefs_v1';
+const CHAT_LS_KEY = 'budtender_chat_history_v1';
+const SESSION_ID_KEY = 'budtender_session_id';
 // ─── Hook ────────────────────────────────────────────────────────────────────
 
 export function useBudTenderMemory() {
@@ -98,9 +101,11 @@ export function useBudTenderMemory() {
     const [savedPrefs, setSavedPrefs] = useState<SavedPrefs | null>(null);
     const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
     const [allChatSessions, setAllChatSessions] = useState<{ id: string, messages: ChatMessage[], title: string, created_at: string }[]>([]);
+    const [extractedInsights, setExtractedInsights] = useState<string[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isHistoryLoading, setIsHistoryLoading] = useState(false);
     const [activeDbId, setActiveDbId] = useState<string | null>(null);
+    const [sessionId, setSessionId] = useState<string | null>(null);
 
     const isLoggedIn = !!user;
     const userName = profile?.full_name
@@ -108,16 +113,26 @@ export function useBudTenderMemory() {
         : null;
 
     // ── Load saved prefs and chat history ────────────────────────────────────
-    // Prefs (non-sensitive): localStorage for cross-session persistence.
-    // Chat history (health-adjacent PII): sessionStorage so it never persists
-    // beyond the current browser tab (clears on tab close / session end).
+    // Prefs & Chat: localStorage for cross-tab persistence.
+    // Active session ID is also kept in localStorage to resume context.
     useEffect(() => {
         try {
             const rawPrefs = localStorage.getItem(LS_KEY);
-            if (rawPrefs) setSavedPrefs(JSON.parse(rawPrefs) as SavedPrefs);
+            if (rawPrefs) {
+                const parsed = JSON.parse(rawPrefs) as SavedPrefs;
+                setSavedPrefs(parsed);
+                if (parsed.semantic_insights) setExtractedInsights(parsed.semantic_insights);
+            }
 
-            const rawChat = sessionStorage.getItem('playadvisor_chat_history_v1');
+            const rawChat = localStorage.getItem(CHAT_LS_KEY);
             if (rawChat) setChatHistory(JSON.parse(rawChat));
+
+            let sid = localStorage.getItem(SESSION_ID_KEY);
+            if (!sid) {
+                sid = `sess_${Math.random().toString(36).substring(2)}_${Date.now()}`;
+                localStorage.setItem(SESSION_ID_KEY, sid);
+            }
+            setSessionId(sid);
         } catch {
             // ignore corrupt data
         }
@@ -229,7 +244,10 @@ export function useBudTenderMemory() {
             if (user) {
                 const payload = {
                     user_id: user.id,
-                    preferences: prefs,
+                    preferences: {
+                        ...prefs,
+                        semantic_insights: extractedInsights
+                    },
                     updated_at: new Date().toISOString()
                 };
 
@@ -302,12 +320,12 @@ export function useBudTenderMemory() {
 
     const saveChatHistory = async (history: ChatMessage[]) => {
         try {
-            // Session-only storage — clears on tab close (health-adjacent data)
-            sessionStorage.setItem('playadvisor_chat_history_v1', JSON.stringify(history));
+            // Persistent storage across tabs
+            localStorage.setItem(CHAT_LS_KEY, JSON.stringify(history));
             setChatHistory(history);
 
             if (user && history.length > 0) {
-                const sessionId = history[0].id || new Date().toISOString();
+                const activeSid = sessionId || history[0].id || new Date().toISOString();
                 const payload = {
                     user_id: user.id,
                     interaction_type: 'chat_session',
@@ -428,15 +446,20 @@ export function useBudTenderMemory() {
     };
 
     const clearChatHistory = () => {
-        sessionStorage.removeItem('playadvisor_chat_history_v1');
+        localStorage.removeItem(CHAT_LS_KEY);
+        localStorage.removeItem(SESSION_ID_KEY);
         setChatHistory([]);
+        setSessionId(null);
     };
 
     const clearPrefs = async () => {
         localStorage.removeItem(LS_KEY);
-        sessionStorage.removeItem('playadvisor_chat_history_v1');
+        localStorage.removeItem(CHAT_LS_KEY);
+        localStorage.removeItem(SESSION_ID_KEY);
         setSavedPrefs(null);
         setChatHistory([]);
+        setExtractedInsights([]);
+        setSessionId(null);
 
         if (user) {
             try {
@@ -490,12 +513,15 @@ export function useBudTenderMemory() {
         if (dbSyncData.prefs) {
             setSavedPrefs(dbSyncData.prefs);
             localStorage.setItem(LS_KEY, JSON.stringify(dbSyncData.prefs));
+            if (dbSyncData.prefs.semantic_insights) {
+                setExtractedInsights(dbSyncData.prefs.semantic_insights);
+            }
         }
         
         const chat = dbSyncData.chat;
         if (chat && chat.length > 0) {
             setChatHistory(chat);
-            sessionStorage.setItem('playadvisor_chat_history_v1', JSON.stringify(chat));
+            localStorage.setItem(CHAT_LS_KEY, JSON.stringify(chat));
         }
     }, [dbSyncData]);
 
@@ -521,6 +547,9 @@ export function useBudTenderMemory() {
         clearChatHistory,
         clearPrefs,
         setActiveDbId,
+        extractedInsights,
+        setExtractedInsights,
+        sessionId,
         loyaltyPoints: profile?.loyalty_points ?? 0,
     };
 }

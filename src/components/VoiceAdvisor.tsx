@@ -108,7 +108,7 @@ function WaveformBars({ state }: { state: VoiceState }) {
 
 // ─── Central mic orb ────────────────────────────────────────────────────────
 
-function MicOrb({ voiceState, isMuted }: { voiceState: VoiceState; isMuted: boolean }) {
+function MicOrb({ voiceState, isMuted, isSearching }: { voiceState: VoiceState; isMuted: boolean; isSearching: boolean }) {
     const { resolvedTheme } = useTheme();
     const isLightTheme = resolvedTheme === 'light';
     const isActive = voiceState === 'listening' || voiceState === 'speaking';
@@ -117,6 +117,24 @@ function MicOrb({ voiceState, isMuted }: { voiceState: VoiceState; isMuted: bool
 
     return (
         <div className="relative flex items-center justify-center w-14 h-14 shrink-0">
+            {/* Searching Pulse (Blue/Cyan) - More pronounced */}
+            <AnimatePresence>
+                {isSearching && (
+                    <>
+                        <motion.div
+                            className="absolute inset-0 rounded-full border-[3px] border-cyan-400/60 shadow-[0_0_15px_rgba(34,211,238,0.4)]"
+                            animate={{ scale: [1, 2.2], opacity: [0.8, 0] }}
+                            transition={{ duration: 1.8, repeat: Infinity, ease: 'easeOut' }}
+                        />
+                        <motion.div
+                            className="absolute inset-0 rounded-full border-2 border-blue-500/40"
+                            animate={{ scale: [1, 1.8], opacity: [0.5, 0] }}
+                            transition={{ duration: 1.8, repeat: Infinity, ease: 'easeOut', delay: 0.6 }}
+                        />
+                    </>
+                )}
+            </AnimatePresence>
+
             {/* Immersive glow layers */}
             <AnimatePresence>
                 {isActive && !isMuted && (
@@ -342,7 +360,7 @@ export default function VoiceAdvisor({
                         {/* ── Body ── */}
                         <div className="px-3.5 py-3 flex items-center gap-3">
                             {/* Orb */}
-                            <MicOrb voiceState={voiceState} isMuted={isMuted} />
+                            <MicOrb voiceState={voiceState} isMuted={isMuted} isSearching={!!toolActivity} />
 
                             {/* Status + waveform */}
                             <div className="flex-1 min-w-0">

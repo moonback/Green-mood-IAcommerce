@@ -1,6 +1,6 @@
 import { Product } from './types';
 import { BudTenderSettings, QuizOption } from './budtenderSettings';
-import { getQuizPrompt } from './budtenderPrompts';
+import { getQuizPrompt, getDynamicQuizPrompt, getInsightExtractionPrompt } from './budtenderPrompts';
 import { CATEGORY_SLUGS } from './constants';
 import { supabase } from './supabase';
 import { useSettingsStore } from '../store/settingsStore';
@@ -102,9 +102,10 @@ export async function callAI(
     products: Product[],
     settings: BudTenderSettings,
     history: { role: string; content: string }[] = [],
-    context?: string
-): Promise<string | null> {
-    if (!settings.ai_enabled) return null;
+    context?: string,
+    insights: string[] = []
+): Promise<{ text: string | null; newInsights?: string[] }> {
+    if (!settings.ai_enabled) return { text: null };
 
     const topScored = [...products]
         .map(p => ({ p, s: scoreProduct(p, answers) }))
@@ -122,9 +123,16 @@ export async function callAI(
     const settingsInStore = useSettingsStore.getState().settings;
     const budtenderName = settingsInStore.budtender_name || 'Assistant';
     const storeName = settingsInStore.store_name || 'Green Mood';
+    
+    // Build enriched context with semantic insights
+    let enrichedContext = context || '';
+    if (insights.length > 0) {
+        enrichedContext += `\nPréférences sémantiques mémorisées : ${insights.join(', ')}.`;
+    }
+
     const systemPromptMessage = {
         role: 'system',
-        content: getQuizPrompt(answers, settings.quiz_steps, catalog, context, settings.custom_quiz_prompt, budtenderName, storeName)
+        content: getQuizPrompt(answers, settings.quiz_steps, catalog, enrichedContext, settings.custom_quiz_prompt, budtenderName, storeName)
     };
 
     const messages = [
@@ -148,10 +156,39 @@ export async function callAI(
                 x_title: `${storeName} ${budtenderName}`,
             },
         });
-        if (error) return null;
-        return json?.choices?.[0]?.message?.content ?? null;
+        if (error) return { text: null };
+        
+        const content = json?.choices?.[0]?.message?.content ?? null;
+        return { text: content };
     } catch (err) {
-        return null;
+        return { text: null };
+    }
+}
+
+/**
+ * Extracts semantic insights from a conversation history to update long-term memory.
+ */
+export async function extractInsights(
+    history: { role: string; content: string }[],
+    currentInsights: string[] = []
+): Promise<string[]> {
+    const model = 'google/gemini-2.0-flash-lite-001';
+    const prompt = getInsightExtractionPrompt(history, currentInsights);
+
+    try {
+        const { data: json } = await supabase.functions.invoke('ai-chat', {
+            body: {
+                model,
+                messages: [{ role: 'user', content: prompt }],
+                temperature: 0.1,
+            },
+        });
+        
+        const content = json?.choices?.[0]?.message?.content ?? '[]';
+        const cleaned = content.replace(/```json|```/g, '').trim();
+        return JSON.parse(cleaned) as string[];
+    } catch (err) {
+        return currentInsights;
     }
 }
 

@@ -119,9 +119,6 @@ Si tu es prêt à recommander :
 ${contextBlock}
 ${customPrompt?.trim() ? `\n📌 INSTRUCTIONS ADDITIONNELLES :\n${customPrompt.trim()}` : ''}
 
-📦 CATALOGUE ACTUEL (RÉSUMÉ) :
-${catalog}
-
 [HISTORIQUE DE LA CONVERSATION DU QUIZ]
 ${history.map(m => `${m.role.toUpperCase()} : ${m.content}`).join('\n')}
 
@@ -130,14 +127,41 @@ Réponds UNIQUEMENT en JSON.
 };
 
 
+/**
+ * Prompt pour extraire des insights sémantiques de l'historique
+ */
+export const getInsightExtractionPrompt = (
+  history: { role: string; content: string }[],
+  currentInsights: string[] = []
+) => {
+  return `Tu es un analyste expert en comportement client pour une boutique de CBD.
+  Ton objectif est d'extraire des préférences ou des traits de personnalité STABLES et FIABLES de l'utilisateur à partir de l'historique de conversation.
+  
+  RÈGLES :
+  1. Retourne UNIQUEMENT un tableau JSON de chaînes de caractères (ex: ["Préfère le vapotage", "Sensible aux arômes boisés"]).
+  2. Max 5 insights clés.
+  3. Ne répète pas les insights déjà existants s'ils sont encore valides.
+  4. Sois factuel et utile pour une personnalisation future.
+
+  INSIGHTS EXISTANTS : ${currentInsights.join(', ') || 'Aucun'}
+
+  HISTORIQUE :
+  ${history.map(h => `${h.role.toUpperCase()}: ${h.content}`).join('\n')}
+
+  Réponds UNIQUEMENT avec le JSON.
+  `;
+};
+
+
 
 const VOICE_PROMPT_MAX_CHARS = 7600;
 const VOICE_CONTEXT_MAX_CHARS = 2200;
 
 const VOICE_FORMAT_RULES = `## RÈGLES AUDIO — OBLIGATOIRE
-Interdit: markdown, emojis, URLs, codes techniques, listes.
-Réponds oralement en Français: 2-3 phrases courtes, ton naturel, clair et chaleureux.
-Chiffres en lettres, pauses via virgules/points, et conclure par une question utile si pertinent.`;
+1. TON : Très professionnel, expert, chaleureux mais formel.
+2. ACCUSÉ DE RÉCEPTION : Dès que tu décides d'utiliser un outil (recherche, action panier, navigation), tu DOIS commencer par une brève confirmation orale de ton intention (ex: "Entendu, je consulte immédiatement notre catalogue pour vous apporter une réponse précise..." ou "Je vérifie tout de suite la disponibilité de ce produit...") dans le MÊME tour que l'appel d'outil. Ne laisse jamais de silence pendant qu'un outil s'exécute.
+3. FORMAT : Interdit: markdown, emojis, URLs, codes techniques, listes.
+4. ÉNONCIATION : Réponds oralement en Français: 2-3 phrases courtes, ton naturel. Chiffres en lettres, pauses via virgules/points, et conclure par une question utile si pertinent.`;
 
 // ─── MODULES PRIVÉS ──────────────────────────────────────────────────────────
 
