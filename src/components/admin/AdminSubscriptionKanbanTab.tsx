@@ -309,27 +309,30 @@ export default function AdminSubscriptionKanbanTab({ isFullScreen, onToggleFullS
     };
 
     return (
-        <div className={`flex flex-col h-full bg-black/40 rounded-3xl border border-white/5 backdrop-blur-xl transition-all duration-500 overflow-hidden ${isFullScreen ? 'fixed inset-0 z-[100] rounded-none border-none' : 'min-h-[700px]'}`}>
+        <div className={`flex flex-col h-full transition-all duration-500 overflow-hidden ${isFullScreen ? 'fixed inset-0 z-[100]' : 'min-h-[700px] rounded-3xl border border-white/[0.04]'}`}
+            style={{ background: 'linear-gradient(180deg, rgba(8,12,20,0.97) 0%, rgba(5,8,16,0.99) 100%)' }}>
             {/* Header */}
-            <div className="p-6 border-b border-white/5 flex items-center justify-between gap-6 flex-wrap shrink-0">
+            <div className="px-8 py-6 flex items-center justify-between gap-6 flex-wrap shrink-0" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
                 <div className="flex items-center gap-6">
                     {isFullScreen && onBack && (
                         <button
                             onClick={onBack}
-                            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-zinc-400 hover:text-white hover:bg-white/10 transition-all font-bold text-sm group"
+                            className="flex items-center gap-2 px-4 py-2 rounded-xl text-white/30 hover:text-white hover:bg-white/[0.04] transition-all text-sm group"
+                            style={{ border: '1px solid rgba(255,255,255,0.06)' }}
                         >
                             <ChevronLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
                             Retour
                         </button>
                     )}
                     <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center shadow-lg shadow-emerald-500/20">
-                            <RefreshCw className="w-6 h-6 text-black" />
+                        <div className="w-11 h-11 rounded-2xl flex items-center justify-center"
+                            style={{ background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', boxShadow: '0 0 24px rgba(16,185,129,0.15)' }}>
+                            <RefreshCw className="w-5 h-5 text-white" />
                         </div>
                         <div>
                             <div className="flex items-center gap-3">
-                                <h2 className="text-xl font-bold text-white tracking-tight">Suivi des Abonnements</h2>
-                                <div className="flex items-center bg-white/5 rounded-xl p-1 border border-white/10">
+                                <h2 className="text-lg font-bold text-white tracking-tight">Suivi des Abonnements</h2>
+                                <div className="flex items-center rounded-lg p-1" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}>
                                     <button
                                         onClick={() => setViewType('day')}
                                         className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${viewType === 'day' ? 'bg-emerald-500 text-black' : 'text-zinc-500 hover:text-white'}`}
@@ -361,35 +364,38 @@ export default function AdminSubscriptionKanbanTab({ isFullScreen, onToggleFullS
                     </div>
                 </div>
 
-                <div className="flex items-center gap-3 flex-1 max-w-md">
+                <div className="flex items-center gap-2.5 flex-1 max-w-lg">
                     <div className="relative flex-1">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+                        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/20" />
                         <input
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            placeholder="Rechercher client ou produit..."
-                            className="w-full bg-zinc-900/50 border border-white/5 rounded-2xl pl-12 pr-4 py-3 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-emerald-500 transition-all backdrop-blur-md"
+                            placeholder="Rechercher client ou produit…"
+                            className="w-full rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-white/20 focus:outline-none transition-all"
+                            style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}
                         />
                     </div>
                     <button
                         onClick={onToggleFullScreen}
-                        className="p-3 rounded-2xl bg-zinc-900/50 border border-white/5 text-zinc-400 hover:text-white hover:bg-zinc-800 transition-all shadow-xl"
+                        className="p-2.5 rounded-xl text-white/25 hover:text-white/60 hover:bg-white/[0.04] transition-all"
+                        style={{ border: '1px solid rgba(255,255,255,0.06)' }}
                         title={isFullScreen ? "Réduire" : "Plein écran"}
                     >
-                        {isFullScreen ? <Minimize2 className="w-5 h-5" /> : <Maximize2 className="w-5 h-5" />}
+                        {isFullScreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
                     </button>
                     <button
                         onClick={loadSubscriptions}
-                        className="p-3 rounded-2xl bg-zinc-900/50 border border-white/5 text-zinc-400 hover:text-white hover:bg-zinc-800 transition-all"
+                        className="p-2.5 rounded-xl text-white/25 hover:text-white/60 hover:bg-white/[0.04] transition-all"
+                        style={{ border: '1px solid rgba(255,255,255,0.06)' }}
                         disabled={isLoading}
                     >
-                        <RefreshCw className={`w-5 h-5 ${isLoading ? 'animate-spin' : ''}`} />
+                        <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
                     </button>
                 </div>
             </div>
 
             {/* Quick Stats Bar */}
-            <div className="px-6 py-4 bg-white/5 border-b border-white/5 flex items-center gap-8 overflow-x-auto no-scrollbar">
+            <div className="px-8 py-5 flex items-center gap-8 overflow-x-auto no-scrollbar" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
                 <div className="flex items-center gap-2">
                     <BarChart3 className="w-4 h-4 text-emerald-500" />
                     <span className="text-xs font-bold text-zinc-400 uppercase tracking-widest">Aperçu:</span>
@@ -444,22 +450,23 @@ export default function AdminSubscriptionKanbanTab({ isFullScreen, onToggleFullS
             </div>
 
             {/* Kanban columns */}
-            <div className="flex-1 overflow-x-auto p-4 flex gap-4 min-h-0 custom-scrollbar">
+            <div className="flex-1 overflow-x-auto px-6 py-5 flex gap-4 min-h-0 kanban-sub-scroll">
                 {kanbanColumns.map((col) => {
                     const colSubs = getColumnSubscriptions(col.id);
                     return (
                         <div
                             key={col.id}
-                            className="flex-shrink-0 w-[300px] flex flex-col bg-zinc-900/30 rounded-3xl border border-white/5"
+                            className="flex-1 min-w-[240px] max-w-[380px] flex flex-col rounded-2xl transition-all duration-200"
+                            style={{ background: 'rgba(255,255,255,0.015)', border: '1px solid rgba(255,255,255,0.04)' }}
                         >
                             {/* Column Header */}
-                            <div className="p-4 flex items-center justify-between border-b border-white/5 bg-zinc-900/20 rounded-t-3xl">
-                                <div className="flex items-center gap-3">
-                                    <div className={`p-2 rounded-xl ${col.bgColor}`}>
-                                        <col.icon className={`w-4 h-4 ${col.color}`} />
+                            <div className="px-4 py-3.5 flex items-center justify-between shrink-0" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                                <div className="flex items-center gap-2.5">
+                                    <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${col.bgColor}`}>
+                                        <col.icon className={`w-3.5 h-3.5 ${col.color}`} />
                                     </div>
-                                    <h3 className="font-bold text-sm text-zinc-100 uppercase tracking-wider">{col.title}</h3>
-                                    <span className="bg-zinc-800 text-zinc-400 text-[10px] px-2 py-0.5 rounded-full font-bold">
+                                    <h3 className="font-semibold text-xs text-white/60 uppercase tracking-wider">{col.title}</h3>
+                                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md ${col.bgColor} ${col.color}`}>
                                         {colSubs.length}
                                     </span>
                                 </div>
@@ -467,7 +474,7 @@ export default function AdminSubscriptionKanbanTab({ isFullScreen, onToggleFullS
 
                             {/* Cards Area */}
                             <div
-                                className="flex-1 overflow-y-auto p-3 space-y-3 custom-scrollbar"
+                                className="flex-1 overflow-y-auto p-3 space-y-2.5 kanban-sub-scroll"
                                 onDragOver={(e) => e.preventDefault()}
                                 onDrop={(e) => {
                                     e.preventDefault();
@@ -489,9 +496,9 @@ export default function AdminSubscriptionKanbanTab({ isFullScreen, onToggleFullS
                                     ))}
                                 </AnimatePresence>
                                 {colSubs.length === 0 && (
-                                    <div className="h-full flex flex-col items-center justify-center opacity-20 py-10 text-center">
-                                        <Package className="w-12 h-12 mb-2 mx-auto" />
-                                        <p className="text-xs">Aucun abonnement</p>
+                                    <div className="h-full flex flex-col items-center justify-center py-10 text-center">
+                                        <Package className="w-8 h-8 mb-2 mx-auto text-white/[0.06]" />
+                                        <p className="text-[10px] text-white/10">Aucun abonnement</p>
                                     </div>
                                 )}
                             </div>
@@ -515,21 +522,11 @@ export default function AdminSubscriptionKanbanTab({ isFullScreen, onToggleFullS
             <style>{`
                 .no-scrollbar::-webkit-scrollbar { display: none; }
                 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-                .custom-scrollbar::-webkit-scrollbar {
-                    width: 8px;
-                    height: 8px;
-                }
-                .custom-scrollbar::-webkit-scrollbar-track {
-                    background: rgba(255, 255, 255, 0.02);
-                    border-radius: 10px;
-                }
-                .custom-scrollbar::-webkit-scrollbar-thumb {
-                    background: rgba(255, 255, 255, 0.1);
-                    border-radius: 10px;
-                }
-                .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-                    background: rgba(16, 185, 129, 0.3);
-                }
+                .kanban-sub-scroll::-webkit-scrollbar { width: 4px; height: 6px; }
+                .kanban-sub-scroll::-webkit-scrollbar-track { background: transparent; }
+                .kanban-sub-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.06); border-radius: 10px; }
+                .kanban-sub-scroll::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.12); }
+                .kanban-sub-scroll { scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.06) transparent; }
             `}</style>
         </div>
     );

@@ -1,8 +1,7 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
     Search,
-    MoreVertical,
     Maximize2,
     Minimize2,
     Clock,
@@ -22,21 +21,32 @@ import {
     CreditCard,
     History,
     ChevronRight,
+    ChevronDown,
     ArrowRight,
     Filter,
-    BarChart3
+    BarChart3,
+    RefreshCw,
+    ArrowUpDown,
+    Printer,
+    Eye,
+    Timer,
+    TrendingUp,
+    Zap,
+    AlertTriangle,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import type { Order, OrderItem } from '../../lib/types';
 
 const KANBAN_COLUMNS = [
-    { id: 'pending', title: 'Attente', icon: Clock, color: 'text-yellow-400', bgColor: 'bg-yellow-400/10' },
-    { id: 'paid', title: 'Payé', icon: CheckCircle2, color: 'text-blue-400', bgColor: 'bg-blue-400/10' },
-    { id: 'processing', title: 'Prép.', icon: Package, color: 'text-purple-400', bgColor: 'bg-purple-400/10' },
-    { id: 'ready', title: 'Prêt', icon: Store, color: 'text-green-400', bgColor: 'bg-green-400/10' },
-    { id: 'shipped', title: 'Livr.', icon: Truck, color: 'text-sky-400', bgColor: 'bg-sky-400/10' },
-    { id: 'delivered', title: 'Livré', icon: CheckCircle2, color: 'text-emerald-400', bgColor: 'bg-emerald-400/10' },
+    { id: 'pending', title: 'En attente', icon: Clock, color: '#eab308', bgColor: 'rgba(234,179,8,0.1)', borderColor: 'rgba(234,179,8,0.15)' },
+    { id: 'paid', title: 'Payées', icon: CheckCircle2, color: '#3b82f6', bgColor: 'rgba(59,130,246,0.1)', borderColor: 'rgba(59,130,246,0.15)' },
+    { id: 'processing', title: 'Préparation', icon: Package, color: '#a855f7', bgColor: 'rgba(168,85,247,0.1)', borderColor: 'rgba(168,85,247,0.15)' },
+    { id: 'ready', title: 'Prêtes', icon: Store, color: '#22c55e', bgColor: 'rgba(34,197,94,0.1)', borderColor: 'rgba(34,197,94,0.15)' },
+    { id: 'shipped', title: 'Expédiées', icon: Truck, color: '#0ea5e9', bgColor: 'rgba(14,165,233,0.1)', borderColor: 'rgba(14,165,233,0.15)' },
+    { id: 'delivered', title: 'Livrées', icon: CheckCircle2, color: '#10b981', bgColor: 'rgba(16,185,129,0.1)', borderColor: 'rgba(16,185,129,0.15)' },
 ];
+
+type SortMode = 'newest' | 'oldest' | 'amount_desc' | 'amount_asc';
 
 interface AdminKanbanTabProps {
     orders: Order[];
@@ -51,28 +61,55 @@ export default function AdminKanbanTab({ orders, onRefresh, isFullScreen, onTogg
     const [draggingId, setDraggingId] = useState<string | null>(null);
     const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
     const [deliveryFilter, setDeliveryFilter] = useState<string | null>(null);
+    const [sortMode, setSortMode] = useState<SortMode>('newest');
+    const [collapsedCols, setCollapsedCols] = useState<string[]>([]);
+    const [dragOverCol, setDragOverCol] = useState<string | null>(null);
 
     const filteredOrders = useMemo(() => {
-        return orders.filter(o => {
+        let result = orders.filter(o => {
             const matchesSearch = o.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 (o.profile?.full_name ?? '').toLowerCase().includes(searchQuery.toLowerCase());
             const matchesDelivery = !deliveryFilter || o.delivery_type === deliveryFilter;
             return matchesSearch && matchesDelivery;
         });
-    }, [orders, searchQuery, deliveryFilter]);
+
+        // Sort
+        result.sort((a, b) => {
+            switch (sortMode) {
+                case 'newest': return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+                case 'oldest': return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+                case 'amount_desc': return Number(b.total) - Number(a.total);
+                case 'amount_asc': return Number(a.total) - Number(b.total);
+                default: return 0;
+            }
+        });
+
+        return result;
+    }, [orders, searchQuery, deliveryFilter, sortMode]);
 
     const stats = useMemo(() => {
         const now = new Date();
-        const todayOrders = orders.filter(o => new Date(o.created_at).toDateString() === now.toDateString());
+        const today = new Date(now); today.setHours(0, 0, 0, 0);
+        const todayOrders = orders.filter(o => new Date(o.created_at) >= today);
+        const paidToday = todayOrders.filter(o => o.payment_status === 'paid');
+
+        // Average processing time (pending → delivered) for delivered orders
+        const deliveredOrders = orders.filter(o => o.status === 'delivered');
+
         return {
             totalToday: todayOrders.length,
-            revenueToday: todayOrders.filter(o => o.payment_status === 'paid').reduce((acc, o) => acc + Number(o.total), 0),
+            revenueToday: paidToday.reduce((acc, o) => acc + Number(o.total), 0),
             pendingCount: orders.filter(o => o.status === 'pending').length,
             processingCount: orders.filter(o => o.status === 'processing').length,
+            readyCount: orders.filter(o => o.status === 'ready').length,
+            shippedCount: orders.filter(o => o.status === 'shipped').length,
+            deliveredCount: deliveredOrders.length,
+            totalOrders: orders.length,
+            avgOrderValue: paidToday.length ? paidToday.reduce((a, o) => a + Number(o.total), 0) / paidToday.length : 0,
         };
     }, [orders]);
 
-    const handleUpdateStatus = async (orderId: string, newStatus: string) => {
+    const handleUpdateStatus = useCallback(async (orderId: string, newStatus: string) => {
         try {
             const { error } = await supabase
                 .from('orders')
@@ -84,147 +121,233 @@ export default function AdminKanbanTab({ orders, onRefresh, isFullScreen, onTogg
         } catch (err) {
             console.error('Error updating status:', err);
         }
+    }, [onRefresh]);
+
+    const getColumnOrders = useCallback((status: string) => {
+        return filteredOrders.filter(o => o.status === status);
+    }, [filteredOrders]);
+
+    const toggleCollapse = (colId: string) => {
+        setCollapsedCols(prev => prev.includes(colId) ? prev.filter(c => c !== colId) : [...prev, colId]);
     };
 
-    const getColumnOrders = (status: string) => {
-        return filteredOrders.filter(o => o.status === status);
-    };
+    // Progress pipeline percentage
+    const pipelineTotal = stats.totalOrders || 1;
+    const pipelineData = KANBAN_COLUMNS.map(col => ({
+        ...col,
+        count: orders.filter(o => o.status === col.id).length,
+        pct: Math.round((orders.filter(o => o.status === col.id).length / pipelineTotal) * 100),
+    }));
 
     return (
-        <div className={`flex flex-col h-full bg-black/40 rounded-3xl border border-white/5 backdrop-blur-xl transition-all duration-500 overflow-hidden ${isFullScreen ? 'fixed inset-0 z-[100] rounded-none border-none' : 'min-h-[700px]'}`}>
-            {/* Header Area */}
-            <div className="p-6 border-b border-white/5 flex items-center justify-between gap-6 flex-wrap shrink-0">
-                <div className="flex items-center gap-6">
+        <div className={`flex flex-col h-full transition-all duration-500 overflow-hidden ${isFullScreen ? 'fixed inset-0 z-[100]' : 'min-h-[700px] rounded-3xl border border-white/[0.04]'}`}
+            style={{ background: 'linear-gradient(180deg, rgba(8,12,20,0.97) 0%, rgba(5,8,16,0.99) 100%)' }}>
+
+            {/* ═══ Header ═══ */}
+            <div className="shrink-0 px-8 py-6 flex items-center justify-between gap-6 flex-wrap" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                <div className="flex items-center gap-5">
                     {isFullScreen && onBack && (
                         <button
                             onClick={onBack}
-                            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-zinc-400 hover:text-white hover:bg-white/10 transition-all font-bold text-sm group"
+                            className="flex items-center gap-2 px-4 py-2 rounded-xl text-white/30 hover:text-white hover:bg-white/[0.04] transition-all text-sm group"
+                            style={{ border: '1px solid rgba(255,255,255,0.06)' }}
                         >
                             <ChevronLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
                             Retour
                         </button>
                     )}
                     <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-green-primary to-emerald-600 flex items-center justify-center shadow-lg shadow-green-primary/20">
-                            <LayoutDashboard className="w-6 h-6 text-black" />
+                        <div className="w-11 h-11 rounded-2xl flex items-center justify-center"
+                            style={{ background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', boxShadow: '0 0 24px rgba(16,185,129,0.15)' }}>
+                            <LayoutDashboard className="w-5 h-5 text-white" />
                         </div>
                         <div>
-                            <h2 className="text-xl font-bold text-white tracking-tight">Suivi des Commandes</h2>
-                            <p className="text-sm text-zinc-400">Gérez le flux de vos commandes en temps réel</p>
+                            <h2 className="text-lg font-bold text-white tracking-tight">Suivi des Commandes</h2>
+                            <p className="text-xs text-white/30">{stats.totalOrders} commandes · {stats.pendingCount} en attente</p>
                         </div>
                     </div>
                 </div>
 
-                <div className="flex items-center gap-3 flex-1 max-w-md">
+                <div className="flex items-center gap-2.5 flex-1 max-w-lg">
                     <div className="relative flex-1">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+                        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/20" />
                         <input
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            placeholder="Rechercher une commande ou un client..."
-                            className="w-full bg-zinc-900/50 border border-white/5 rounded-2xl pl-12 pr-4 py-3 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-green-primary transition-all backdrop-blur-md"
+                            placeholder="Rechercher #id, client…"
+                            className="w-full rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-white/20 focus:outline-none transition-all"
+                            style={{
+                                background: 'rgba(255,255,255,0.03)',
+                                border: '1px solid rgba(255,255,255,0.06)',
+                            }}
                         />
                     </div>
                     <button
                         onClick={onToggleFullScreen}
-                        className="p-3 rounded-2xl bg-zinc-900/50 border border-white/5 text-zinc-400 hover:text-white hover:bg-zinc-800 transition-all shadow-xl"
+                        className="p-2.5 rounded-xl text-white/25 hover:text-white/60 hover:bg-white/[0.04] transition-all"
+                        style={{ border: '1px solid rgba(255,255,255,0.06)' }}
                         title={isFullScreen ? "Réduire" : "Plein écran"}
                     >
-                        {isFullScreen ? <Minimize2 className="w-5 h-5" /> : <Maximize2 className="w-5 h-5" />}
+                        {isFullScreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
                     </button>
-                    {isFullScreen && (
-                        <button
-                            onClick={onRefresh}
-                            className="px-5 py-3 rounded-2xl bg-green-primary text-black font-bold text-sm hover:scale-105 transition-all shadow-lg shadow-green-primary/20"
-                        >
-                            Actualiser
-                        </button>
-                    )}
+                    <button
+                        onClick={onRefresh}
+                        className="p-2.5 rounded-xl text-white/25 hover:text-white/60 hover:bg-white/[0.04] transition-all"
+                        style={{ border: '1px solid rgba(255,255,255,0.06)' }}
+                        title="Actualiser"
+                    >
+                        <RefreshCw className="w-4 h-4" />
+                    </button>
                 </div>
             </div>
 
-            {/* Filters & Quick Stats Bar */}
-            <div className="px-6 py-4 bg-white/5 border-b border-white/5 flex items-center justify-between gap-4 overflow-x-auto no-scrollbar">
-                <div className="flex items-center gap-6">
+            {/* ═══ Stats + Pipeline + Filters ═══ */}
+            <div className="shrink-0 px-8 py-5 flex flex-col gap-4" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                {/* Stats row */}
+                <div className="flex items-center gap-6 flex-wrap">
                     <div className="flex items-center gap-2">
-                        <BarChart3 className="w-4 h-4 text-green-primary" />
-                        <span className="text-xs font-bold text-zinc-400 uppercase tracking-widest">Aujourd'hui:</span>
+                        <Zap className="w-3.5 h-3.5 text-emerald-400" />
+                        <span className="text-[10px] font-bold text-white/30 uppercase tracking-[0.2em]">Aujourd'hui</span>
                     </div>
-                    <div className="flex items-center gap-4">
-                        <div className="flex flex-col">
-                            <span className="text-xs text-zinc-500">Commandes</span>
-                            <span className="text-sm font-bold text-white">{stats.totalToday}</span>
+
+                    <div className="flex items-center gap-5">
+                        <StatPill label="Commandes" value={stats.totalToday} color="#10b981" />
+                        <div className="w-px h-5 bg-white/[0.06]" />
+                        <StatPill label="Chiffre" value={`${stats.revenueToday.toFixed(0)} €`} color="#10b981" />
+                        <div className="w-px h-5 bg-white/[0.06]" />
+                        <StatPill label="Panier moy." value={`${stats.avgOrderValue.toFixed(0)} €`} color="#3b82f6" />
+                        <div className="w-px h-5 bg-white/[0.06]" />
+                        <StatPill label="En attente" value={stats.pendingCount} color="#eab308" highlight={stats.pendingCount > 5} />
+                        <div className="w-px h-5 bg-white/[0.06]" />
+                        <StatPill label="Prépa." value={stats.processingCount} color="#a855f7" />
+                    </div>
+
+                    {/* Filters (right) */}
+                    <div className="flex items-center gap-2 ml-auto">
+                        {/* Sort */}
+                        <div className="flex items-center gap-1 p-1 rounded-lg" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}>
+                            <button
+                                onClick={() => setSortMode(prev => prev === 'newest' ? 'oldest' : prev === 'oldest' ? 'amount_desc' : prev === 'amount_desc' ? 'amount_asc' : 'newest')}
+                                className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-bold text-white/30 hover:text-white/60 transition-colors"
+                            >
+                                <ArrowUpDown className="w-3 h-3" />
+                                {sortMode === 'newest' ? 'Récent' : sortMode === 'oldest' ? 'Ancien' : sortMode === 'amount_desc' ? '€ ↓' : '€ ↑'}
+                            </button>
                         </div>
-                        <div className="w-px h-6 bg-white/10" />
-                        <div className="flex flex-col">
-                            <span className="text-xs text-zinc-500">Chiffre d'Affaires</span>
-                            <span className="text-sm font-bold text-green-primary">{stats.revenueToday.toFixed(2)} €</span>
-                        </div>
-                        <div className="w-px h-6 bg-white/10" />
-                        <div className="flex flex-col">
-                            <span className="text-xs text-zinc-500">En Attente</span>
-                            <span className="text-sm font-bold text-yellow-400">{stats.pendingCount}</span>
+
+                        {/* Delivery type filter */}
+                        <div className="flex items-center gap-0.5 p-1 rounded-lg" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}>
+                            {[
+                                { key: null, label: 'Tout', color: '#10b981' },
+                                { key: 'click_collect', label: 'Retrait', color: '#a855f7' },
+                                { key: 'delivery', label: 'Livraison', color: '#0ea5e9' },
+                            ].map(f => (
+                                <button
+                                    key={f.key ?? 'all'}
+                                    onClick={() => setDeliveryFilter(f.key)}
+                                    className="px-2.5 py-1 rounded-md text-[10px] font-bold transition-all"
+                                    style={{
+                                        color: deliveryFilter === f.key ? '#fff' : 'rgba(255,255,255,0.3)',
+                                        background: deliveryFilter === f.key ? `${f.color}20` : 'transparent',
+                                        boxShadow: deliveryFilter === f.key ? `inset 0 0 0 1px ${f.color}40` : 'none',
+                                    }}
+                                >
+                                    {f.label}
+                                </button>
+                            ))}
                         </div>
                     </div>
                 </div>
 
-                <div className="flex items-center gap-2 ml-auto">
-                    <div className="flex items-center gap-1 bg-black/40 p-1 rounded-xl border border-white/5">
-                        <button
-                            onClick={() => setDeliveryFilter(null)}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${!deliveryFilter ? 'bg-green-primary text-black' : 'text-zinc-400 hover:text-white'}`}
-                        >
-                            Tout
-                        </button>
-                        <button
-                            onClick={() => setDeliveryFilter('click_collect')}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${deliveryFilter === 'click_collect' ? 'bg-purple-500 text-white' : 'text-zinc-400 hover:text-white'}`}
-                        >
-                            Retrait
-                        </button>
-                        <button
-                            onClick={() => setDeliveryFilter('delivery')}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${deliveryFilter === 'delivery' ? 'bg-sky-500 text-white' : 'text-zinc-400 hover:text-white'}`}
-                        >
-                            Livraison
-                        </button>
-                    </div>
+                {/* Pipeline bar */}
+                <div className="flex items-center gap-1 h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.03)' }}>
+                    {pipelineData.map(col => (
+                        <motion.div
+                            key={col.id}
+                            className="h-full rounded-full"
+                            style={{ backgroundColor: col.color, opacity: col.count > 0 ? 0.7 : 0.1 }}
+                            initial={{ width: 0 }}
+                            animate={{ width: `${Math.max(col.pct, col.count > 0 ? 2 : 0.5)}%` }}
+                            transition={{ duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
+                        />
+                    ))}
                 </div>
             </div>
 
-            {/* Kanban Columns */}
-            <div className="flex-1 overflow-x-auto p-4 flex gap-3 min-h-0 custom-scrollbar">
+            {/* ═══ Kanban Columns ═══ */}
+            <div className="flex-1 overflow-x-auto px-6 py-5 flex gap-4 min-h-0 kanban-scroll">
                 {KANBAN_COLUMNS.map((col) => {
                     const colOrders = getColumnOrders(col.id);
-                    return (
-                        <div
-                            key={col.id}
-                            className="flex-shrink-0 w-[240px] flex flex-col bg-zinc-900/30 rounded-3xl border border-white/5"
-                        >
-                            {/* Column Header */}
-                            <div className="p-4 flex items-center justify-between border-b border-white/5 bg-zinc-900/20 rounded-t-3xl">
-                                <div className="flex items-center gap-3">
-                                    <div className={`p-2 rounded-xl ${col.bgColor}`}>
-                                        <col.icon className={`w-4 h-4 ${col.color}`} />
-                                    </div>
-                                    <h3 className="font-bold text-sm text-zinc-100 uppercase tracking-wider">{col.title}</h3>
-                                    <span className="bg-zinc-800 text-zinc-400 text-[10px] px-2 py-0.5 rounded-full font-bold">
-                                        {colOrders.length}
-                                    </span>
-                                </div>
-                                <button className="p-1.5 rounded-lg hover:bg-white/5 text-zinc-500 hover:text-white transition-colors">
-                                    <MoreVertical className="w-4 h-4" />
-                                </button>
-                            </div>
+                    const isCollapsed = collapsedCols.includes(col.id);
+                    const isDragTarget = dragOverCol === col.id;
 
-                            {/* Cards Area */}
+                    if (isCollapsed) {
+                        return (
                             <div
-                                className="flex-1 overflow-y-auto p-3 space-y-3 custom-scrollbar"
+                                key={col.id}
+                                onClick={() => toggleCollapse(col.id)}
+                                className="flex-shrink-0 w-14 flex flex-col items-center py-5 rounded-2xl cursor-pointer hover:bg-white/[0.03] transition-all"
+                                style={{ border: '1px solid rgba(255,255,255,0.04)' }}
                                 onDragOver={(e) => e.preventDefault()}
                                 onDrop={(e) => {
                                     e.preventDefault();
                                     const id = e.dataTransfer.getData('orderId');
                                     if (id) handleUpdateStatus(id, col.id);
+                                    setDragOverCol(null);
+                                }}
+                            >
+                                <div className="w-7 h-7 rounded-lg flex items-center justify-center mb-2" style={{ backgroundColor: col.bgColor }}>
+                                    <col.icon className="w-3.5 h-3.5" style={{ color: col.color }} />
+                                </div>
+                                <span className="text-[10px] font-bold text-white/30 [writing-mode:vertical-lr] rotate-180 tracking-wider">{col.title}</span>
+                                <span className="mt-2 text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center"
+                                    style={{ backgroundColor: col.bgColor, color: col.color }}>
+                                    {colOrders.length}
+                                </span>
+                            </div>
+                        );
+                    }
+
+                    return (
+                        <div
+                            key={col.id}
+                            className="flex-1 min-w-[240px] max-w-[400px] flex flex-col rounded-2xl transition-all duration-200"
+                            style={{
+                                background: isDragTarget ? `${col.bgColor}` : 'rgba(255,255,255,0.015)',
+                                border: `1px solid ${isDragTarget ? col.borderColor : 'rgba(255,255,255,0.04)'}`,
+                                boxShadow: isDragTarget ? `0 0 30px ${col.color}10` : 'none',
+                            }}
+                        >
+                            {/* Column Header */}
+                            <div className="px-4 py-3 flex items-center justify-between shrink-0" style={{ borderBottom: `1px solid rgba(255,255,255,0.04)` }}>
+                                <div className="flex items-center gap-2.5">
+                                    <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ backgroundColor: col.bgColor }}>
+                                        <col.icon className="w-3.5 h-3.5" style={{ color: col.color }} />
+                                    </div>
+                                    <h3 className="font-semibold text-xs text-white/60 uppercase tracking-wider">{col.title}</h3>
+                                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md" style={{ backgroundColor: col.bgColor, color: col.color }}>
+                                        {colOrders.length}
+                                    </span>
+                                </div>
+                                <button
+                                    onClick={() => toggleCollapse(col.id)}
+                                    className="p-1 rounded-md text-white/15 hover:text-white/40 hover:bg-white/[0.04] transition-all"
+                                    title="Réduire"
+                                >
+                                    <ChevronDown className="w-3.5 h-3.5 -rotate-90" />
+                                </button>
+                            </div>
+
+                            {/* Cards Area */}
+                            <div
+                                className="flex-1 overflow-y-auto p-3 space-y-2.5 kanban-scroll"
+                                onDragOver={(e) => { e.preventDefault(); setDragOverCol(col.id); }}
+                                onDragLeave={() => setDragOverCol(null)}
+                                onDrop={(e) => {
+                                    e.preventDefault();
+                                    const id = e.dataTransfer.getData('orderId');
+                                    if (id) handleUpdateStatus(id, col.id);
+                                    setDragOverCol(null);
                                 }}
                             >
                                 <AnimatePresence mode="popLayout">
@@ -232,24 +355,24 @@ export default function AdminKanbanTab({ orders, onRefresh, isFullScreen, onTogg
                                         <KanbanCard
                                             key={order.id}
                                             order={order}
+                                            colColor={col.color}
                                             onDragStart={() => setDraggingId(order.id)}
-                                            onDragEnd={() => setDraggingId(null)}
+                                            onDragEnd={() => { setDraggingId(null); setDragOverCol(null); }}
                                             onClick={() => setSelectedOrder(order)}
                                             isDragging={draggingId === order.id}
                                         />
                                     ))}
                                 </AnimatePresence>
                                 {colOrders.length === 0 && (
-                                    <div className="h-full flex flex-col items-center justify-center opacity-20 py-10">
-                                        <Package className="w-12 h-12 mb-2" />
-                                        <p className="text-xs">Aucune commande</p>
+                                    <div className="h-full flex flex-col items-center justify-center py-10">
+                                        <Package className="w-8 h-8 text-white/[0.06] mb-2" />
+                                        <p className="text-[10px] text-white/10">Aucune commande</p>
                                     </div>
                                 )}
                             </div>
                         </div>
                     );
                 })}
-                <div className="flex-shrink-0 w-10" /> {/* Larger Spacer at the end */}
             </div>
 
             {/* Order Detail Sidepanel */}
@@ -264,39 +387,43 @@ export default function AdminKanbanTab({ orders, onRefresh, isFullScreen, onTogg
             </AnimatePresence>
 
             <style>{`
-                .no-scrollbar::-webkit-scrollbar { display: none; }
-                .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-                .custom-scrollbar::-webkit-scrollbar {
-                    width: 10px;
-                    height: 10px;
-                }
-                .custom-scrollbar::-webkit-scrollbar-track {
-                    background: rgba(255, 255, 255, 0.02);
-                    border-radius: 10px;
-                }
-                .custom-scrollbar::-webkit-scrollbar-thumb {
-                    background: rgba(255, 255, 255, 0.15);
-                    border-radius: 10px;
-                    border: 2px solid rgba(0, 0, 0, 0.3);
-                }
-                .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-                    background: rgba(57, 255, 20, 0.3);
-                }
+                .kanban-scroll::-webkit-scrollbar { width: 4px; height: 6px; }
+                .kanban-scroll::-webkit-scrollbar-track { background: transparent; }
+                .kanban-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.06); border-radius: 10px; }
+                .kanban-scroll::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.12); }
+                .kanban-scroll { scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.06) transparent; }
             `}</style>
         </div>
     );
 }
 
-function KanbanCard({ order, onDragStart, onDragEnd, onClick, isDragging }: { order: Order; onDragStart: () => void; onDragEnd: () => void; onClick: () => void; isDragging: boolean }) {
+/* ─── Stat Pill ─── */
+function StatPill({ label, value, color, highlight }: { label: string; value: string | number; color: string; highlight?: boolean }) {
+    return (
+        <div className="flex flex-col">
+            <span className="text-[9px] text-white/25 uppercase tracking-widest font-medium">{label}</span>
+            <span className={`text-sm font-bold ${highlight ? 'animate-pulse' : ''}`} style={{ color }}>
+                {value}
+            </span>
+        </div>
+    );
+}
+
+/* ─── Kanban Card ─── */
+function KanbanCard({ order, colColor, onDragStart, onDragEnd, onClick, isDragging }: {
+    order: Order; colColor: string; onDragStart: () => void; onDragEnd: () => void; onClick: () => void; isDragging: boolean;
+}) {
     const items = order.order_items as OrderItem[] | undefined;
+    const minutesAgo = Math.floor((new Date().getTime() - new Date(order.created_at).getTime()) / 60000);
+    const isUrgent = order.status === 'pending' && minutesAgo > 30;
 
     return (
         <motion.div
             layout
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.9 }}
-            whileHover={{ y: -2 }}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            whileHover={{ y: -1 }}
             draggable
             onDragStart={(e: any) => {
                 e.dataTransfer.setData('orderId', order.id);
@@ -304,69 +431,87 @@ function KanbanCard({ order, onDragStart, onDragEnd, onClick, isDragging }: { or
             }}
             onDragEnd={onDragEnd}
             onClick={onClick}
-            className={`group bg-zinc-900 border border-white/5 p-3 rounded-xl hover:border-green-primary/30 transition-all cursor-grab active:cursor-grabbing shadow-lg relative ${isDragging ? 'opacity-40 grayscale' : ''}`}
+            className={`group relative p-4 rounded-xl cursor-grab active:cursor-grabbing transition-all duration-200 ${isDragging ? 'opacity-30 scale-95' : ''}`}
+            style={{
+                background: 'rgba(255,255,255,0.02)',
+                border: `1px solid ${isUrgent ? 'rgba(239,68,68,0.2)' : 'rgba(255,255,255,0.04)'}`,
+                boxShadow: isUrgent ? '0 0 20px rgba(239,68,68,0.05)' : 'none',
+            }}
         >
-            <div className="flex justify-between items-start mb-3">
-                <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-tighter">
+            {/* Urgent badge */}
+            {isUrgent && (
+                <div className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-red-500 flex items-center justify-center animate-pulse"
+                    style={{ boxShadow: '0 0 8px rgba(239,68,68,0.5)' }}>
+                    <AlertTriangle className="w-3 h-3 text-white" />
+                </div>
+            )}
+
+            {/* Top row: ID + delivery badge */}
+            <div className="flex justify-between items-center mb-3">
+                <span className="text-[11px] font-mono text-white/25 tracking-tight">
                     #{order.id.slice(0, 8)}
                 </span>
-                <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold bg-white/5 ${order.delivery_type === 'click_collect' ? 'text-purple-400' :
-                    order.delivery_type === 'in_store' ? 'text-orange-400' : 'text-sky-400'
-                    }`}>
+                <span className="text-[10px] px-2.5 py-0.5 rounded-md font-bold" style={{
+                    color: order.delivery_type === 'click_collect' ? '#a855f7' :
+                        order.delivery_type === 'in_store' ? '#f59e0b' : '#0ea5e9',
+                    background: order.delivery_type === 'click_collect' ? 'rgba(168,85,247,0.1)' :
+                        order.delivery_type === 'in_store' ? 'rgba(245,158,11,0.1)' : 'rgba(14,165,233,0.1)',
+                }}>
                     {order.delivery_type === 'click_collect' ? 'Retrait' :
                         order.delivery_type === 'in_store' ? 'Boutique' : 'Livraison'}
                 </span>
             </div>
 
-            <div className="mb-2">
-                <h4 className="text-xs font-bold text-white group-hover:text-emerald-400 transition-colors line-clamp-1">
-                    {order.profile?.full_name ?? 'Client Inconnu'}
-                </h4>
-                <div className="flex items-center justify-between mt-1">
-                    <p className="text-[10px] text-zinc-500 flex items-center gap-1">
-                        <Clock className="w-2.5 h-2.5" />
-                        {new Date(order.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
-                    </p>
-                    <span className="text-[9px] text-zinc-500 font-medium">
-                        {Math.floor((new Date().getTime() - new Date(order.created_at).getTime()) / 60000)} min
-                    </span>
-                </div>
+            {/* Client name */}
+            <h4 className="text-sm font-semibold text-white/70 group-hover:text-white transition-colors truncate mb-2">
+                {order.profile?.full_name ?? 'Client Inconnu'}
+            </h4>
+
+            {/* Time + payment */}
+            <div className="flex items-center gap-3 mb-3.5">
+                <span className="text-[11px] text-white/20 flex items-center gap-1.5">
+                    <Timer className="w-3 h-3" />
+                    {minutesAgo < 60 ? `${minutesAgo}m` : `${Math.floor(minutesAgo / 60)}h${minutesAgo % 60}m`}
+                </span>
                 {order.payment_status === 'paid' && (
-                    <div className="mt-1.5">
-                        <span className="text-[8px] bg-green-primary/20 text-green-primary px-1.5 py-0.5 rounded-md font-bold uppercase tracking-widest">Payé</span>
-                    </div>
+                    <span className="text-[10px] font-bold text-emerald-400/70 flex items-center gap-1">
+                        <CheckCircle2 className="w-3 h-3" /> Payé
+                    </span>
                 )}
             </div>
 
-            <div className="space-y-0.5 mb-3">
+            {/* Items preview */}
+            <div className="space-y-1.5 mb-3.5">
                 {(items ?? []).slice(0, 2).map((item, idx) => (
-                    <div key={idx} className="flex justify-between text-[10px] text-zinc-400">
-                        <span className="line-clamp-1 flex-1">{item.product_name}</span>
-                        <span className="ml-2 px-1 rounded bg-white/5 ring-1 ring-white/10">×{item.quantity}</span>
+                    <div key={idx} className="flex justify-between text-[11px]">
+                        <span className="text-white/30 truncate flex-1 pr-3">{item.product_name}</span>
+                        <span className="text-white/15 font-mono">×{item.quantity}</span>
                     </div>
                 ))}
                 {(items?.length ?? 0) > 2 && (
-                    <p className="text-[10px] text-green-primary/60 italic">+{items!.length - 2} autres produits...</p>
+                    <p className="text-[11px] text-white/15 italic">+{items!.length - 2} autres…</p>
                 )}
             </div>
 
-            <div className="flex items-center justify-between pt-3 border-t border-white/5">
-                <div className="text-sm font-black text-white">
-                    {order.total.toFixed(2)} €
-                </div>
-                <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded-lg bg-zinc-800 border border-white/5 flex items-center justify-center group-hover:bg-zinc-700 transition-colors">
-                        <ChevronRight className="w-3 h-3 text-zinc-500 group-hover:text-white" />
-                    </div>
+            {/* Footer: total + arrow */}
+            <div className="flex items-center justify-between pt-3" style={{ borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+                <span className="text-[15px] font-bold text-white/80">{Number(order.total).toFixed(2)} €</span>
+                <div className="w-7 h-7 rounded-lg flex items-center justify-center text-white/10 group-hover:text-white/30 transition-all"
+                    style={{ background: 'rgba(255,255,255,0.03)' }}>
+                    <Eye className="w-3.5 h-3.5" />
                 </div>
             </div>
         </motion.div>
     );
 }
 
+/* ─── Order Detail Sidepanel ─── */
 function OrderDetailSidepanel({ order, onClose, onUpdateStatus }: { order: Order; onClose: () => void; onUpdateStatus: (id: string, s: string) => void }) {
     const items = order.order_items as OrderItem[] | undefined;
     const profile = order.profile;
+    const currentColIndex = KANBAN_COLUMNS.findIndex(c => c.id === order.status);
+    const currentCol = KANBAN_COLUMNS[currentColIndex];
+    const nextCol = KANBAN_COLUMNS[currentColIndex + 1];
 
     return (
         <>
@@ -375,198 +520,214 @@ function OrderDetailSidepanel({ order, onClose, onUpdateStatus }: { order: Order
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 onClick={onClose}
-                className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[110]"
+                className="fixed inset-0 z-[110]"
+                style={{ background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(4px)' }}
             />
             <motion.div
                 initial={{ x: '100%' }}
                 animate={{ x: 0 }}
                 exit={{ x: '100%' }}
-                transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                className="fixed right-0 top-0 bottom-0 w-full max-w-md bg-zinc-950 border-l border-white/10 shadow-2xl z-[120] flex flex-col overflow-hidden"
+                transition={{ type: 'spring', damping: 28, stiffness: 220 }}
+                className="fixed right-0 top-0 bottom-0 w-full max-w-md z-[120] flex flex-col overflow-hidden"
+                style={{
+                    background: 'linear-gradient(180deg, rgba(8,12,20,0.99) 0%, rgba(4,6,14,1) 100%)',
+                    borderLeft: '1px solid rgba(255,255,255,0.06)',
+                }}
             >
                 {/* Header */}
-                <div className="p-6 border-b border-white/5 bg-gradient-to-r from-zinc-900 to-zinc-950 flex items-center justify-between">
+                <div className="p-6 shrink-0 flex items-center justify-between" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
                     <div>
-                        <div className="flex items-center gap-2 mb-1">
-                            <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest bg-white/5 px-2 py-0.5 rounded">
+                        <div className="flex items-center gap-2 mb-1.5">
+                            <span className="text-[10px] font-mono text-white/25 px-2 py-0.5 rounded"
+                                style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
                                 #{order.id.slice(0, 8)}
                             </span>
-                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${order.status === 'delivered' ? 'bg-green-500/20 text-green-400' : 'bg-yellow-500/20 text-yellow-400'
-                                }`}>
-                                {order.status.toUpperCase()}
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-md"
+                                style={{ backgroundColor: currentCol?.bgColor, color: currentCol?.color }}>
+                                {currentCol?.title || order.status}
                             </span>
                         </div>
-                        <h3 className="text-xl font-bold text-white">Détails de la Commande</h3>
+                        <h3 className="text-lg font-bold text-white">Détails de la commande</h3>
                     </div>
                     <button
                         onClick={onClose}
-                        className="p-2 rounded-xl bg-white/5 text-zinc-400 hover:text-white hover:bg-white/10 transition-all border border-white/5"
+                        className="p-2 rounded-xl text-white/20 hover:text-white/50 hover:bg-white/[0.04] transition-all"
+                        style={{ border: '1px solid rgba(255,255,255,0.06)' }}
                     >
-                        <XCircle className="w-6 h-6" />
+                        <XCircle className="w-5 h-5" />
                     </button>
                 </div>
 
+                {/* ─ Status Pipeline ─ */}
+                <div className="px-6 py-4 shrink-0" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                    <div className="flex items-center gap-1">
+                        {KANBAN_COLUMNS.map((col, idx) => (
+                            <div key={col.id} className="flex items-center flex-1">
+                                <div className="flex-1 h-1 rounded-full transition-all"
+                                    style={{
+                                        backgroundColor: idx <= currentColIndex ? col.color : 'rgba(255,255,255,0.04)',
+                                        opacity: idx <= currentColIndex ? 0.7 : 1,
+                                    }} />
+                                {idx < KANBAN_COLUMNS.length - 1 && <div className="w-1" />}
+                            </div>
+                        ))}
+                    </div>
+                    <div className="flex justify-between mt-1.5">
+                        {KANBAN_COLUMNS.map((col, idx) => (
+                            <span key={col.id} className="text-[8px] font-bold uppercase tracking-wider"
+                                style={{ color: idx <= currentColIndex ? col.color : 'rgba(255,255,255,0.1)' }}>
+                                {col.title}
+                            </span>
+                        ))}
+                    </div>
+                </div>
+
                 {/* Content */}
-                <div className="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar">
-                    {/* Customer Info */}
-                    <section>
-                        <div className="flex items-center gap-2 mb-4">
-                            <User className="w-4 h-4 text-green-primary" />
-                            <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Client</h4>
-                        </div>
-                        <div className="bg-white/5 rounded-2xl p-4 border border-white/5">
-                            <div className="flex items-center gap-4 mb-4">
-                                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-zinc-800 to-zinc-900 border border-white/10 flex items-center justify-center text-lg font-bold text-white">
-                                    {(profile?.full_name ?? 'C')[0]}
-                                </div>
-                                <div>
-                                    <h5 className="font-bold text-white">{profile?.full_name ?? 'Client Anonyme'}</h5>
-                                    <p className="text-xs text-zinc-500">ID: {profile?.id.slice(0, 8)}...</p>
-                                </div>
+                <div className="flex-1 overflow-y-auto p-6 space-y-6 kanban-scroll">
+                    {/* Customer */}
+                    <Section icon={User} title="Client" color="#10b981">
+                        <div className="flex items-center gap-3 mb-3">
+                            <div className="w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold text-white/60"
+                                style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                                {(profile?.full_name ?? 'C')[0]}
                             </div>
-                            <div className="space-y-3">
-                                {profile?.email && (
-                                    <div className="flex items-center gap-3 text-sm text-zinc-400">
-                                        <Mail className="w-4 h-4" />
-                                        <span>{profile.email}</span>
-                                    </div>
-                                )}
-                                {profile?.phone && (
-                                    <div className="flex items-center gap-3 text-sm text-zinc-400">
-                                        <Phone className="w-4 h-4" />
-                                        <span>{profile.phone}</span>
-                                    </div>
-                                )}
+                            <div>
+                                <h5 className="font-semibold text-white/80 text-sm">{profile?.full_name ?? 'Anonyme'}</h5>
+                                <p className="text-[10px] text-white/20">{profile?.id?.slice(0, 8)}…</p>
                             </div>
                         </div>
-                    </section>
-
-                    {/* Delivery Address */}
-                    <section>
-                        <div className="flex items-center gap-2 mb-4">
-                            <MapPin className="w-4 h-4 text-green-primary" />
-                            <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Livraison</h4>
+                        <div className="space-y-2">
+                            {profile?.email && <InfoRow icon={Mail} text={profile.email} />}
+                            {profile?.phone && <InfoRow icon={Phone} text={profile.phone} />}
                         </div>
-                        <div className="bg-white/5 rounded-2xl p-4 border border-white/5">
-                            <p className="text-sm text-white font-medium mb-1">
-                                {order.delivery_type === 'delivery' ? 'Expédition à domicile' :
-                                    order.delivery_type === 'click_collect' ? 'Retrait en magasin' : 'Achat direct'}
-                            </p>
-                            <p className="text-sm text-zinc-400 leading-relaxed">
-                                {order.address ? (
-                                    <>
-                                        {order.address.street}<br />
-                                        {order.address.postal_code} {order.address.city}, {order.address.country}
-                                    </>
-                                ) : 'Pas d\'adresse spécifiée'}
-                            </p>
-                        </div>
-                    </section>
+                    </Section>
 
-                    {/* Order Notes */}
+                    {/* Delivery */}
+                    <Section icon={MapPin} title="Livraison" color="#0ea5e9">
+                        <p className="text-xs text-white/50 font-medium mb-1">
+                            {order.delivery_type === 'delivery' ? 'Expédition à domicile' :
+                                order.delivery_type === 'click_collect' ? 'Retrait en magasin' : 'Achat direct'}
+                        </p>
+                        <p className="text-xs text-white/30 leading-relaxed">
+                            {order.address ? (
+                                <>{order.address.street}<br />{order.address.postal_code} {order.address.city}, {order.address.country}</>
+                            ) : 'Pas d\'adresse spécifiée'}
+                        </p>
+                    </Section>
+
+                    {/* Notes */}
                     {order.notes && (
-                        <section>
-                            <div className="flex items-center gap-2 mb-4">
-                                <History className="w-4 h-4 text-orange-400" />
-                                <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Note Client</h4>
-                            </div>
-                            <div className="bg-orange-500/5 rounded-2xl p-4 border border-orange-500/10 italic text-sm text-zinc-300">
-                                "{order.notes}"
-                            </div>
-                        </section>
+                        <Section icon={History} title="Note" color="#f59e0b">
+                            <p className="text-xs text-white/40 italic leading-relaxed">"{order.notes}"</p>
+                        </Section>
                     )}
 
-                    {/* Order Items */}
-                    <section>
-                        <div className="flex items-center gap-2 mb-4">
-                            <ShoppingBag className="w-4 h-4 text-green-primary" />
-                            <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Articles ({items?.length ?? 0})</h4>
-                        </div>
-                        <div className="space-y-3">
+                    {/* Items */}
+                    <Section icon={ShoppingBag} title={`Articles (${items?.length ?? 0})`} color="#10b981">
+                        <div className="space-y-2">
                             {items?.map((item, idx) => (
-                                <div key={idx} className="flex items-center justify-between p-3 bg-white/5 rounded-xl border border-white/5 group">
+                                <div key={idx} className="flex items-center justify-between p-3 rounded-xl"
+                                    style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)' }}>
                                     <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 rounded-lg bg-zinc-900 border border-white/10 flex items-center justify-center overflow-hidden">
-                                            <Package className="w-5 h-5 text-zinc-600 group-hover:text-green-primary transition-colors" />
+                                        <div className="w-9 h-9 rounded-lg flex items-center justify-center"
+                                            style={{ background: 'rgba(255,255,255,0.03)' }}>
+                                            <Package className="w-4 h-4 text-white/15" />
                                         </div>
                                         <div>
-                                            <p className="text-sm font-bold text-white">{item.product_name}</p>
-                                            <p className="text-[10px] text-zinc-500">Quantité: {item.quantity}</p>
+                                            <p className="text-xs font-medium text-white/60">{item.product_name}</p>
+                                            <p className="text-[10px] text-white/20">×{item.quantity}</p>
                                         </div>
                                     </div>
                                     <div className="text-right">
-                                        <p className="text-sm font-bold text-white">{item.unit_price.toFixed(2)} €</p>
-                                        <p className="text-[10px] text-zinc-500">Total: {item.total_price.toFixed(2)} €</p>
+                                        <p className="text-xs font-bold text-white/60">{item.total_price.toFixed(2)} €</p>
                                     </div>
                                 </div>
                             ))}
                         </div>
-                    </section>
+                    </Section>
 
                     {/* Payment Summary */}
-                    <section>
-                        <div className="flex items-center gap-2 mb-4">
-                            <CreditCard className="w-4 h-4 text-green-primary" />
-                            <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Résumé</h4>
-                        </div>
-                        <div className="bg-gradient-to-br from-zinc-900 to-black rounded-2xl p-6 border border-white/10 shadow-xl">
-                            <div className="space-y-3 mb-6">
-                                <div className="flex justify-between text-sm">
-                                    <span className="text-zinc-500">Sous-total</span>
-                                    <span className="text-zinc-100">{order.total.toFixed(2)} €</span>
+                    <Section icon={CreditCard} title="Résumé" color="#10b981">
+                        <div className="rounded-xl p-5" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}>
+                            <div className="space-y-2 mb-4">
+                                <div className="flex justify-between text-xs">
+                                    <span className="text-white/25">Sous-total</span>
+                                    <span className="text-white/50">{Number(order.total).toFixed(2)} €</span>
                                 </div>
-                                <div className="flex justify-between text-sm">
-                                    <span className="text-zinc-500">Frais de livraison</span>
-                                    <span className="text-zinc-100">0.00 €</span>
+                                <div className="flex justify-between text-xs">
+                                    <span className="text-white/25">Livraison</span>
+                                    <span className="text-white/50">0.00 €</span>
                                 </div>
-                                <div className="h-px bg-white/5 my-2" />
+                                <div className="h-px my-1" style={{ background: 'rgba(255,255,255,0.04)' }} />
                                 <div className="flex justify-between items-center">
-                                    <span className="font-bold text-zinc-100">Total</span>
-                                    <span className="text-2xl font-black text-green-primary">{order.total.toFixed(2)} €</span>
+                                    <span className="font-semibold text-sm text-white/60">Total</span>
+                                    <span className="text-xl font-black" style={{ color: '#10b981' }}>{Number(order.total).toFixed(2)} €</span>
                                 </div>
                             </div>
 
-                            <div className={`p-3 rounded-xl flex items-center gap-3 ${order.payment_status === 'paid' ? 'bg-green-500/10 border border-green-500/20' : 'bg-yellow-500/10 border border-yellow-500/20'}`}>
-                                {order.payment_status === 'paid' ? <CheckCircle2 className="w-5 h-5 text-green-400" /> : <Clock className="w-5 h-5 text-yellow-400" />}
-                                <div>
-                                    <p className={`text-xs font-bold ${order.payment_status === 'paid' ? 'text-green-400' : 'text-yellow-400'}`}>
-                                        {order.payment_status === 'paid' ? 'Paiement confirmé' : 'Paiement en attente'}
-                                    </p>
-                                </div>
+                            <div className="p-3 rounded-lg flex items-center gap-2.5" style={{
+                                background: order.payment_status === 'paid' ? 'rgba(16,185,129,0.06)' : 'rgba(234,179,8,0.06)',
+                                border: `1px solid ${order.payment_status === 'paid' ? 'rgba(16,185,129,0.15)' : 'rgba(234,179,8,0.15)'}`,
+                            }}>
+                                {order.payment_status === 'paid' ? <CheckCircle2 className="w-4 h-4 text-emerald-400/70" /> : <Clock className="w-4 h-4 text-yellow-400/70" />}
+                                <span className="text-[11px] font-bold" style={{ color: order.payment_status === 'paid' ? '#10b981' : '#eab308' }}>
+                                    {order.payment_status === 'paid' ? 'Paiement confirmé' : 'Paiement en attente'}
+                                </span>
                             </div>
                         </div>
-                    </section>
+                    </Section>
                 </div>
 
                 {/* Actions Footer */}
-                <div className="p-6 border-t border-white/10 bg-zinc-950 flex gap-3">
-                    {order.status !== 'ready' && order.status !== 'shipped' && order.status !== 'delivered' && (
+                <div className="p-5 shrink-0 flex gap-2.5" style={{ borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+                    {nextCol && (
                         <button
-                            onClick={() => onUpdateStatus(order.id, 'ready')}
-                            className="flex-1 bg-green-primary text-black font-black py-4 rounded-2xl hover:scale-[1.02] active:scale-[0.98] transition-all shadow-lg shadow-green-primary/20 flex items-center justify-center gap-2"
+                            onClick={() => onUpdateStatus(order.id, nextCol.id)}
+                            className="flex-1 font-bold py-3.5 rounded-xl text-sm flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-[0.98] transition-all"
+                            style={{
+                                backgroundColor: nextCol.color,
+                                color: '#000',
+                                boxShadow: `0 0 24px ${nextCol.color}25`,
+                            }}
                         >
-                            <Package className="w-5 h-5" />
-                            Marquer comme Prêt
-                        </button>
-                    )}
-                    {order.status === 'ready' && (
-                        <button
-                            onClick={() => onUpdateStatus(order.id, order.delivery_type === 'delivery' ? 'shipped' : 'delivered')}
-                            className="flex-1 bg-sky-500 text-white font-black py-4 rounded-2xl hover:scale-[1.02] active:scale-[0.98] transition-all shadow-lg shadow-sky-500/20 flex items-center justify-center gap-2"
-                        >
-                            <Truck className="w-5 h-5" />
-                            {order.delivery_type === 'delivery' ? 'Expédier' : 'Remettre au client'}
+                            <nextCol.icon className="w-4 h-4" />
+                            {nextCol.title}
+                            <ArrowRight className="w-3.5 h-3.5" />
                         </button>
                     )}
                     <button
                         onClick={() => window.print()}
-                        className="p-4 rounded-2xl bg-zinc-900 border border-white/5 text-zinc-400 hover:text-white transition-all"
-                        title="Imprimer le ticket"
+                        className="p-3.5 rounded-xl text-white/20 hover:text-white/40 hover:bg-white/[0.04] transition-all"
+                        style={{ border: '1px solid rgba(255,255,255,0.06)' }}
+                        title="Imprimer"
                     >
-                        <Maximize2 className="w-5 h-5" />
+                        <Printer className="w-4 h-4" />
                     </button>
                 </div>
             </motion.div>
         </>
+    );
+}
+
+/* ─── Section wrapper ─── */
+function Section({ icon: Icon, title, color, children }: { icon: any; title: string; color: string; children: React.ReactNode }) {
+    return (
+        <section>
+            <div className="flex items-center gap-2 mb-3">
+                <Icon className="w-3.5 h-3.5" style={{ color, opacity: 0.6 }} />
+                <h4 className="text-[10px] font-bold text-white/25 uppercase tracking-[0.15em]">{title}</h4>
+            </div>
+            {children}
+        </section>
+    );
+}
+
+/* ─── Info Row ─── */
+function InfoRow({ icon: Icon, text }: { icon: any; text: string }) {
+    return (
+        <div className="flex items-center gap-2.5 text-xs text-white/35">
+            <Icon className="w-3.5 h-3.5 text-white/15" />
+            <span>{text}</span>
+        </div>
     );
 }

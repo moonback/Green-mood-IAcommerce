@@ -35,6 +35,9 @@ import {
   Stethoscope,
   Newspaper,
   FileText,
+  PanelLeftClose,
+  PanelLeftOpen,
+  ExternalLink,
 } from 'lucide-react';
 import { useSettingsStore } from '../../../store/settingsStore';
 
@@ -181,6 +184,7 @@ export default function AdminSidebar({
 }: AdminSidebarProps) {
   const { settings } = useSettingsStore();
   const [openCategories, setOpenCategories] = useState<string[]>(['overview', 'sales', 'clients']);
+  const [hoveredItem, setHoveredItem] = useState<string | null>(null);
 
   const filteredCategories = useMemo(
     () =>
@@ -203,129 +207,291 @@ export default function AdminSidebar({
     setOpenCategories((prev) => (prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key]));
   };
 
-  const Item = ({ item }: { item: any }) => {
-    const isActive = currentTab === item.key;
-    return (
-      <button
-        onClick={() => onTabChange(item.key)}
-        className={`group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-all duration-200 ${isActive
-          ? 'bg-green-neon/12 text-green-neon shadow-[inset_0_0_0_1px_rgba(16,185,129,0.35)]'
-          : 'text-slate-400 hover:bg-slate-800/70 hover:text-slate-100'
-          }`}
-      >
-        <item.icon className={`h-4 w-4 ${isActive ? 'text-green-neon' : 'text-slate-500 group-hover:text-slate-300'}`} />
-        {isSidebarOpen && <span className="truncate">{item.label}</span>}
-      </button>
-    );
-  };
+  // Find which category owns the active tab (for the accent strip)
+  const activeCatColor = useMemo(() => {
+    for (const cat of sidebarCategories) {
+      if (cat.items.some((i) => i.key === currentTab)) return cat.color;
+    }
+    return '#10b981';
+  }, [currentTab]);
 
   return (
-    <aside
-      className={`hidden md:flex h-screen sticky top-0 z-30 flex-col border-r border-slate-800/80 bg-[#0b1220]/95 backdrop-blur-xl transition-all duration-300 ${isSidebarOpen ? 'w-72' : 'w-20'
+    <>
+      <aside
+        className={`hidden md:flex h-screen sticky top-0 z-30 flex-col transition-all duration-300 ease-[cubic-bezier(.4,0,.2,1)] ${
+          isSidebarOpen ? 'w-[272px]' : 'w-[72px]'
         }`}
-    >
-      <div className="flex items-center justify-between border-b border-slate-800/80 px-4 py-4">
-        {isSidebarOpen ? (
-          <div className="flex items-center gap-3">
-            <div className="h-auto w-60 overflow-hidden rounded-xl border border-green-neon/30 bg-slate-900/70">
+        style={{
+          background: 'linear-gradient(180deg, rgba(8,15,28,0.97) 0%, rgba(6,12,24,0.99) 100%)',
+          borderRight: '1px solid rgba(255,255,255,0.04)',
+        }}
+      >
+        {/* ───── Logo / Brand ───── */}
+        <div className="relative flex items-center justify-center px-4 py-5 shrink-0">
+          {/* Subtle glow behind logo */}
+          <div
+            className="absolute inset-0 opacity-30 blur-3xl pointer-events-none"
+            style={{ background: `radial-gradient(ellipse at center, ${activeCatColor}22, transparent 70%)` }}
+          />
+
+          {isSidebarOpen ? (
+            <div className="relative w-full h-14 rounded-2xl overflow-hidden border border-white/[0.06] bg-white/[0.02] flex items-center justify-center">
               {settings.store_logo_dark_url || settings.store_logo_url ? (
-                <img src={settings.store_logo_dark_url || settings.store_logo_url} alt="Logo" className="h-full w-full object-contain p-1" />
+                <img
+                  src={settings.store_logo_dark_url || settings.store_logo_url}
+                  alt="Logo"
+                  className="h-full w-full object-contain p-2"
+                />
               ) : (
-                <div className="flex h-full w-full items-center justify-center text-green-neon">
-                  <Leaf className="h-5 w-5" />
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-xl bg-emerald-500/15 flex items-center justify-center">
+                    <Leaf className="w-4 h-4 text-emerald-400" />
+                  </div>
+                  <span className="text-sm font-semibold text-white/80 tracking-tight">
+                    {settings.store_name || 'Green Mood'}
+                  </span>
                 </div>
               )}
             </div>
+          ) : (
+            <div className="relative w-10 h-10 rounded-xl overflow-hidden border border-white/[0.06] bg-white/[0.02] flex items-center justify-center">
+              {settings.store_logo_dark_url || settings.store_logo_url ? (
+                <img
+                  src={settings.store_logo_dark_url || settings.store_logo_url}
+                  alt="Logo"
+                  className="h-full w-full object-contain p-1"
+                />
+              ) : (
+                <Leaf className="w-4 h-4 text-emerald-400" />
+              )}
+            </div>
+          )}
+        </div>
 
-          </div>
-        ) : (
-          <div className="mx-auto h-10 w-10 overflow-hidden rounded-xl border border-green-neon/30 bg-slate-900/70">
-            {settings.store_logo_dark_url || settings.store_logo_url ? (
-              <img src={settings.store_logo_dark_url || settings.store_logo_url} alt="Logo" className="h-full w-full object-contain p-1" />
-            ) : (
-              <div className="flex h-full w-full items-center justify-center text-green-neon">
-                <Leaf className="h-5 w-5" />
-              </div>
-            )}
-          </div>
-        )}
-      </div>
+        {/* Divider */}
+        <div className="mx-4 h-px bg-gradient-to-r from-transparent via-white/[0.06] to-transparent" />
 
-      <nav className="flex-1 overflow-y-auto px-3 py-3">
-        {filteredCategories.map((cat) => (
-          <div key={cat.key} className="mb-2">
-            {isSidebarOpen ? (
-              <>
+        {/* ───── Navigation ───── */}
+        <nav className="flex-1 overflow-y-auto py-3 px-3 sidebar-scroll">
+          {filteredCategories.map((cat, catIdx) => (
+            <div key={cat.key} className={catIdx > 0 ? 'mt-1' : ''}>
+              {/* Category Header */}
+              {isSidebarOpen ? (
                 <button
                   onClick={() => toggleCategory(cat.key)}
-                  className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left text-xs uppercase tracking-[0.16em] text-slate-500 hover:bg-slate-800/50"
+                  className="group flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left transition-colors hover:bg-white/[0.03]"
                 >
-                  <span className="flex-1">{cat.label}</span>
-                  <ChevronDown className={`h-3.5 w-3.5 transition-transform ${openCategories.includes(cat.key) ? '' : '-rotate-90'}`} />
+                  <div
+                    className="w-1 h-3.5 rounded-full transition-all duration-300"
+                    style={{
+                      backgroundColor: cat.color,
+                      opacity: openCategories.includes(cat.key) ? 1 : 0.3,
+                    }}
+                  />
+                  <span className="flex-1 text-[10px] font-bold uppercase tracking-[0.18em] text-white/30 group-hover:text-white/50 transition-colors">
+                    {cat.label}
+                  </span>
+                  <ChevronDown
+                    className={`h-3 w-3 text-white/20 transition-transform duration-300 ${
+                      openCategories.includes(cat.key) ? '' : '-rotate-90'
+                    }`}
+                  />
                 </button>
+              ) : (
+                <div className="flex justify-center py-2">
+                  <div className="w-5 h-px rounded-full" style={{ backgroundColor: cat.color, opacity: 0.3 }} />
+                </div>
+              )}
+
+              {/* Category Items */}
+              {isSidebarOpen ? (
                 <AnimatePresence initial={false}>
                   {openCategories.includes(cat.key) && (
                     <motion.div
                       initial={{ height: 0, opacity: 0 }}
                       animate={{ height: 'auto', opacity: 1 }}
                       exit={{ height: 0, opacity: 0 }}
-                      className="space-y-1 overflow-hidden px-1"
+                      transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
+                      className="overflow-hidden"
                     >
-                      {cat.items.map((item) => (
-                        <Item key={item.key} item={item} />
-                      ))}
+                      <div className="space-y-0.5 pb-1 pl-1">
+                        {cat.items.map((item) => {
+                          const isActive = currentTab === item.key;
+                          return (
+                            <button
+                              key={item.key}
+                              onClick={() => onTabChange(item.key)}
+                              className={`group relative flex w-full items-center gap-3 rounded-xl px-3 py-2 text-[13px] font-medium transition-all duration-200 ${
+                                isActive
+                                  ? 'text-white'
+                                  : 'text-white/40 hover:text-white/70 hover:bg-white/[0.03]'
+                              }`}
+                            >
+                              {/* Active indicator bar */}
+                              {isActive && (
+                                <motion.div
+                                  layoutId="sidebar-active-indicator"
+                                  className="absolute inset-0 rounded-xl"
+                                  style={{
+                                    background: `linear-gradient(135deg, ${cat.color}12, ${cat.color}06)`,
+                                    boxShadow: `inset 0 0 0 1px ${cat.color}25, 0 0 20px ${cat.color}08`,
+                                  }}
+                                  transition={{ type: 'spring', stiffness: 350, damping: 30 }}
+                                />
+                              )}
+
+                              {/* Left accent dot */}
+                              <div className="relative z-10 flex items-center justify-center w-5 h-5">
+                                {isActive && (
+                                  <motion.div
+                                    layoutId="sidebar-active-dot"
+                                    className="absolute w-1.5 h-1.5 rounded-full"
+                                    style={{ backgroundColor: cat.color, boxShadow: `0 0 8px ${cat.color}80` }}
+                                    transition={{ type: 'spring', stiffness: 350, damping: 30 }}
+                                  />
+                                )}
+                                <item.icon
+                                  className={`relative z-10 h-[15px] w-[15px] transition-colors duration-200 ${
+                                    isActive ? '' : 'text-white/25 group-hover:text-white/50'
+                                  }`}
+                                  style={isActive ? { color: cat.color } : undefined}
+                                />
+                              </div>
+
+                              <span className="relative z-10 truncate">{item.label}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
                     </motion.div>
                   )}
                 </AnimatePresence>
+              ) : (
+                /* Collapsed: icon-only with tooltip */
+                <div className="space-y-0.5">
+                  {cat.items.map((item) => {
+                    const isActive = currentTab === item.key;
+                    return (
+                      <div key={item.key} className="relative">
+                        <button
+                          onClick={() => onTabChange(item.key)}
+                          onMouseEnter={() => setHoveredItem(item.key)}
+                          onMouseLeave={() => setHoveredItem(null)}
+                          className={`group relative flex w-full items-center justify-center rounded-xl py-2.5 transition-all duration-200 ${
+                            isActive ? 'text-white' : 'text-white/25 hover:text-white/50 hover:bg-white/[0.03]'
+                          }`}
+                        >
+                          {isActive && (
+                            <motion.div
+                              layoutId="sidebar-active-collapsed"
+                              className="absolute inset-0 rounded-xl"
+                              style={{
+                                background: `linear-gradient(135deg, ${cat.color}15, ${cat.color}08)`,
+                                boxShadow: `inset 0 0 0 1px ${cat.color}30`,
+                              }}
+                              transition={{ type: 'spring', stiffness: 350, damping: 30 }}
+                            />
+                          )}
+                          <item.icon
+                            className="relative z-10 h-[17px] w-[17px]"
+                            style={isActive ? { color: cat.color } : undefined}
+                          />
+                        </button>
+
+                        {/* Tooltip */}
+                        <AnimatePresence>
+                          {hoveredItem === item.key && (
+                            <motion.div
+                              initial={{ opacity: 0, x: -4 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              exit={{ opacity: 0, x: -4 }}
+                              transition={{ duration: 0.15 }}
+                              className="absolute left-full top-1/2 -translate-y-1/2 ml-2 z-50 pointer-events-none"
+                            >
+                              <div
+                                className="px-3 py-1.5 rounded-lg text-xs font-medium text-white whitespace-nowrap"
+                                style={{
+                                  background: 'rgba(15,23,42,0.95)',
+                                  border: '1px solid rgba(255,255,255,0.08)',
+                                  boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+                                }}
+                              >
+                                {item.label}
+                              </div>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          ))}
+        </nav>
+
+        {/* ───── Footer ───── */}
+        <div className="shrink-0 border-t border-white/[0.04] p-3 space-y-2">
+          {/* Collapse toggle */}
+          <button
+            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+            className="group flex w-full items-center justify-center gap-2 rounded-xl py-2.5 text-white/25 hover:text-white/50 hover:bg-white/[0.03] transition-all duration-200"
+          >
+            {isSidebarOpen ? (
+              <>
+                <PanelLeftClose className="h-4 w-4" />
+                <span className="text-xs font-medium">Réduire</span>
               </>
             ) : (
-              <div className="space-y-1 border-t border-slate-800/70 pt-2 first:border-t-0 first:pt-0">
-                {cat.items.map((item) => (
-                  <button
-                    key={item.key}
-                    onClick={() => onTabChange(item.key)}
-                    title={item.label}
-                    className={`group flex w-full items-center justify-center rounded-xl py-2.5 transition-all ${currentTab === item.key ? 'bg-green-neon/12 text-green-neon' : 'text-slate-500 hover:bg-slate-800/60 hover:text-slate-300'
-                      }`}
-                  >
-                    <item.icon className="h-4 w-4" />
-                  </button>
-                ))}
-              </div>
+              <PanelLeftOpen className="h-4 w-4" />
             )}
-          </div>
-        ))}
-      </nav>
-
-      <div className="space-y-2 border-t border-slate-800/80 p-3">
-        <button
-          onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-          className="flex w-full items-center justify-center rounded-xl border border-slate-700 bg-slate-900/70 p-2.5 text-slate-400 transition hover:border-slate-500 hover:text-slate-200"
-        >
-          <ChevronRight className={`h-4 w-4 transition-transform ${isSidebarOpen ? 'rotate-180' : ''}`} />
-        </button>
-
-        <div className="grid grid-cols-2 gap-2">
-          <Link
-            to="/"
-            title="Voir le site"
-            className={`flex items-center justify-center gap-2 rounded-xl border border-slate-700 bg-slate-900/70 py-2.5 text-slate-300 transition hover:border-green-neon/50 hover:text-green-neon ${!isSidebarOpen ? 'px-1' : ''
-              }`}
-          >
-            <Home className="h-4 w-4" />
-            {isSidebarOpen && <span className="text-xs">Site</span>}
-          </Link>
-          <button
-            onClick={onSignOut}
-            title="Déconnexion"
-            className={`flex items-center justify-center gap-2 rounded-xl border border-slate-700 bg-slate-900/70 py-2.5 text-slate-300 transition hover:border-rose-400/40 hover:text-rose-300 ${!isSidebarOpen ? 'px-1' : ''
-              }`}
-          >
-            <LogOut className="h-4 w-4" />
-            {isSidebarOpen && <span className="text-xs">Sortir</span>}
           </button>
+
+          {/* Action buttons */}
+          <div className={`grid gap-1.5 ${isSidebarOpen ? 'grid-cols-2' : 'grid-cols-1'}`}>
+            <Link
+              to="/"
+              className={`group flex items-center justify-center gap-2 rounded-xl py-2.5 text-white/30 hover:text-emerald-400 hover:bg-emerald-400/[0.06] transition-all duration-200 border border-transparent hover:border-emerald-400/10 ${
+                !isSidebarOpen ? 'px-1' : ''
+              }`}
+              title="Voir le site"
+            >
+              <ExternalLink className="h-3.5 w-3.5" />
+              {isSidebarOpen && <span className="text-xs font-medium">Site</span>}
+            </Link>
+            <button
+              onClick={onSignOut}
+              title="Déconnexion"
+              className={`group flex items-center justify-center gap-2 rounded-xl py-2.5 text-white/30 hover:text-rose-400 hover:bg-rose-400/[0.06] transition-all duration-200 border border-transparent hover:border-rose-400/10 ${
+                !isSidebarOpen ? 'px-1' : ''
+              }`}
+            >
+              <LogOut className="h-3.5 w-3.5" />
+              {isSidebarOpen && <span className="text-xs font-medium">Sortir</span>}
+            </button>
+          </div>
         </div>
-      </div>
-    </aside>
+      </aside>
+
+      <style>{`
+        .sidebar-scroll::-webkit-scrollbar {
+          width: 3px;
+        }
+        .sidebar-scroll::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .sidebar-scroll::-webkit-scrollbar-thumb {
+          background: rgba(255,255,255,0.06);
+          border-radius: 10px;
+        }
+        .sidebar-scroll::-webkit-scrollbar-thumb:hover {
+          background: rgba(255,255,255,0.12);
+        }
+        .sidebar-scroll {
+          scrollbar-width: thin;
+          scrollbar-color: rgba(255,255,255,0.06) transparent;
+        }
+      `}</style>
+    </>
   );
 }
