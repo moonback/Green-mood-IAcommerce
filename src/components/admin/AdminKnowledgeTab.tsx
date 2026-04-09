@@ -22,6 +22,7 @@ import { generateEmbedding } from '../../lib/embeddings';
 import { getRelevantKnowledge } from '../../lib/budtenderKnowledge';
 import { buildKnowledgeImportRows, extractPdfTextFromFile } from '../../lib/pdfKnowledge';
 import { useToastStore } from '../../store/toastStore';
+import { parseObsidianNote } from '../../lib/obsidianImport';
 
 export interface KnowledgeEntry {
   id: string;
@@ -31,7 +32,7 @@ export interface KnowledgeEntry {
   updated_at: string;
 }
 
-type ModalMode = 'manual' | 'pdf';
+type ModalMode = 'manual' | 'pdf' | 'markdown';
 
 const CATEGORIES = [
   { id: 'science', label: 'Science & Santé' },
@@ -82,6 +83,7 @@ export default function AdminKnowledgeTab() {
   const [pdfTitle, setPdfTitle] = useState('');
   const [pdfCategory, setPdfCategory] = useState('manuals');
   const [pdfFile, setPdfFile] = useState<File | null>(null);
+  const [markdownFiles, setMarkdownFiles] = useState<File[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   const loadEntries = async () => {
@@ -140,6 +142,13 @@ export default function AdminKnowledgeTab() {
     resetForm();
     setModalMode('pdf');
     setPdfCategory('manuals');
+    setIsModalOpen(true);
+  };
+
+  const handleOpenMarkdownModal = () => {
+    resetForm();
+    setModalMode('markdown');
+    setMarkdownFiles([]);
     setIsModalOpen(true);
   };
 
@@ -257,6 +266,60 @@ export default function AdminKnowledgeTab() {
     } catch (err: any) {
       console.error('Erreur lors de l’import PDF:', err);
       setError(err.message || 'Échec de l’import PDF.');
+    } finally {
+      setIsImportingPdf(false);
+    }
+  };
+
+  const handleImportMarkdown = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (markdownFiles.length === 0) {
+      setError('Sélectionnez au moins un fichier Markdown.');
+      return;
+    }
+
+    setIsImportingPdf(true); // Re-use the same loading state
+    setImportProgress(0);
+    setError(null);
+
+    try {
+      let successCount = 0;
+      for (let i = 0; i < markdownFiles.length; i++) {
+        const file = markdownFiles[i];
+        const content = await file.text();
+        const parsed = parseObsidianNote(content, file.name);
+
+        if (!parsed.content.trim()) {
+          console.warn(`[Markdown Import] Fichier vide ou illisible : ${file.name}`);
+          continue;
+        }
+
+        const textToEmbed = `${parsed.title}\n\n${parsed.content}`;
+        const embedding = await generateEmbedding(textToEmbed);
+
+        const { error: insertError } = await supabase.from('knowledge_base').insert({
+          title: parsed.title,
+          category: parsed.category === 'other' ? category : parsed.category, // fallback to selected
+          content: parsed.content,
+          embedding,
+        });
+
+        if (insertError) throw insertError;
+        
+        successCount++;
+        setImportProgress(Math.round(((i + 1) / markdownFiles.length) * 100));
+      }
+
+      await loadEntries();
+      addToast({
+        type: 'success',
+        message: `${successCount} note(s) Obsidian importée(s) et vectorisée(s).`,
+      });
+      handleCloseModal();
+    } catch (err: any) {
+      console.error('Erreur lors de l’import Markdown:', err);
+      setError(err.message || 'Échec de l’import Markdown.');
     } finally {
       setIsImportingPdf(false);
     }
@@ -396,6 +459,14 @@ export default function AdminKnowledgeTab() {
             ) : (
               <Settings className="w-4 h-4" />
             )}
+          </button>
+
+          <button
+            onClick={handleOpenMarkdownModal}
+            className="flex items-center gap-2 bg-zinc-900 hover:bg-zinc-800 text-white px-4 py-2.5 rounded-xl font-black text-xs uppercase tracking-widest transition-all border border-zinc-800"
+          >
+            <BookOpen className="w-4 h-4 text-purple-400" />
+            Importer Obsidian
           </button>
 
           <button
@@ -685,14 +756,18 @@ export default function AdminKnowledgeTab() {
                   <h3 className="text-xl font-serif italic font-bold">
                     {modalMode === 'pdf'
                       ? 'Importer une notice PDF'
-                      : editingEntry
-                        ? 'Modifier la Connaissance'
-                        : 'Ajouter une Connaissance'}
+                      : modalMode === 'markdown'
+                        ? 'Importer un Vault Obsidian'
+                        : editingEntry
+                          ? 'Modifier la Connaissance'
+                          : 'Ajouter une Connaissance'}
                   </h3>
                   <p className="text-xs text-zinc-500 mt-1">
                     {modalMode === 'pdf'
                       ? 'Extraction du texte, découpage intelligent puis vectorisation en 3072 dimensions.'
-                      : 'Créez ou modifiez un savoir utilisé par la recherche sémantique.'}
+                      : modalMode === 'markdown'
+                        ? 'Importation directe de vos notes Markdown avec nettoyage de la syntaxe Obsidian.'
+                        : 'Créez ou modifiez un savoir utilisé par la recherche sémantique.'}
                   </p>
                 </div>
                 <button
@@ -806,6 +881,92 @@ export default function AdminKnowledgeTab() {
                       </div>
                     )}
                   </form>
+                ) : modalMode === 'markdown' ? (
+                  <form id="knowledge-markdown-form" onSubmit={handleImportMarkdown} className="space-y-6">
+                    <div className="bg-zinc-950/60 border border-zinc-800 rounded-2xl p-6 space-y-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center">
+                          <BookOpen className="w-5 h-5 text-purple-400" />
+                        </div>
+                        <div>
+                          <h4 className="text-sm font-bold text-white">Importer des notes Obsidian</h4>
+                          <p className="text-[10px] text-zinc-500 uppercase tracking-widest">Supporte .md avec Frontmatter</p>
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-4">
+                        <label className="block cursor-pointer rounded-2xl border-2 border-dashed border-zinc-800 hover:border-purple-500/50 hover:bg-purple-500/5 transition-all p-8 text-center">
+                          <input
+                            type="file"
+                            accept=".md"
+                            multiple
+                            className="hidden"
+                            onChange={(e) => {
+                              const files = Array.from(e.target.files || []);
+                              setMarkdownFiles(files);
+                            }}
+                          />
+                          <FileUp className="w-8 h-8 text-zinc-600 mx-auto mb-4" />
+                          <p className="text-sm font-medium text-zinc-300">
+                            {markdownFiles.length > 0 
+                              ? `${markdownFiles.length} fichier(s) sélectionné(s)` 
+                              : 'Sélectionnez vos notes Markdown (.md)'}
+                          </p>
+                          <p className="text-xs text-zinc-500 mt-2">Vous pouvez en sélectionner plusieurs à la fois</p>
+                        </label>
+
+                        {markdownFiles.length > 0 && (
+                          <div className="max-h-40 overflow-y-auto bg-black/30 rounded-xl p-3 border border-zinc-800/50">
+                            {markdownFiles.slice(0, 10).map((f, i) => (
+                              <div key={i} className="text-[10px] text-zinc-500 py-1 flex items-center gap-2">
+                                <div className="w-1 h-1 rounded-full bg-zinc-700" />
+                                {f.name}
+                              </div>
+                            ))}
+                            {markdownFiles.length > 10 && (
+                              <div className="text-[10px] text-zinc-600 italic py-1 pl-3">
+                                ... et {markdownFiles.length - 10} autres fichiers
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Catégorie par défaut</label>
+                        <select
+                          value={category}
+                          onChange={(e) => setCategory(e.target.value)}
+                          className="w-full bg-black/50 border border-zinc-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-purple-500/50 transition-all"
+                        >
+                          {CATEGORIES.map((item) => (
+                            <option key={item.id} value={item.id}>{item.label}</option>
+                          ))}
+                        </select>
+                        <p className="text-[9px] text-zinc-600 italic">Utilisée si 'category' n'est pas spécifié dans le frontmatter YAML.</p>
+                      </div>
+                      <div className="bg-purple-500/5 border border-purple-500/10 rounded-xl p-4 flex items-start gap-3">
+                        <Zap className="w-4 h-4 text-purple-400 shrink-0 mt-0.5" />
+                        <p className="text-[11px] text-zinc-400 leading-relaxed">
+                          Le script nettoie automatiquement la syntaxe Obsidian (WikiLinks, callouts, tags) pour optimiser la compréhension de l'IA.
+                        </p>
+                      </div>
+                    </div>
+
+                    {isImportingPdf && (
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between text-xs text-zinc-400">
+                          <span>Import et vectorisation en cours…</span>
+                          <span>{importProgress}%</span>
+                        </div>
+                        <div className="h-2 rounded-full bg-zinc-800 overflow-hidden">
+                          <div className="h-full bg-purple-500 transition-all" style={{ width: `${importProgress}%` }} />
+                        </div>
+                      </div>
+                    )}
+                  </form>
                 ) : (
                   <form id="knowledge-form" onSubmit={handleSave} className="space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -869,22 +1030,22 @@ export default function AdminKnowledgeTab() {
                   Annuler
                 </button>
                 <button
-                  form={modalMode === 'pdf' ? 'knowledge-pdf-form' : 'knowledge-form'}
+                  form={modalMode === 'pdf' ? 'knowledge-pdf-form' : modalMode === 'markdown' ? 'knowledge-markdown-form' : 'knowledge-form'}
                   type="submit"
                   disabled={isSaving || isImportingPdf}
                   className="flex items-center gap-2 bg-purple-500 hover:bg-purple-600 text-black px-6 py-3 rounded-xl font-black text-xs uppercase tracking-widest transition-all shadow-[0_0_20px_rgba(168,85,247,0.3)] disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isSaving || isImportingPdf ? (
                     <RefreshCw className="w-4 h-4 animate-spin" />
-                  ) : modalMode === 'pdf' ? (
+                  ) : modalMode === 'pdf' || modalMode === 'markdown' ? (
                     <FileUp className="w-4 h-4" />
                   ) : (
                     <Save className="w-4 h-4" />
                   )}
-                  {modalMode === 'pdf'
+                  {modalMode === 'pdf' || modalMode === 'markdown'
                     ? isImportingPdf
                       ? 'Import en cours...'
-                      : 'Importer et vectoriser'
+                      : modalMode === 'markdown' ? 'Importer les Notes' : 'Importer et vectoriser'
                     : isSaving
                       ? 'Vectorisation en cours...'
                       : 'Enregistrer le Savoir'}

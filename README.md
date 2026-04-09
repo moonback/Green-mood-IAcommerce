@@ -133,7 +133,7 @@ Le cœur différenciant du projet. Un conseiller expert CBD disponible 24h/24 di
 | **Abonnements** | Gestion commandes récurrentes, fréquences |
 | **Avis** | Modération, réponses, approbation |
 | **Blog RAG** | Génération guides SEO depuis base de connaissances |
-| **Base de connaissances** | Import PDF, CRUD articles, vectorisation auto |
+| **Base de connaissances** | Import PDF, import Obsidian (.md), CRUD articles, vectorisation auto |
 | **Cannabis Conditions** | Base de données scientifique (evidence score, études) |
 | **SEO Auto** | Génération IA title + meta description par produit |
 | **Comptabilité** | Export CSV/Excel, génération factures PDF |
@@ -148,6 +148,7 @@ Le cœur différenciant du projet. Un conseiller expert CBD disponible 24h/24 di
 ### SEO & Contenu Automatisé
 
 - **SEO produits automatisé** : génération IA des balises `title` + `meta description` exploitées côté front
+- **Base de connaissances hybride** : support natif des notices PDF et des vaults **Obsidians** (Markdown avec frontmatter). Nettoyage automatique de la syntaxe Obsidian (WikiLinks, tags, callouts) pour une vectorisation optimale.
 - **Blog automatique via RAG** : génération de guides SEO depuis la base de connaissances (`npm run blog:generate`)
 - **Sitemap enrichi** : injection automatique des URLs produits et guides (`npx tsx scripts/generate-sitemap.ts`)
 - **JSON-LD structuré** : schemas Product, BreadcrumbList, Organization pour le rich snippet Google
@@ -491,6 +492,7 @@ green-mood/
 │   │   ├── supabase.ts                # Client singleton + exports URL/KEY
 │   │   ├── budtenderPrompts.ts        # Constructeur system prompts (21 KB)
 │   │   ├── budtenderKnowledge.ts      # Requêtes base de connaissances vectorielle
+│   │   ├── obsidianImport.ts          # Traitement et nettoyage notes Obsidian
 │   │   ├── productAI.ts               # Auto-complétion produits via LLM (17 KB)
 │   │   ├── embeddings.ts              # Génération + cache embeddings (OpenRouter)
 │   │   ├── matchProductsRpc.ts        # Wrapper RPC pgvector + guard disponibilité
@@ -564,6 +566,7 @@ green-mood/
 │   ├── import-cannabis-conditions.ts  # Import base conditions médicales
 │   ├── index-cannabis-condition-vectors.ts
 │   ├── seed-knowledge.ts              # Population base de connaissances
+│   ├── sync-obsidian-vault.ts         # Synchronisation vault Obsidian complet
 │   └── check_settings.ts             # Validation configuration
 │
 ├── server/
@@ -807,6 +810,9 @@ npx tsx scripts/sync-embeddings.ts
 # Importer la base de conditions médicales cannabis
 npx tsx scripts/import-cannabis-conditions.ts
 
+# Synchroniser un vault Obsidian entier (CLI)
+npx tsx scripts/sync-obsidian-vault.ts "C:/Mon/Vault"
+
 # Valider la configuration settings
 npx tsx scripts/check_settings.ts
 ```
@@ -944,6 +950,7 @@ npm run dev:importer     # Serveur Express import produits
 npx tsx scripts/generate-sitemap.ts
 npx tsx scripts/sync-embeddings.ts
 npx tsx scripts/import-cannabis-conditions.ts
+npx tsx scripts/sync-obsidian-vault.ts "path/to/vault"
 ```
 
 ---
