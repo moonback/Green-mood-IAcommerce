@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
-import { Package, Truck, MapPin, Plus, CreditCard, Coins, ArrowLeft, ShieldCheck, Sparkles, CheckCircle2, Check, Star, Crown, FlaskConical, ArrowRight } from 'lucide-react';
+import { Package, Truck, MapPin, Plus, CreditCard, Coins, ArrowLeft, ShieldCheck, Sparkles, CheckCircle2, Check, Star, Crown, FlaskConical, ArrowRight, RefreshCw } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { trackEvent } from '../lib/analytics';
 import { Address } from '../lib/types';
@@ -192,12 +192,16 @@ export default function Checkout() {
 
       const { data: orderId, error: orderError } = await supabase.rpc('reserve_stock_and_create_order', {
         p_user_id: user.id,
-        p_items: items.map((item) => ({
-          product_id: item.product.id,
-          product_name: item.product.name,
-          quantity: item.quantity,
-          unit_price: item.product.price,
-        })),
+        p_items: items.map((item) => {
+          const discount = item.subscriptionFrequency === 'weekly' ? 0.15 : item.subscriptionFrequency === 'biweekly' ? 0.10 : item.subscriptionFrequency === 'monthly' ? 0.05 : 0;
+          return {
+            product_id: item.product.id,
+            product_name: item.product.name,
+            quantity: item.quantity,
+            unit_price: item.product.price * (1 - discount),
+            subscription_frequency: item.subscriptionFrequency
+          };
+        }),
         p_delivery_type: deliveryType,
         p_address_id: deliveryType === 'delivery' ? selectedAddress : null,
         p_subtotal: sub,
@@ -769,15 +773,30 @@ export default function Checkout() {
                       <span className="text-xs font-semibold text-slate-400">{items.length} article(s)</span>
                     </div>
                     <div className="max-h-[260px] space-y-4 overflow-y-auto pr-1">
-                      {items.map(({ product, quantity }) => (
-                        <div key={product.id} className="flex items-start justify-between gap-4 rounded-2xl bg-slate-950 p-4 border border-white/5">
-                          <div className="min-w-0 flex-1">
-                            <p className="truncate text-sm font-black uppercase tracking-[0.14em] text-white">{product.name}</p>
-                            <p className="mt-1 text-xs text-slate-500">Quantité : {quantity}</p>
+                      {items.map(({ product, quantity, subscriptionFrequency }) => {
+                        const discount = subscriptionFrequency === 'weekly' ? 0.15 : subscriptionFrequency === 'biweekly' ? 0.10 : subscriptionFrequency === 'monthly' ? 0.05 : 0;
+                        const finalPrice = product.price * (1 - discount);
+                        
+                        return (
+                          <div key={`${product.id}-${subscriptionFrequency || 'none'}`} className="flex items-start justify-between gap-4 rounded-2xl bg-slate-950 p-4 border border-white/5">
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-2">
+                                <p className="truncate text-sm font-black uppercase tracking-[0.14em] text-white">{product.name}</p>
+                                {subscriptionFrequency && (
+                                  <span className="flex items-center gap-1 text-[8px] font-black uppercase text-emerald-400 bg-emerald-400/10 px-1.5 py-0.5 rounded-full border border-emerald-400/20">
+                                    <RefreshCw className="w-2 h-2 animate-[spin_4s_linear_infinite]" />
+                                    {subscriptionFrequency === 'weekly' ? 'Hebdo' : subscriptionFrequency === 'biweekly' ? '15 jours' : 'Mensuel'}
+                                  </span>
+                                )}
+                              </div>
+                              <p className="mt-1 text-xs text-slate-500">
+                                Quantité : {quantity} {subscriptionFrequency && <span className="text-emerald-500/60 ml-1">(Abonnement -{Math.round(discount * 100)}%)</span>}
+                              </p>
+                            </div>
+                            <p className="text-sm font-bold text-white">{(finalPrice * quantity).toFixed(2)} €</p>
                           </div>
-                          <p className="text-sm font-bold text-white">{(product.price * quantity).toFixed(2)} €</p>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
 

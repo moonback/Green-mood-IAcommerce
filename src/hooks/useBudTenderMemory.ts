@@ -102,6 +102,7 @@ export function useBudTenderMemory() {
     const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
     const [allChatSessions, setAllChatSessions] = useState<{ id: string, messages: ChatMessage[], title: string, created_at: string }[]>([]);
     const [extractedInsights, setExtractedInsights] = useState<string[]>([]);
+    const [activeSubscriptions, setActiveSubscriptions] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isHistoryLoading, setIsHistoryLoading] = useState(false);
     const [activeDbId, setActiveDbId] = useState<string | null>(null);
@@ -142,17 +143,28 @@ export function useBudTenderMemory() {
     const { data: orderHistoryData } = useQuery({
         queryKey: ['order-history', user?.id],
         queryFn: async () => {
-            if (!user?.id) return { past: [], pastOrds: [], restock: [] };
+            if (!user?.id) return { past: [], pastOrds: [], restock: [], subscriptions: [] };
             
-            const { data: orders } = await supabase
-                .from('orders')
-                .select('id, created_at, status, total, order_items(product_id, product_name, unit_price, quantity, product:products(slug, image_url, category:categories(slug)))')
-                .eq('user_id', user.id)
-                .in('status', ['paid', 'processing', 'ready', 'shipped', 'delivered'])
-                .order('created_at', { ascending: false })
-                .limit(10);
+            const [ordersRes, subscriptionsRes] = await Promise.all([
+                supabase
+                    .from('orders')
+                    .select('id, created_at, status, total, order_items(product_id, product_name, unit_price, quantity, product:products(slug, image_url, category:categories(slug)))')
+                    .eq('user_id', user.id)
+                    .in('status', ['paid', 'processing', 'ready', 'shipped', 'delivered'])
+                    .order('created_at', { ascending: false })
+                    .limit(10),
+                supabase
+                    .from('subscriptions')
+                    .select('*, product:products(id, name, slug, image_url, price)')
+                    .eq('user_id', user.id)
+                    .in('status', ['active', 'paused'])
+                    .order('created_at', { ascending: false })
+            ]);
 
-            if (!orders) return { past: [], pastOrds: [], restock: [] };
+            const orders = ordersRes.data;
+            const subscriptions = subscriptionsRes.data || [];
+
+            if (!orders) return { past: [], pastOrds: [], restock: [], subscriptions };
 
             const settings = await fetchBudTenderSettings();
             if (!settings.memory_enabled) {
@@ -213,7 +225,8 @@ export function useBudTenderMemory() {
             return {
                 past: past.slice(0, 5),
                 pastOrds: pastOrds.slice(0, 3),
-                restock: restock.slice(0, 2)
+                restock: restock.slice(0, 2),
+                subscriptions
             };
         },
         enabled: !!user?.id,
@@ -229,6 +242,7 @@ export function useBudTenderMemory() {
             setPastProducts(orderHistoryData.past);
             setPastOrders(orderHistoryData.pastOrds);
             setRestockCandidates(orderHistoryData.restock);
+            setActiveSubscriptions(orderHistoryData.subscriptions || []);
             setIsLoading(false);
         }
     }, [orderHistoryData, user]);
@@ -551,5 +565,6 @@ export function useBudTenderMemory() {
         setExtractedInsights,
         sessionId,
         loyaltyPoints: profile?.loyalty_points ?? 0,
+        activeSubscriptions,
     };
 }

@@ -3,7 +3,7 @@
  * skills optionnels chargés via load_voice_skill (lazy Vite + hook).
  */
 
-export const OPTIONAL_VOICE_SKILL_IDS = ['botanique_expert', 'cross_selling', 'fidelite', 'livraison', 'quiz'] as const;
+export const OPTIONAL_VOICE_SKILL_IDS = ['abonnement', 'botanique_expert', 'cross_selling', 'fidelite', 'livraison', 'quiz'] as const;
 export type OptionalVoiceSkillId = (typeof OPTIONAL_VOICE_SKILL_IDS)[number];
 
 const OPTIONAL_VOICE_SKILL_SET = new Set<string>(OPTIONAL_VOICE_SKILL_IDS);
@@ -27,7 +27,7 @@ const coreVoiceSkillFiles = import.meta.glob(
 ) as Record<string, string>;
 
 const optionalVoiceSkillLoaders = import.meta.glob(
-  ['../skills/botanique_expert.md', '../skills/cross_selling.md', '../skills/fidelite.md', '../skills/livraison.md', '../skills/quiz.md'],
+  ['../skills/abonnement.md', '../skills/botanique_expert.md', '../skills/cross_selling.md', '../skills/fidelite.md', '../skills/livraison.md', '../skills/quiz.md'],
   { query: '?raw', eager: false, import: 'default' }
 ) as Record<string, () => Promise<string>>;
 
@@ -66,6 +66,7 @@ export function buildCoreVoiceSkillsContext(): string {
 export function buildOptionalVoiceSkillsInstruction(): string {
   return `## SKILLS ÉTENDUS (CHARGEMENT À LA DEMANDE)
 Ces instructions détaillées ne sont PAS dans ton prompt initial. Avant d'approfondir :
+- questions abonnement, gestion livraisons → appelle load_voice_skill avec skill_id "abonnement"
 - questions terpènes, expertise botanique → appelle load_voice_skill avec skill_id "botanique_expert"
 - stratégie vente croisée complexe → appelle load_voice_skill avec skill_id "cross_selling"
 - questions fidélité, solde, conversion points → appelle load_voice_skill avec skill_id "fidelite"

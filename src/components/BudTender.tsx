@@ -9,6 +9,7 @@ import { getCachedProducts, getCachedSettings } from "../lib/budtenderCache";
 import { Product } from "../lib/types";
 import { BudTenderSettings } from "../lib/budtenderSettings";
 import { useBudtenderStore } from "../store/budtenderStore";
+import { supabase } from "../lib/supabase";
 import ProductCompareModal from "./ProductCompareModal";
 
 // UI Components
@@ -66,6 +67,28 @@ export default function BudTender() {
     fetchData();
   }, []);
 
+  const handlePauseSubscription = useCallback(async (id: string) => {
+    await supabase.from('subscriptions').update({ status: 'paused' }).eq('id', id);
+  }, []);
+
+  const handleResumeSubscription = useCallback(async (id: string) => {
+    await supabase.from('subscriptions').update({ status: 'active' }).eq('id', id);
+  }, []);
+
+  const handleCancelSubscription = useCallback(async (id: string) => {
+    await supabase.from('subscriptions').update({ status: 'cancelled' }).eq('id', id);
+  }, []);
+
+  const handleUpdateSubscriptionFrequency = useCallback(async (id: string, frequency: any) => {
+    const now = new Date();
+    if (frequency === 'weekly') now.setDate(now.getDate() + 7);
+    else if (frequency === 'biweekly') now.setDate(now.getDate() + 14);
+    else now.setMonth(now.getMonth() + 1);
+
+    const next_delivery_date = now.toISOString().split('T')[0];
+    await supabase.from('subscriptions').update({ frequency, next_delivery_date }).eq('id', id);
+  }, []);
+
   return (
     <>
       <AnimatePresence>
@@ -85,6 +108,7 @@ export default function BudTender() {
         pastOrders={memory.pastOrders}
         savedPrefs={memory.savedPrefs}
         userName={memory.userName}
+        activeSubscriptions={memory.activeSubscriptions}
         isOpen={isVoiceOpen}
         cartItems={cartItems}
         customPrompt={settings?.custom_chat_prompt || ""}
@@ -92,8 +116,8 @@ export default function BudTender() {
         allowCloseSession={settings?.voice_close_session_enabled ?? true}
         onClose={() => closeVoice()}
         onHangup={() => closeVoice()}
-        onAddItem={(product, quantity) => {
-          addItem(product, quantity);
+        onAddItem={(product, quantity, frequency) => {
+          addItem(product, quantity, frequency);
           openSidebarWithAutoClose();
         }}
         onRemoveItem={(product, quantity) => {
@@ -126,6 +150,10 @@ export default function BudTender() {
         }}
         onSavePrefs={memory.updatePrefs}
         onCompareProducts={(prods) => setComparisonProducts(prods)}
+        onPauseSubscription={handlePauseSubscription}
+        onResumeSubscription={handleResumeSubscription}
+        onCancelSubscription={handleCancelSubscription}
+        onUpdateSubscriptionFrequency={handleUpdateSubscriptionFrequency}
         wishlistItems={wishlistItems}
         onToggleFavorite={toggleFavorite}
         showUI={true}

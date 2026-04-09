@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef, useMemo, useEffect } from 'react';
 import { GoogleGenAI, type FunctionResponse, type LiveServerMessage, type Session } from '@google/genai';
-import { Product, Review as BaseReview } from '../lib/types';
+import { Product, Review as BaseReview, SubscriptionFrequency } from '../lib/types';
 import { Product as PremiumProduct, Review } from '../types/premiumProduct';
 import { PastProduct, SavedPrefs, PastOrderSummary } from './useBudTenderMemory';
 import { generateEmbedding } from '../lib/embeddings';
@@ -205,9 +205,13 @@ interface Options {
   savedPrefs?: SavedPrefs | null;
   userName?: string | null;
   cartItems?: { product: Product; quantity: number }[];
-  onAddItem?: (product: Product, quantity: number) => void;
-  onRemoveItem?: (product: Product, quantity?: number) => void;
-  onUpdateQuantity?: (product: Product, quantity: number) => void;
+  onAddItem?: (product: Product, quantity: number, frequency?: SubscriptionFrequency) => void;
+  onRemoveItem?: (product: Product, quantity?: number, frequency?: SubscriptionFrequency) => void;
+  onUpdateQuantity?: (product: Product, quantity: number, frequency?: SubscriptionFrequency) => void;
+  onPauseSubscription?: (subId: string) => Promise<void>;
+  onResumeSubscription?: (subId: string) => Promise<void>;
+  onCancelSubscription?: (subId: string) => Promise<void>;
+  onUpdateSubscriptionFrequency?: (subId: string, frequency: SubscriptionFrequency) => Promise<void>;
   deliveryFee?: number;
   deliveryFreeThreshold?: number;
   onCloseSession?: () => void;
@@ -226,6 +230,7 @@ interface Options {
   onVolumeLevel?: (rms: number) => void; // Am3: reactive waveform
   onCompareProducts?: (products: any[]) => void; // Am8: visual comparison
   proactiveGreeting?: string;            // Am6: used when voice is triggered proactively
+  activeSubscriptions?: any[];
 }
 
 type VectorSearchCacheEntry = { ts: number; results: Product[] };
@@ -289,6 +294,10 @@ export function useGeminiLiveVoice({
   onAddItem,
   onRemoveItem,
   onUpdateQuantity,
+  onPauseSubscription,
+  onResumeSubscription,
+  onCancelSubscription,
+  onUpdateSubscriptionFrequency,
   deliveryFee = 5.9,
   deliveryFreeThreshold = 50,
   onCloseSession,
@@ -307,6 +316,7 @@ export function useGeminiLiveVoice({
   onVolumeLevel,
   onCompareProducts,
   proactiveGreeting,
+  activeSubscriptions = [],
 }: Options) {
   const globalSettings = useSettingsStore(s => s.settings);
   const recentlyViewed = useRecentlyViewedStore(s => s.items);
@@ -335,6 +345,14 @@ export function useGeminiLiveVoice({
   onRemoveItemRef.current = onRemoveItem;
   const onUpdateQuantityRef = useRef(onUpdateQuantity);
   onUpdateQuantityRef.current = onUpdateQuantity;
+  const onPauseSubscriptionRef = useRef(onPauseSubscription);
+  onPauseSubscriptionRef.current = onPauseSubscription;
+  const onResumeSubscriptionRef = useRef(onResumeSubscription);
+  onResumeSubscriptionRef.current = onResumeSubscription;
+  const onCancelSubscriptionRef = useRef(onCancelSubscription);
+  onCancelSubscriptionRef.current = onCancelSubscription;
+  const onUpdateSubscriptionFrequencyRef = useRef(onUpdateSubscriptionFrequency);
+  onUpdateSubscriptionFrequencyRef.current = onUpdateSubscriptionFrequency;
   const onCloseSessionRef = useRef(onCloseSession);
   onCloseSessionRef.current = onCloseSession;
   const onViewProductRef = useRef(onViewProduct);
@@ -602,6 +620,7 @@ export function useGeminiLiveVoice({
     tiers: (globalSettings.loyalty_tiers || []).map((t: any) => `${t.name}:${t.min_points}:${t.multiplier}`),
     store: globalSettings.store_name || 'Eco CBD',
     bot: globalSettings.budtender_name || 'BudTender',
+    activeSubscriptions: activeSubscriptions.map(s => `${s.id}:${s.status}`),
   }), [
     products.length,
     cartItems,
@@ -614,6 +633,7 @@ export function useGeminiLiveVoice({
     globalSettings.loyalty_tiers,
     globalSettings.store_name,
     globalSettings.budtender_name,
+    activeSubscriptions,
   ]);
 
   const runVectorCatalogSearch = useCallback(async (query: string): Promise<Product[]> => {
@@ -652,8 +672,8 @@ export function useGeminiLiveVoice({
     const effectiveCustomPrompt = [globalSettings.budtender_base_prompt?.trim(), customPrompt?.trim()].filter(Boolean).join('\n\n');
     const prompt = getVoicePrompt(
       productsRef.current, savedPrefs, userName, pastProducts, pastOrders,
-      deliveryFee, deliveryFreeThreshold, cartItems, effectiveCustomPrompt,
-      loyaltyPoints, globalSettings.budtender_name || 'BudTender',
+      deliveryFee, deliveryFreeThreshold, cartItems, activeSubscriptions,
+      effectiveCustomPrompt, loyaltyPoints, globalSettings.budtender_name || 'BudTender',
       globalSettings.loyalty_tiers || [], allowCloseSession, recentlyViewed,
       globalSettings.store_name || 'Eco CBD', globalSettings.loyalty_currency_name || 'CARATS',
       activeProduct
@@ -1429,7 +1449,8 @@ export function useGeminiLiveVoice({
               'get_favorites', 'filter_catalog', 'get_referral_link',
               'compare_products', 'suggest_bundle', 'watch_stock',
               'submit_review', 'apply_promo', 'open_product_modal', 'save_preferences',
-              'get_current_time', 'get_cart', 'remove_from_cart', 'update_cart_quantity'
+              'get_current_time', 'get_cart', 'remove_from_cart', 'update_cart_quantity',
+              'pause_subscription', 'resume_subscription', 'cancel_subscription', 'update_subscription_frequency'
             ]);
             const phase1Calls = calls.filter(c => PHASE_1_TOOLS.has(c.name!));
             const phase2Calls = calls.filter(c => !PHASE_1_TOOLS.has(c.name!));
@@ -1566,6 +1587,7 @@ export function useGeminiLiveVoice({
                   const prodName = (args.product_name || '').trim();
                   const weightGrams = Number(args.weight_grams) || 0;
                   let qty = Number(args.quantity) || 0;
+                  const frequency = args.frequency as SubscriptionFrequency | undefined;
 
                   let p = await findProduct(prodName);
 
@@ -1587,15 +1609,55 @@ export function useGeminiLiveVoice({
                     }
 
                     if (onAddItemRef.current) {
-                      onAddItemRef.current(p, qty);
-                      // Verification check: get current total from ref (approximated here as we can't easily read store state inside here without more plumbing, but we can signal success)
+                      onAddItemRef.current(p, qty, frequency);
                       const msg = weightGrams > 0
-                        ? `CONFIRMATION : ${p.name} (${weightGrams}g, soit x${qty}) ajouté. Vérification système : ACTION_SUCCESS. Le panier est à jour.`
-                        : `CONFIRMATION : ${p.name} x${qty} ajouté. Vérification système : ACTION_SUCCESS. Le panier est à jour.`;
+                        ? `CONFIRMATION : ${p.name} (${weightGrams}g, soit x${qty}${frequency ? `, abonnement ${frequency}` : ''}) ajouté. Vérification système : ACTION_SUCCESS. Le panier est à jour.`
+                        : `CONFIRMATION : ${p.name} x${qty}${frequency ? ` (abonnement ${frequency})` : ''} ajouté. Vérification système : ACTION_SUCCESS. Le panier est à jour.`;
                       return { name: c.name, id: c.id, response: { result: msg, status: 'verified', product_id: p.id } };
                     }
                   }
                   return { name: c.name, id: c.id, response: { error: `Produit "${prodName}" non trouvé dans le catalogue.` } };
+                }
+
+                if (c.name === 'pause_subscription') {
+                  const prodName = (args.product_name || '').trim();
+                  const sub = activeSubscriptions.find(s => normalizeStr(s.product?.name || '') === normalizeStr(prodName));
+                  if (sub && onPauseSubscriptionRef.current) {
+                    await onPauseSubscriptionRef.current(sub.id);
+                    return { name: c.name, id: c.id, response: { result: `L'abonnement pour ${prodName} a été mis en pause.` } };
+                  }
+                  return { name: c.name, id: c.id, response: { error: `Abonnement pour "${prodName}" non trouvé.` } };
+                }
+
+                if (c.name === 'resume_subscription') {
+                  const prodName = (args.product_name || '').trim();
+                  const sub = activeSubscriptions.find(s => normalizeStr(s.product?.name || '') === normalizeStr(prodName));
+                  if (sub && onResumeSubscriptionRef.current) {
+                    await onResumeSubscriptionRef.current(sub.id);
+                    return { name: c.name, id: c.id, response: { result: `L'abonnement pour ${prodName} a été réactivé.` } };
+                  }
+                  return { name: c.name, id: c.id, response: { error: `Abonnement pour "${prodName}" non trouvé.` } };
+                }
+
+                if (c.name === 'cancel_subscription') {
+                  const prodName = (args.product_name || '').trim();
+                  const sub = activeSubscriptions.find(s => normalizeStr(s.product?.name || '') === normalizeStr(prodName));
+                  if (sub && onCancelSubscriptionRef.current) {
+                    await onCancelSubscriptionRef.current(sub.id);
+                    return { name: c.name, id: c.id, response: { result: `L'abonnement pour ${prodName} a été résilié.` } };
+                  }
+                  return { name: c.name, id: c.id, response: { error: `Abonnement pour "${prodName}" non trouvé.` } };
+                }
+
+                if (c.name === 'update_subscription_frequency') {
+                  const prodName = (args.product_name || '').trim();
+                  const frequency = args.frequency as SubscriptionFrequency;
+                  const sub = activeSubscriptions.find(s => normalizeStr(s.product?.name || '') === normalizeStr(prodName));
+                  if (sub && onUpdateSubscriptionFrequencyRef.current) {
+                    await onUpdateSubscriptionFrequencyRef.current(sub.id, frequency);
+                    return { name: c.name, id: c.id, response: { result: `La fréquence de l'abonnement pour ${prodName} a été changée pour ${frequency}.` } };
+                  }
+                  return { name: c.name, id: c.id, response: { error: `Abonnement pour "${prodName}" non trouvé.` } };
                 }
 
                 if (c.name === 'remove_from_cart') {

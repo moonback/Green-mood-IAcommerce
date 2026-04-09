@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Mic, MicOff, PhoneOff, Volume2, X, Radio, Headphones } from 'lucide-react';
-import { Product, Review } from '../lib/types';
+import { Product, Review, SubscriptionFrequency } from '../lib/types';
 import { Product as PremiumProduct, Review as PremiumReview } from '../types/premiumProduct';
 import { PastProduct, SavedPrefs, PastOrderSummary } from '../hooks/useBudTenderMemory';
 import { useGeminiLiveVoice, VoiceState } from '../hooks/useGeminiLiveVoice';
@@ -20,16 +20,20 @@ interface Props {
     isOpen: boolean;
     onClose: () => void;
     onHangup?: () => void;
-    onAddItem?: (product: Product, quantity: number) => void;
+    onAddItem?: (product: Product, quantity: number, frequency?: SubscriptionFrequency) => void;
     onViewProduct?: (product: Product) => void;
     onNavigate?: (path: string) => void;
     onOpenModal?: (modalName: string) => void;
     onSavePrefs?: (prefs: any) => void;
     onApplyPromo?: (code: string) => Promise<{ success: boolean; discount?: number; message?: string }>;
-    onRemoveItem?: (product: Product, quantity?: number) => void;
-    onUpdateQuantity?: (product: Product, quantity: number) => void;
+    onRemoveItem?: (product: Product, quantity?: number, frequency?: SubscriptionFrequency) => void;
+    onUpdateQuantity?: (product: Product, quantity: number, frequency?: SubscriptionFrequency) => void;
     onToggleFavorite?: (productId: string) => void;
     onCompareProducts?: (products: any[]) => void;
+    onPauseSubscription?: (subId: string) => Promise<void>;
+    onResumeSubscription?: (subId: string) => Promise<void>;
+    onCancelSubscription?: (subId: string) => Promise<void>;
+    onUpdateSubscriptionFrequency?: (subId: string, frequency: any) => Promise<void>;
     activeProduct?: (PremiumProduct & { reviews: PremiumReview[]; relatedProducts?: Product[] }) | null;
     showUI?: boolean;
     cartItems?: any[];
@@ -37,6 +41,7 @@ interface Props {
     loyaltyPoints?: number;
     allowCloseSession?: boolean;
     wishlistItems?: string[];
+    activeSubscriptions?: any[];
 }
 
 // ─── Status labels ───────────────────────────────────────────────────────────
@@ -198,6 +203,7 @@ export default function VoiceAdvisor({
     products, pastProducts, pastOrders, savedPrefs, userName,
     isOpen, onClose, onHangup, onAddItem, onRemoveItem, onUpdateQuantity, onViewProduct, onNavigate, onOpenModal, onSavePrefs, onApplyPromo,
     onToggleFavorite, onCompareProducts,
+    onPauseSubscription, onResumeSubscription, onCancelSubscription, onUpdateSubscriptionFrequency,
     activeProduct,
     showUI = true, cartItems = [], customPrompt, loyaltyPoints, allowCloseSession = true,
     wishlistItems = [],
@@ -233,6 +239,10 @@ export default function VoiceAdvisor({
             prewarmToken: isOpen,
             wishlistItems,
             onToggleFavorite,
+            onPauseSubscription,
+            onResumeSubscription,
+            onCancelSubscription,
+            onUpdateSubscriptionFrequency,
         });
 
     // Auto-start ONCE when the panel opens — never on subsequent voiceState changes.

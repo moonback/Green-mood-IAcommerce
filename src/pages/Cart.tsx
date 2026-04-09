@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { ShoppingCart, ArrowLeft, Trash2, Package, Truck, ShoppingBag, ShieldCheck, Sparkles, ArrowRight, CreditCard } from 'lucide-react';
+import { ShoppingCart, ArrowLeft, Trash2, Package, Truck, ShoppingBag, ShieldCheck, Sparkles, ArrowRight, CreditCard, RefreshCw } from 'lucide-react';
 import { applyProductImageFallback, getProductImageSrc } from '../lib/productImage';
 import { useCartStore } from '../store/cartStore';
 import { useSettingsStore } from '../store/settingsStore';
@@ -226,9 +226,9 @@ export default function Cart() {
             {/* Items List */}
             <div className="lg:col-span-8 space-y-6">
               <AnimatePresence mode="popLayout">
-                {items.map(({ product, quantity }) => (
+                {items.map(({ product, quantity, subscriptionFrequency }) => (
                   <motion.div
-                    key={product.id}
+                    key={`${product.id}-${subscriptionFrequency || 'none'}`}
                     layout
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
@@ -249,12 +249,22 @@ export default function Cart() {
                     <div className="flex-1 space-y-6 flex flex-col justify-between">
                       <div className="space-y-4">
                         <div className="flex justify-between items-start gap-4">
-                          <Link
-                            to={`/catalogue/${product.slug}`}
-                            className="text-2xl font-black uppercase tracking-tight text-[color:var(--color-text)] hover:text-[color:var(--color-primary)] transition-colors"
-                          >
-                            {product.name}
-                          </Link>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-3 mb-1">
+                              <Link
+                                to={`/catalogue/${product.slug}`}
+                                className="text-2xl font-black uppercase tracking-tight text-[color:var(--color-text)] hover:text-[color:var(--color-primary)] transition-colors"
+                              >
+                                {product.name}
+                              </Link>
+                              {subscriptionFrequency && (
+                                <span className="flex items-center gap-1.5 text-[10px] font-black uppercase bg-emerald-500/10 text-emerald-500 px-3 py-1 rounded-full border border-emerald-500/20">
+                                  <RefreshCw className="w-3 h-3 animate-[spin_4s_linear_infinite]" />
+                                  Abonnement {subscriptionFrequency === 'weekly' ? 'Hebdo' : subscriptionFrequency === 'biweekly' ? '15 jours' : 'Mensuel'}
+                                </span>
+                              )}
+                            </div>
+                          </div>
                           <button
                             onClick={() => handleRemoveItem(product, quantity)}
                             aria-label={`Retirer ${product.name} du panier`}
@@ -280,14 +290,16 @@ export default function Cart() {
                           <span className="text-xs font-black uppercase tracking-wider text-[color:var(--color-text-subtle)] block px-1">Quantité</span>
                           <QuantitySelector
                             quantity={quantity}
-                            onChange={(q) => updateQuantity(product.id, q)}
+                            onChange={(q) => updateQuantity(product.id, q, subscriptionFrequency)}
                             max={product.stock_quantity}
                           />
                         </div>
                         <div className="text-right">
-                          <span className="text-xs font-black uppercase tracking-wider text-[color:var(--color-text-subtle)] block mb-1">Total Article</span>
+                          <span className="text-xs font-black uppercase tracking-wider text-[color:var(--color-text-subtle)] block mb-1">
+                            {subscriptionFrequency ? 'Total Abonnement' : 'Total Article'}
+                          </span>
                           <p className="text-3xl font-black text-[color:var(--color-text)]">
-                            {(product.price * quantity).toFixed(2)}<span className="text-[color:var(--color-primary)] text-sm ml-1">€</span>
+                            {(product.price * (1 - (subscriptionFrequency === 'weekly' ? 0.15 : subscriptionFrequency === 'biweekly' ? 0.10 : subscriptionFrequency === 'monthly' ? 0.05 : 0)) * quantity).toFixed(2)}<span className="text-[color:var(--color-primary)] text-sm ml-1">€</span>
                           </p>
                         </div>
                       </div>

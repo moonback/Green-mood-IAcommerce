@@ -159,7 +159,7 @@ export default function CartSidebar() {
                         <AnimatePresence mode="popLayout">
                           {items.map((item) => (
                             <motion.div
-                              key={item.product.id}
+                              key={`${item.product.id}-${item.subscriptionFrequency || 'none'}`}
                               layout
                               initial={{ opacity: 0, scale: 0.95 }}
                               animate={{ opacity: 1, scale: 1 }}
@@ -185,8 +185,8 @@ export default function CartSidebar() {
                                             {item.product.category?.name || 'Exception'}
                                           </p>
                                           {item.subscriptionFrequency && (
-                                            <span className="flex items-center gap-1 text-[7px] font-black uppercase bg-emerald-400/10 text-emerald-400 px-1.5 py-0.5 rounded-full border border-emerald-400/20">
-                                              <RefreshCw className="w-2 h-2" />
+                                            <span className="flex items-center gap-1.5 text-[8px] font-black uppercase bg-emerald-500/10 text-emerald-500 px-2 py-0.5 rounded-full border border-emerald-500/20 shadow-[0_0_10px_rgba(16,185,129,0.1)]">
+                                              <RefreshCw className="w-2.5 h-2.5 animate-[spin_4s_linear_infinite]" />
                                               {item.subscriptionFrequency === 'weekly' ? 'Hebdo' : item.subscriptionFrequency === 'biweekly' ? '15 jours' : 'Mensuel'}
                                             </span>
                                           )}

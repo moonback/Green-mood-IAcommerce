@@ -184,6 +184,7 @@ const _buildClientContext = (
   savedPrefs: any,
   cartItems: any[],
   activeProduct: any,
+  activeSubscriptions: any[] = [],
   deliveryFee: number = 0,
   deliveryFreeThreshold: number = 0
 ) => {
@@ -214,6 +215,18 @@ const _buildClientContext = (
   } else if (pastProducts && pastProducts.length > 0) {
     const lastProds = pastProducts.slice(0, 4).map((p: any) => p.product_name || p.name).join(', ');
     ctx += `- HISTORIQUE ACHATS : ${lastProds}.\n`;
+  }
+
+  if (activeSubscriptions && activeSubscriptions.length > 0) {
+    const subsStr = activeSubscriptions
+      .map(s => {
+        const prod = s.product?.name || 'Produit inconnu';
+        const freq = s.frequency === 'weekly' ? 'hebdo' : s.frequency === 'biweekly' ? 'bi-mensuel' : 'mensuel';
+        const next = new Date(s.next_delivery_date).toLocaleDateString('fr-FR');
+        return `${s.quantity}x ${prod} (${freq}, prochaine: ${next}, statut: ${s.status})`;
+      })
+      .join(' || ');
+    ctx += `- ABONNEMENTS ACTIFS : ${subsStr}.\n`;
   }
 
   if (recentlyViewed && recentlyViewed.length > 0) {
@@ -369,6 +382,7 @@ export const getVoicePrompt = (
   deliveryFee: number = 0,
   deliveryFreeThreshold: number = 0,
   cartItems: any[] = [],
+  activeSubscriptions: any[] = [],
   customPrompt?: string,
   loyaltyPoints?: number,
   budtenderName: string = 'Assistant',
@@ -382,7 +396,7 @@ export const getVoicePrompt = (
   const rawClientContext = _buildClientContext(
     userName, loyaltyPoints, loyaltyTiers, currencyName,
     pastOrders, pastProducts, recentlyViewed, savedPrefs, cartItems, activeProduct,
-    deliveryFee, deliveryFreeThreshold
+    activeSubscriptions, deliveryFee, deliveryFreeThreshold
   );
   const clientContext = _trimContextForVoice(rawClientContext, VOICE_CONTEXT_MAX_CHARS);
   const now = new Date();
