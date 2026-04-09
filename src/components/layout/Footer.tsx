@@ -60,7 +60,7 @@ export default function Footer() {
       <div className="absolute top-0 left-1/4 w-96 h-96 bg-[color:var(--color-primary)]/5 rounded-full blur-[120px] pointer-events-none" />
       <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-[color:var(--color-secondary)]/5 rounded-full blur-[120px] pointer-events-none" />
 
-      <div className="max-w-screen-xl mx-auto px-6 lg:px-8 relative z-10">
+      <div className="max-w-12xl mx-auto px-6 lg:px-8 relative z-10">
 
         {/* Top: Trust Signals Bar */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-20 pb-12 border-b border-[color:var(--color-border)]">
