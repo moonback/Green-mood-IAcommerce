@@ -65,7 +65,7 @@ Les solutions génériques (Shopify, WooCommerce) imposent des dizaines de plugi
 ### E-commerce Premium
 
 - **Storefront haute performance** — React 19 + Vite 6, chargement < 1s, lazy loading natif sur toutes les routes
-- **Catalogue dynamique** — Recherche sémantique vectorielle, filtres multicritères, DualRangeSlider prix, tri par popularité / prix / nouveautés
+- **Catalogue dynamique** — Recherche hybride IA (Sémantique vectorielle + Fallback PostgreSQL ILIKE), filtres hiérarchiques, DualRangeSlider prix, tri intelligent
 - **Recherche prédictive instantanée** — Résultats textuels et visuels en temps réel dès la première frappe
 - **Fiches produit "Conversion-Ready"** — Galerie immersive, badges stock, preuve sociale, guides de consommation, spécifications botaniques, profil sensoriel interactif
 - **Panier & tunnel de commande** — CartSidebar persisté, calcul livraison dynamique, codes promo, checkout Stripe 2 étapes (adresse → paiement)
@@ -128,7 +128,7 @@ Le cœur différenciant du projet. Un conseiller expert CBD disponible 24h/24 di
 | **Promo Codes** | Création codes avec type (% / fixe), limites, expiration |
 | **Fidélité** | Taux points, paliers, historique transactions |
 | **Parrainage** | Suivi filleuls, attributions, statistiques |
-| **Recommandations** | Cross-selling IA, associations produits, couverture catalogue |
+| **Recommandations** | Cross-selling IA, similarité vectorielle par profil terpénique, associations produits |
 | **Abonnements** | Gestion commandes récurrentes, fréquences |
 | **Avis** | Modération, réponses, approbation |
 | **Blog RAG** | Génération guides SEO depuis base de connaissances |
@@ -152,15 +152,8 @@ Le cœur différenciant du projet. Un conseiller expert CBD disponible 24h/24 di
 - **JSON-LD structuré** : schemas Product, BreadcrumbList, Organization pour le rich snippet Google
 - **Open Graph** : balises OG complètes pour le partage réseaux sociaux
 
-### Sécurité & Robustesse
-
-- **RLS Supabase** : Row Level Security sur toutes les tables sensibles
-- **JWT Validation** : vérification systématique dans les Edge Functions (`gemini-token`, `ai-chat`, `ai-embeddings`)
-- **Vérification rôle admin** : guard côté serveur pour les actions admin-only
-- **Webhook HMAC** : signature Stripe vérifiée via Web Crypto API (compatible Deno runtime)
-- **Rollback automatique** : stocks restaurés + commande annulée si paiement Stripe échoue
-- **Token éphémère Gemini** : clé API Gemini jamais exposée côté client
-- **Tests Qualité** : Suite exhaustive Vitest (368 tests passants) + Tests E2E Playwright (21/21 scénarios critiques réussis)
+- **Check Admin Server-Side** : Fonction `check_is_admin()` durcie avec validation systématique contre les escalades de privilèges
+- **Tests Qualité** : Suite exhaustive Vitest (364 tests passants) + Tests E2E Playwright (21/21 scénarios critiques réussis)
 
 ---
 
@@ -708,11 +701,11 @@ SELECT * FROM search_products_fuzzy(
 );
 ```
 
-**Pipeline de recherche produit (4 niveaux)** :
+**Pipeline de recherche produit (Hybride)** :
 1. **Cache FIFO local** (max 100 entrées, clé = query normalisée)
-2. **Exact match** + substring (L1/L2)
-3. **Tous les mots présents** + fuzzy Levenshtein local ≤ 2 (L3)
-4. **Supabase RPC** `search_products_fuzzy` (pg_trgm, L4)
+2. **Recherche Vectorielle** (L1) — Similarité cosinus via `match_products` (pgvector)
+3. **Fallback Textuel** (L2) — Recherche `ILIKE` via `match_products_text` (Name, Desc, Specs)
+4. **Fuzzy Search** (L3) — Algorithme trigramme via `search_products_fuzzy`
 
 ### Mémoire et personnalisation
 
