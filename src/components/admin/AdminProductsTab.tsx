@@ -447,42 +447,54 @@ export default function AdminProductsTab({ products, categories, onRefresh }: Ad
     const allSelected = filteredProducts.length > 0 && selectedProductIds.length === filteredProducts.length;
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-5">
             {/* Header: Search, Count & Actions */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h2 className="text-xl font-serif font-bold text-white flex items-center gap-2">
-                        <ShoppingBag className="w-5 h-5 text-emerald-400" />
-                        Inventaire des Produits
-                        <div className="flex items-center gap-2 ml-2">
-                            <span className="px-2 py-0.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-full text-[12px] font-bold leading-none transition-all">
-                                {filteredProducts.length} Produits
-                            </span>
-                            <span className="px-2 py-0.5 bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-full text-[12px] font-bold leading-none flex items-center gap-1" title={`${products.length - productsNeedingEnrichment.length} produits entièrement renseignés par l'IA sur le total du catalogue (${products.length})`}>
-                                <Sparkles className="w-3 h-3" />
-                                {products.length - productsNeedingEnrichment.length} Enrichis
-                            </span>
-                            <span className="px-2 py-0.5 bg-purple-500/10 text-purple-400 border border-purple-500/20 rounded-full text-[12px] font-bold leading-none flex items-center gap-1" title={`${products.length - productsWithoutVectors.length} produits prêts pour la recherche sémantique sur le total du catalogue (${products.length})`}>
-                                <Brain className="w-3 h-3" />
-                                {products.length - productsWithoutVectors.length} Vectorisés
-                            </span>
+                    <div className="flex items-center gap-4 mb-2">
+                        <div className="w-11 h-11 rounded-2xl flex items-center justify-center"
+                            style={{ background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', boxShadow: '0 0 24px rgba(16,185,129,0.15)' }}>
+                            <ShoppingBag className="w-5 h-5 text-white" />
                         </div>
-                    </h2>
-                    <p className="text-xs text-zinc-500 mt-1">Gérez votre catalogue et vos niveaux de stock.</p>
+                        <div>
+                            <h2 className="text-lg font-bold text-white tracking-tight">Inventaire des Produits</h2>
+                            <p className="text-xs text-white/30">Gérez votre catalogue et vos niveaux de stock</p>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-2 ml-15">
+                        <span className="px-2.5 py-1 rounded-md text-[11px] font-bold flex items-center gap-1.5"
+                            style={{ background: 'rgba(16,185,129,0.08)', color: '#10b981', border: '1px solid rgba(16,185,129,0.15)' }}>
+                            {filteredProducts.length} Produits
+                        </span>
+                        <span className="px-2.5 py-1 rounded-md text-[11px] font-bold flex items-center gap-1.5"
+                            style={{ background: 'rgba(59,130,246,0.08)', color: '#3b82f6', border: '1px solid rgba(59,130,246,0.15)' }}
+                            title={`${products.length - productsNeedingEnrichment.length} produits entièrement renseignés par l'IA`}>
+                            <Sparkles className="w-3 h-3" />
+                            {products.length - productsNeedingEnrichment.length} Enrichis
+                        </span>
+                        <span className="px-2.5 py-1 rounded-md text-[11px] font-bold flex items-center gap-1.5"
+                            style={{ background: 'rgba(168,85,247,0.08)', color: '#a855f7', border: '1px solid rgba(168,85,247,0.15)' }}
+                            title={`${products.length - productsWithoutVectors.length} produits prêts pour la recherche sémantique`}>
+                            <Brain className="w-3 h-3" />
+                            {products.length - productsWithoutVectors.length} Vectorisés
+                        </span>
+                    </div>
                 </div>
 
-                <div className="flex items-center gap-3">
-                    <div className="flex bg-zinc-900 border border-zinc-800 rounded-xl p-1">
+                <div className="flex items-center gap-2.5">
+                    <div className="flex p-1 rounded-lg" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}>
                         <button
                             onClick={() => setViewMode('list')}
-                            className={`p-2 rounded-lg transition-all ${viewMode === 'list' ? 'bg-zinc-800 text-emerald-400 shadow-lg' : 'text-zinc-500 hover:text-white'}`}
+                            className={`p-2 rounded-md transition-all ${viewMode === 'list' ? 'text-emerald-400' : 'text-white/20 hover:text-white/50'}`}
+                            style={viewMode === 'list' ? { background: 'rgba(16,185,129,0.1)', boxShadow: 'inset 0 0 0 1px rgba(16,185,129,0.2)' } : {}}
                             title="Vue Liste"
                         >
                             <List className="w-4 h-4" />
                         </button>
                         <button
                             onClick={() => setViewMode('grid')}
-                            className={`p-2 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-zinc-800 text-emerald-400 shadow-lg' : 'text-zinc-500 hover:text-white'}`}
+                            className={`p-2 rounded-md transition-all ${viewMode === 'grid' ? 'text-emerald-400' : 'text-white/20 hover:text-white/50'}`}
+                            style={viewMode === 'grid' ? { background: 'rgba(16,185,129,0.1)', boxShadow: 'inset 0 0 0 1px rgba(16,185,129,0.2)' } : {}}
                             title="Vue Grille"
                         >
                             <LayoutGrid className="w-4 h-4" />
@@ -638,7 +650,8 @@ export default function AdminProductsTab({ products, categories, onRefresh }: Ad
 
                     <button
                         onClick={() => openProductModal()}
-                        className="flex items-center gap-2 bg-emerald-500 hover:bg-green-600 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition-all shadow-lg shadow-emerald-500/20 active:scale-95"
+                        className="flex items-center gap-2 text-sm font-bold px-4 py-2.5 rounded-xl transition-all hover:scale-[1.02] active:scale-[0.98]"
+                        style={{ background: '#10b981', color: '#000', boxShadow: '0 0 20px rgba(16,185,129,0.2)' }}
                     >
                         <Plus className="w-4 h-4" />
                         <span className="hidden sm:inline">Nouveau produit</span>
@@ -648,17 +661,18 @@ export default function AdminProductsTab({ products, categories, onRefresh }: Ad
             </div>
 
             {/* Filters & Search */}
-            <div className="bg-zinc-900/50 backdrop-blur-sm border border-zinc-800 rounded-2xl p-4 flex flex-wrap items-center gap-4">
+            <div className="rounded-2xl p-4 flex flex-wrap items-center gap-3" style={{ background: 'rgba(255,255,255,0.015)', border: '1px solid rgba(255,255,255,0.04)' }}>
                 <div className="relative flex-1 min-w-[200px]">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/20" />
                     <input
                         value={searchQuery}
                         onChange={(e) => {
                             setSearchQuery(e.target.value);
                             setCurrentPage(1);
                         }}
-                        placeholder="Rechercher par nom, SKU ou description..."
-                        className="w-full bg-zinc-950/50 border border-zinc-800 rounded-xl pl-10 pr-4 py-2 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-emerald-500 transition-all"
+                        placeholder="Rechercher par nom, SKU ou description…"
+                        className="w-full rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-white/20 focus:outline-none transition-all"
+                        style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}
                     />
                 </div>
                 <div className="relative min-w-[200px]">
@@ -668,7 +682,8 @@ export default function AdminProductsTab({ products, categories, onRefresh }: Ad
                             setSelectedCategoryFilter(e.target.value);
                             setCurrentPage(1);
                         }}
-                        className="w-full bg-zinc-950/50 border border-zinc-800 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:border-emerald-500 transition-all appearance-none cursor-pointer"
+                        className="w-full rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none transition-all appearance-none cursor-pointer"
+                        style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}
                     >
                         <option value="all">Toutes les catégories</option>
                         {categories.map((cat) => (
@@ -677,17 +692,17 @@ export default function AdminProductsTab({ products, categories, onRefresh }: Ad
                             </option>
                         ))}
                     </select>
-                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400 pointer-events-none" />
+                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/20 pointer-events-none" />
                 </div>
             </div>
 
             {/* Views */}
             {viewMode === 'list' ? (
-                <div className="bg-zinc-900 rounded-2xl border border-zinc-800 overflow-hidden shadow-xl">
+                <div className="rounded-2xl overflow-hidden" style={{ background: 'rgba(255,255,255,0.015)', border: '1px solid rgba(255,255,255,0.04)' }}>
                     <div className="overflow-x-auto">
                         <table className="w-full">
                             <thead>
-                                <tr className="text-left text-xs text-zinc-500 uppercase tracking-wider border-b border-zinc-800 bg-zinc-800/50">
+                                <tr className="text-left text-[10px] text-white/25 uppercase tracking-[0.15em] font-bold" style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
                                     <th className="px-5 py-4 w-12 text-center">
                                         <input
                                             type="checkbox"
@@ -696,19 +711,19 @@ export default function AdminProductsTab({ products, categories, onRefresh }: Ad
                                             className="w-4 h-4 rounded border-zinc-700 bg-zinc-800 text-emerald-400 focus:ring-emerald-500 cursor-pointer"
                                         />
                                     </th>
-                                    <th className="px-5 py-4 font-bold">Produit</th>
-                                    <th className="px-5 py-4 font-bold">Catégorie</th>
-                                    <th className="px-5 py-4 font-bold">Prix</th>
-                                    <th className="px-5 py-4 font-bold">Culture</th>
-                                    <th className="px-5 py-4 font-bold">Stock</th>
-                                    <th className="px-5 py-4 font-bold">Statut</th>
-                                    <th className="px-5 py-4 text-center font-bold" title="Statut IA">IA</th>
-                                    <th className="px-5 py-4 text-right font-bold">Actions</th>
+                                    <th className="px-5 py-4">Produit</th>
+                                    <th className="px-5 py-4">Catégorie</th>
+                                    <th className="px-5 py-4">Prix</th>
+                                    <th className="px-5 py-4">Culture</th>
+                                    <th className="px-5 py-4">Stock</th>
+                                    <th className="px-5 py-4">Statut</th>
+                                    <th className="px-5 py-4 text-center" title="Statut IA">IA</th>
+                                    <th className="px-5 py-4 text-right">Actions</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-zinc-800/80">
+                            <tbody className="divide-y" style={{ borderColor: 'rgba(255,255,255,0.03)' }}>
                                 {paginatedProducts.map((product) => (
-                                    <tr key={product.id} className="hover:bg-zinc-800/40 transition-colors group">
+                                    <tr key={product.id} className="hover:bg-white/[0.02] transition-colors group">
                                         <td className="px-5 py-4 text-center">
                                             <input
                                                 type="checkbox"
@@ -864,13 +879,14 @@ export default function AdminProductsTab({ products, categories, onRefresh }: Ad
                     </div>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                     {paginatedProducts.map((product) => (
                         <motion.div
                             key={product.id}
-                            initial={{ opacity: 0, scale: 0.95 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            className="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden group hover:border-emerald-500/30 transition-all flex flex-col shadow-lg"
+                            initial={{ opacity: 0, y: 8 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="rounded-2xl overflow-hidden group flex flex-col transition-all duration-200"
+                            style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)' }}
                         >
                             <div className="relative aspect-square bg-zinc-800 overflow-hidden">
                                 <div className="absolute top-2 left-2 z-10 bg-black/40 rounded p-1 backdrop-blur-md">
@@ -942,7 +958,7 @@ export default function AdminProductsTab({ products, categories, onRefresh }: Ad
                                     </div>
                                 </div>
 
-                                <div className="flex items-center justify-between text-xs py-2 border-y border-zinc-800/50">
+                                <div className="flex items-center justify-between text-xs py-2.5" style={{ borderTop: '1px solid rgba(255,255,255,0.04)', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
                                     <div className="flex flex-col">
                                         <span className="text-zinc-500 text-[10px] uppercase font-bold tracking-tighter">Stock</span>
                                         <span className={`font-bold ${product.stock_quantity <= 5 ? 'text-orange-400' : 'text-white'}`}>
@@ -955,17 +971,19 @@ export default function AdminProductsTab({ products, categories, onRefresh }: Ad
                                     </div>
                                 </div>
 
-                                <div className="flex items-center gap-2 pt-1">
+                                <div className="flex items-center gap-1.5 pt-1">
                                     <button
                                         onClick={() => setPreviewProduct(product)}
-                                        className="p-2 bg-zinc-800 hover:bg-white/10 hover:text-white text-zinc-400 rounded-xl border border-zinc-700 transition-all"
+                                        className="p-2 rounded-xl text-white/20 hover:text-white/50 hover:bg-white/[0.04] transition-all"
+                                        style={{ border: '1px solid rgba(255,255,255,0.06)' }}
                                         title="Aperçu"
                                     >
                                         <Eye className="w-3.5 h-3.5" />
                                     </button>
                                     <button
                                         onClick={() => openProductModal(product)}
-                                        className="flex-1 flex items-center justify-center gap-2 bg-zinc-800 hover:bg-zinc-700 text-white text-xs font-bold py-2 rounded-xl border border-zinc-700 transition-all"
+                                        className="flex-1 flex items-center justify-center gap-2 text-white/50 text-xs font-bold py-2 rounded-xl hover:bg-white/[0.04] transition-all"
+                                        style={{ border: '1px solid rgba(255,255,255,0.06)' }}
                                     >
                                         <Edit3 className="w-3.5 h-3.5" />
                                         Modifier
@@ -973,20 +991,23 @@ export default function AdminProductsTab({ products, categories, onRefresh }: Ad
                                     <button
                                         onClick={() => handleSingleAIFillSync(product)}
                                         disabled={isGeneratingAI === product.id}
-                                        className={`p-2 bg-zinc-800 rounded-xl border border-zinc-700 transition-all ${isGeneratingAI === product.id ? 'text-emerald-400 animate-pulse bg-zinc-700' : 'text-zinc-400 hover:text-emerald-400 hover:bg-white/10'}`}
+                                        className={`p-2 rounded-xl transition-all ${isGeneratingAI === product.id ? 'text-emerald-400 animate-pulse' : 'text-white/20 hover:text-emerald-400 hover:bg-white/[0.04]'}`}
+                                        style={{ border: '1px solid rgba(255,255,255,0.06)' }}
                                         title="Remplir via IA"
                                     >
                                         <Sparkles className="w-3.5 h-3.5" />
                                     </button>
                                     <button
                                         onClick={() => setStockAdjust({ id: product.id, qty: '', note: '' })}
-                                        className="p-2 bg-zinc-800 hover:bg-emerald-500/10 hover:text-emerald-400 text-zinc-400 rounded-xl border border-zinc-700 transition-all"
+                                        className="p-2 rounded-xl text-white/20 hover:text-emerald-400 hover:bg-white/[0.04] transition-all"
+                                        style={{ border: '1px solid rgba(255,255,255,0.06)' }}
                                     >
                                         <ArrowUpDown className="w-3.5 h-3.5" />
                                     </button>
                                     <button
                                         onClick={() => handleDeleteProduct(product.id)}
-                                        className="p-2 bg-zinc-800 hover:bg-red-500/10 hover:text-red-500 text-zinc-400 rounded-xl border border-zinc-700 transition-all"
+                                        className="p-2 rounded-xl text-white/20 hover:text-red-400 hover:bg-red-500/[0.06] transition-all"
+                                        style={{ border: '1px solid rgba(255,255,255,0.06)' }}
                                     >
                                         <Trash2 className="w-3.5 h-3.5" />
                                     </button>
@@ -998,23 +1019,25 @@ export default function AdminProductsTab({ products, categories, onRefresh }: Ad
             )}
 
             {totalPages > 1 && (
-                <div className="flex items-center justify-center gap-2 mt-6">
+                <div className="flex items-center justify-center gap-3 mt-5">
                     <button
                         onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                         disabled={currentPage === 1}
-                        className="p-2 bg-zinc-900 border border-zinc-800 rounded-lg hover:bg-zinc-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                        className="p-2.5 rounded-xl text-white/25 hover:text-white/50 hover:bg-white/[0.04] disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                        style={{ border: '1px solid rgba(255,255,255,0.06)' }}
                     >
-                        <ChevronLeft className="w-5 h-5 text-white" />
+                        <ChevronLeft className="w-4 h-4" />
                     </button>
-                    <span className="text-zinc-500 font-medium text-sm px-4">
+                    <span className="text-white/25 font-medium text-sm px-4">
                         Page {currentPage} sur {totalPages}
                     </span>
                     <button
                         onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                         disabled={currentPage === totalPages}
-                        className="p-2 bg-zinc-900 border border-zinc-800 rounded-lg hover:bg-zinc-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                        className="p-2.5 rounded-xl text-white/25 hover:text-white/50 hover:bg-white/[0.04] disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                        style={{ border: '1px solid rgba(255,255,255,0.06)' }}
                     >
-                        <ChevronRight className="w-5 h-5 text-white" />
+                        <ChevronRight className="w-4 h-4" />
                     </button>
                 </div>
             )}
