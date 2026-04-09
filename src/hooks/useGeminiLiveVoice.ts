@@ -4,7 +4,7 @@ import { Product, Review as BaseReview } from '../lib/types';
 import { Product as PremiumProduct, Review } from '../types/premiumProduct';
 import { PastProduct, SavedPrefs, PastOrderSummary } from './useBudTenderMemory';
 import { generateEmbedding } from '../lib/embeddings';
-import { isMatchProductsRpcAvailable, matchProductsRpc } from '../lib/matchProductsRpc';
+import { isMatchProductsRpcAvailable, matchProductsRpc, matchProductsTextRpc } from '../lib/matchProductsRpc';
 import { supabase, SUPABASE_URL, SUPABASE_ANON_KEY } from '../lib/supabase';
 import { getRelevantKnowledge } from '../lib/budtenderKnowledge';
 import { getVoicePrompt } from '../lib/budtenderPrompts';
@@ -12,19 +12,24 @@ import { loadOptionalVoiceSkill } from '../lib/voiceSkills';
 import { searchCannabisKnowledge } from '../lib/cannabisKnowledgeService';
 import { useSettingsStore } from '../store/settingsStore';
 import { useRecentlyViewedStore } from '../store/recentlyViewedStore';
+// Shared audio utilities (Axe 5: deduplicated core)
+import {
+  toBase64, wait, classifyError, getAdaptiveScheduleAhead,
+  NON_RETRYABLE_CODES, INPUT_SAMPLE_RATE, OUTPUT_SAMPLE_RATE,
+} from './audio/audioHelpers';
+import { type VoiceState, type AudioSessionMetrics, createEmptyMetrics } from './audio/types';
+export type { VoiceState } from './audio/types';
+
+import { usePlaybackWorklet } from './audio';
+
 
 // Stable GA model — the preview model has a known 1008 bug with function calling
 const LIVE_MODEL = 'models/gemini-3.1-flash-live-preview';
-
-
-const INPUT_SAMPLE_RATE = 16000;
-const OUTPUT_SAMPLE_RATE = 24000;
-
 // ── Timeouts & retry policy ──────────────────────────────────────────────────
-const CONNECTION_TIMEOUT_MS = 10000;   // 18s — generous for slow mobile connections
-const AUDIO_SCHEDULE_AHEAD_SEC = 0.05; // 50ms — prevents audio gaps on CPU spikes
+const CONNECTION_TIMEOUT_MS = 10000;   // 10s — generous for slow mobile connections
 const MAX_AUTO_RETRIES = 2;           // Retry up to 2 times on non-intentional closes
-const RETRY_DELAY_MS = 500;          // Wait 1s between retries (faster recovery)
+const RETRY_DELAY_MS = 500;          // Wait 500ms between retries (faster recovery)
+
 
 
 const TOKEN_MAX_RETRIES = 2;
@@ -185,15 +190,6 @@ function shouldDisableSemanticSearch(error: unknown): boolean {
   return schemaMismatchMessage || schemaMismatchDetails;
 }
 
-function wait(ms: number): Promise<void> {
-  return new Promise(resolve => window.setTimeout(resolve, ms));
-}
-
-// WebSocket close codes that are NOT worth retrying (user closed, server clean close, auth)
-const NON_RETRYABLE_CODES = new Set([1000, 1001, 4000, 4001, 4003, 4008]);
-
-export type VoiceState = 'idle' | 'connecting' | 'listening' | 'speaking' | 'error';
-
 // Helper for robust string normalization
 const normalizeStr = (s: string) =>
   s.toLowerCase().trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
@@ -230,54 +226,9 @@ interface Options {
 
 type VectorSearchCacheEntry = { ts: number; results: Product[] };
 
-let audioWorkerSingleton: Worker | null = null;
-function getAudioWorker(): Worker {
-  if (!audioWorkerSingleton && typeof window !== 'undefined') {
-    audioWorkerSingleton = new Worker('/downsample-worker.js');
-  }
-  return audioWorkerSingleton!;
-}
-
-function toBase64(bytes: Uint8Array): string {
-  let binary = '';
-  for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
-  return btoa(binary);
-}
-
-/**
- * Maps browser MediaDevices/WebSocket errors to user-friendly French messages.
- */
-function classifyError(err: unknown): string {
-  if (err instanceof Error) {
-    const name = err.name;
-    const msg = err.message.toLowerCase();
-    if (name === 'NotAllowedError' || name === 'PermissionDeniedError') {
-      return 'Accès au microphone refusé. Veuillez l\'autoriser dans les paramètres du navigateur.';
-    }
-    if (name === 'NotFoundError' || name === 'DevicesNotFoundError') {
-      return 'Aucun microphone détecté sur cet appareil.';
-    }
-    if (name === 'NotReadableError' || name === 'TrackStartError') {
-      return 'Microphone déjà utilisé par une autre application.';
-    }
-    if (name === 'OverconstrainedError') {
-      return 'Configuration audio non supportée par ce microphone.';
-    }
-    if (msg.includes('timeout') || msg.includes('délai')) {
-      return 'Délai de connexion dépassé. Vérifiez votre connexion internet.';
-    }
-    if (msg.includes('network') || msg.includes('réseau') || msg.includes('failed to fetch')) {
-      return 'Problème réseau. Vérifiez votre connexion internet.';
-    }
-    if (msg.includes('bad gateway') || msg.includes('502') || msg.includes('gemini-token') || msg.includes('non-2xx status code')) {
-      return 'Le service vocal est temporairement indisponible (erreur serveur). Réessayez dans quelques instants.';
-    }
-    if (msg.includes('api key') || msg.includes('unauthorized') || msg.includes('403')) {
-      return 'Clé API invalide ou expirée.';
-    }
-  }
-  return 'Erreur de connexion. Appuyez sur "Réessayer".';
-}
+// AudioSessionMetrics, createEmptyMetrics, toBase64, classifyError, wait,
+// NON_RETRYABLE_CODES, and getAdaptiveScheduleAhead are imported from
+// './audio/audioHelpers' and './audio/types' (Axe 5: shared audio core).
 
 export function useGeminiLiveVoice({
   products,
@@ -363,12 +314,10 @@ export function useGeminiLiveVoice({
   const startTimeRef = useRef<number | null>(null);
   const interactionIdRef = useRef<string | null>(null);
   const captureCtxRef = useRef<AudioContext | null>(null);
-  const playbackCtxRef = useRef<AudioContext | null>(null);
   const processorRef = useRef<AudioWorkletNode | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
-  const scheduledUntilRef = useRef<number>(0);
   const isMutedRef = useRef(false);
-  const activeSourcesRef = useRef<Set<AudioBufferSourceNode>>(new Set());
+  const playback = usePlaybackWorklet();
   const interruptedRef = useRef(false);
   const setupTimeoutRef = useRef<number | null>(null);
   const startInFlightRef = useRef(false);
@@ -406,6 +355,8 @@ export function useGeminiLiveVoice({
   const vectorSearchCacheRef = useRef<Map<string, VectorSearchCacheEntry>>(new Map());
   const vectorSearchInFlightRef = useRef<Map<string, Promise<Product[]>>>(new Map());
   const toolActivityTimerRef = useRef<number | null>(null);
+  const audioMetricsRef = useRef<AudioSessionMetrics>(createEmptyMetrics());
+  const lastMicSendTimestampRef = useRef<number>(0);
 
 
   const resetSilenceTimer = useCallback(() => {
@@ -490,7 +441,7 @@ export function useGeminiLiveVoice({
     // L3 – ALL words present
     const cleanWords = (s: string) => normalizeStr(s).split(/\s+/).filter(w => w.length > 1);
     const words = cleanWords(q);
-    
+
     if (words.length > 0) {
       found = allKnown.find(i => {
         const itemWords = cleanWords(i.name);
@@ -616,7 +567,7 @@ export function useGeminiLiveVoice({
     globalSettings.budtender_name,
   ]);
 
-  const runVectorCatalogSearch = useCallback(async (query: string): Promise<Product[]> => {
+  const runHybridCatalogSearch = useCallback(async (query: string): Promise<Product[]> => {
     const normalized = query.toLowerCase().trim();
     if (!normalized) return [];
     const now = Date.now();
@@ -628,14 +579,34 @@ export function useGeminiLiveVoice({
     if (inFlight) return inFlight;
 
     const searchPromise = (async () => {
-      const embedding = await generateEmbedding(query);
-      const { data, error: rpcError } = await matchProductsRpc<Product>({
-        embedding,
-        matchThreshold: 0.1,
-        matchCount: 10
-      });
-      if (rpcError) throw rpcError;
-      const results = (data as Product[]) || [];
+      // 1. Lance la recherche sémantique (via embeddings) et la recherche full-text en parallèle
+      const vectorSearchPromise = generateEmbedding(query).then(embedding =>
+        matchProductsRpc<Product>({ embedding, matchThreshold: 0.1, matchCount: 15 })
+      ).catch(e => ({ data: null, error: e }));
+
+      const textSearchPromise = matchProductsTextRpc<Product>(query, 15)
+        .catch(e => ({ data: null, error: e }));
+
+      const [vectorRes, textRes] = await Promise.all([vectorSearchPromise, textSearchPromise]);
+
+      if (vectorRes.error && !textRes.data) {
+        throw vectorRes.error; // Only throw if BOTH failed or text has no data
+      }
+
+      // Merge results, prioritizing text matches slightly for exact keyword hits
+      const combined = new Map<string, Product>();
+
+      if (textRes.data) {
+        textRes.data.forEach((p) => combined.set(p.id, p as Product));
+      }
+
+      if (vectorRes.data) {
+        vectorRes.data.forEach((p) => {
+          if (!combined.has(p.id)) combined.set(p.id, p as Product);
+        });
+      }
+
+      const results = Array.from(combined.values()).slice(0, 15);
       vectorSearchCacheRef.current.set(normalized, { ts: Date.now(), results });
       return results;
     })();
@@ -739,9 +710,18 @@ export function useGeminiLiveVoice({
     }
   }, [buildSystemPrompt, globalSettings.budtender_voice_name]);
 
+  const prewarmAttemptedRef = useRef(false);
+
   useEffect(() => {
+    // Reset our lock when the UI asks to discard prewarm state
+    if (!prewarmToken) {
+      prewarmAttemptedRef.current = false;
+      return;
+    }
     // Only prewarm if not already in a session to avoid overhead/concurrency issues
-    if (!prewarmToken || sessionRef.current) return;
+    if (sessionRef.current || prewarmAttemptedRef.current) return;
+
+    prewarmAttemptedRef.current = true;
     fetchEphemeralToken().catch((err) => {
       console.warn('[Voice] Token prewarm failed:', err);
     });
@@ -749,36 +729,14 @@ export function useGeminiLiveVoice({
 
   const stopAllPlayback = useCallback((fadeMs = 0) => {
     interruptedRef.current = true;
-    const ctx = playbackCtxRef.current;
-    const sources = activeSourcesRef.current;
-
-    if (ctx && fadeMs > 0 && sources.size > 0) {
-      // Soft fade-out: reconnect active sources through a gain node and ramp to 0
-      const gain = ctx.createGain();
-      gain.connect(ctx.destination);
-      gain.gain.setValueAtTime(1, ctx.currentTime);
-      gain.gain.linearRampToValueAtTime(0, ctx.currentTime + fadeMs / 1000);
-      const stopAt = ctx.currentTime + fadeMs / 1000;
-      sources.forEach(s => {
-        try { s.disconnect(); s.connect(gain); s.stop(stopAt); } catch { }
-      });
-      setTimeout(() => gain.disconnect(), fadeMs + 50);
-    } else {
-      sources.forEach(s => {
-        try { s.disconnect(); s.stop(0); } catch { }
-      });
-    }
-
-    sources.clear();
-    // Reset the scheduling timeline so future chunks don't play at stale offsets
-    scheduledUntilRef.current = 0;
-  }, []);
+    playback.clear(); // Use the worklet's clear to instantly flush the jitter buffer
+  }, [playback]);
 
   const cleanup = useCallback((options?: { preserveViewedProducts?: boolean }) => {
     if (options?.preserveViewedProducts) {
       preserveViewedProductsOnCleanupRef.current = true;
     }
-    
+
     // Calculate and log duration if session was active
     if (startTimeRef.current && interactionIdRef.current) {
       const durationSeconds = Math.round((Date.now() - startTimeRef.current) / 1000);
@@ -837,11 +795,9 @@ export function useGeminiLiveVoice({
     processorRef.current = null;
     captureCtxRef.current?.close().catch(() => { });
     captureCtxRef.current = null;
-    playbackCtxRef.current?.close().catch(() => { });
-    playbackCtxRef.current = null;
+    playback.dispose();
     streamRef.current?.getTracks().forEach(t => t.stop());
     streamRef.current = null;
-    scheduledUntilRef.current = 0;
     isMutedRef.current = false;
     interruptedRef.current = false;
     isClosingRef.current = false;
@@ -953,7 +909,7 @@ export function useGeminiLiveVoice({
     if (!sessionRef.current || isManualCloseRef.current || !savedPrefs) return;
     const prevSignature = JSON.stringify(prevSavedPrefsRef.current || {});
     const isDifferent = savedPrefsSignature !== prevSignature;
-    
+
     if (isDifferent) {
       const renderValue = (val: any): string => {
         if (Array.isArray(val)) return val.join(', ');
@@ -963,7 +919,7 @@ export function useGeminiLiveVoice({
         }
         return String(val);
       };
-      
+
       const entries = Object.entries(savedPrefs)
         .filter(([k, v]) => {
           if (!v || ['id', 'user_id', 'updated_at', 'preferences'].includes(k)) return false;
@@ -1024,31 +980,18 @@ export function useGeminiLiveVoice({
   const playPcmChunk = useCallback((base64: string) => {
     // Guard: discard any audio chunks that arrive after an interruption
     if (interruptedRef.current) return;
-    if (!playbackCtxRef.current) return;
-    const ctx = playbackCtxRef.current;
-    const bytes = Uint8Array.from(atob(base64), c => c.charCodeAt(0));
-    const int16 = new Int16Array(bytes.buffer);
-    const float32 = new Float32Array(int16.length);
-    for (let i = 0; i < int16.length; i++) float32[i] = int16[i] / 32768;
 
-    const buffer = ctx.createBuffer(1, float32.length, OUTPUT_SAMPLE_RATE);
-    buffer.copyToChannel(float32, 0);
-    const source = ctx.createBufferSource();
-    source.buffer = buffer;
-    source.connect(ctx.destination);
-    const startAt = Math.max(ctx.currentTime + AUDIO_SCHEDULE_AHEAD_SEC, scheduledUntilRef.current);
-    source.start(startAt);
-    scheduledUntilRef.current = startAt + buffer.duration;
-    activeSourcesRef.current.add(source);
-    setVoiceState('speaking');
-    source.onended = () => {
-      activeSourcesRef.current.delete(source);
-      if (!interruptedRef.current && ctx.currentTime >= scheduledUntilRef.current - 0.05) {
-        setVoiceState('listening');
-        resetSilenceTimer();
-      }
-    };
-  }, [resetSilenceTimer]);
+    // Track round-trip latency (time between last mic send and first playback chunk)
+    if (lastMicSendTimestampRef.current > 0 && audioMetricsRef.current.roundTripSamples.length < 50) {
+      const rtt = Date.now() - lastMicSendTimestampRef.current;
+      if (rtt > 0 && rtt < 30000) audioMetricsRef.current.roundTripSamples.push(rtt);
+    }
+
+    if (playback.isInitialized.current) {
+      playback.feedChunk(base64);
+      setVoiceState('speaking');
+    }
+  }, [playback]);
 
   // Am4: sample ambient noise then set an adaptive barge-in threshold
   const calibrateNoise = useCallback(() => {
@@ -1086,9 +1029,10 @@ export function useGeminiLiveVoice({
     const source = ctx.createMediaStreamSource(stream);
     const worklet = new AudioWorkletNode(ctx, 'mic-processor');
     processorRef.current = worklet;
-    const worker = getAudioWorker();
 
-    worker.onmessage = (msg) => {
+    // The AudioWorklet now handles downsample + RMS + Int16 conversion inline,
+    // so we receive ready-to-send { rms, pcm } directly — no Worker round-trip.
+    worklet.port.onmessage = (e) => {
       if (isMutedRef.current || !canSendRealtimeInput()) return;
 
       // Synchronous race-condition guard: check WS state right before send to catch
@@ -1099,8 +1043,13 @@ export function useGeminiLiveVoice({
       } catch { /* ignore if _ws is not accessible */ }
 
       try {
-        const { rms, pcm } = msg.data;
+        const { rms, pcm } = e.data;
         const now = Date.now();
+
+        // Axe 6: track average RMS for metrics
+        const metrics = audioMetricsRef.current;
+        metrics.avgRms = (metrics.avgRms * metrics.rmsSampleCount + rms) / (metrics.rmsSampleCount + 1);
+        metrics.rmsSampleCount++;
 
         // Am4: noise calibration — collect RMS samples silently during calibration window
         if (isCalibratingRef.current) {
@@ -1131,6 +1080,7 @@ export function useGeminiLiveVoice({
               lastBargeInAtRef.current = now;
               bargeInStartRef.current = 0;
               bargeInFramesRef.current = 0;
+              metrics.bargeInCount++;
               stopAllPlayback(80); // soft fade-out
               // Small delay before switching to listening to avoid audio feedback loop
               setTimeout(() => {
@@ -1139,6 +1089,9 @@ export function useGeminiLiveVoice({
             }
           } else {
             // Signal dropped below threshold — reset detection to avoid false trigger on noise spike
+            if (bargeInStartRef.current > 0) {
+              metrics.falseBargeInCount++;
+            }
             bargeInStartRef.current = 0;
             bargeInFramesRef.current = 0;
           }
@@ -1154,6 +1107,7 @@ export function useGeminiLiveVoice({
         if (audioData.length === 0) return; // Skip empty chunks to prevent 1007 errors
 
         try {
+          lastMicSendTimestampRef.current = now;
           sessionRef.current.sendRealtimeInput({
             audio: {
               mimeType: 'audio/pcm',
@@ -1171,17 +1125,6 @@ export function useGeminiLiveVoice({
         }
         console.warn('[Voice] Mic capture error:', err);
       }
-    };
-
-    worklet.port.onmessage = (e) => {
-      if (isMutedRef.current || !canSendRealtimeInput()) return;
-      const chunk = e.data as Float32Array;
-      worker.postMessage({
-        chunk,
-        fromRate: captureCtxRef.current?.sampleRate ?? 48000,
-        toRate: INPUT_SAMPLE_RATE,
-        bargeInThreshold: adaptiveBargeInThresholdRef.current
-      }, [chunk.buffer]);
     };
 
     const silent = ctx.createGain();
@@ -1229,9 +1172,17 @@ export function useGeminiLiveVoice({
     try {
       // Fetch a short-lived ephemeral token from the server so the real
       // GEMINI_API_KEY never appears in the browser bundle or network traffic.
+      // Axe 3: AEC + noise suppression + auto gain control for superior audio quality
+      const audioConstraints: MediaTrackConstraints = {
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: true,
+        channelCount: 1,
+        sampleRate: { ideal: INPUT_SAMPLE_RATE }, // 16kHz ideal, fallback to native
+      };
       const [tokenData, stream] = await Promise.all([
         fetchEphemeralToken(forceFreshToken),
-        navigator.mediaDevices.getUserMedia({ audio: true }),
+        navigator.mediaDevices.getUserMedia({ audio: audioConstraints }),
       ]);
 
       console.info('[Voice] Token acquired, starting WebRTC/WS connect with model:', LIVE_MODEL);
@@ -1255,7 +1206,16 @@ export function useGeminiLiveVoice({
             resetSilenceTimer();
             await startMicCapture(stream);
             startInFlightRef.current = false;
-            playbackCtxRef.current = new AudioContext({ sampleRate: OUTPUT_SAMPLE_RATE });
+
+            // Axe 2: Initialize jitter buffer playback worklet
+            await playback.init(() => {
+              if (!interruptedRef.current) {
+                setVoiceState('listening');
+                resetSilenceTimer();
+              }
+            });
+            // Reset audio metrics for this session
+            audioMetricsRef.current = createEmptyMetrics();
             // On reconnects (1011/auto-retry) skip the greeting so the conversation
             // doesn't restart from scratch — just resume listening silently.
             if (!isRetry) {
@@ -1339,6 +1299,7 @@ export function useGeminiLiveVoice({
 
             if (canRetry) {
               retryCountRef.current += 1;
+              audioMetricsRef.current.reconnectCount++;
               const attempt = retryCountRef.current;
               const jitter = Math.floor(Math.random() * 500);
               const delay = RETRY_DELAY_MS * attempt + jitter; // Exponential-ish back-off with jitter
@@ -1362,9 +1323,7 @@ export function useGeminiLiveVoice({
                 processorRef.current = null;
                 captureCtxRef.current?.close().catch(() => { });
                 captureCtxRef.current = null;
-                playbackCtxRef.current?.close().catch(() => { });
-                playbackCtxRef.current = null;
-                scheduledUntilRef.current = 0;
+                playback.dispose();
                 interruptedRef.current = false;
                 // Don't reset sessionIdRef — we keep the same sid guard
                 // Force a FRESH token on retries — reusing tokens causes "Token has been used too many times (1011)"
@@ -1388,7 +1347,6 @@ export function useGeminiLiveVoice({
             }
 
             const setupTurn = () => {
-              scheduledUntilRef.current = playbackCtxRef.current?.currentTime ?? 0;
               setVoiceState('listening');
               resetSilenceTimer();
             };
@@ -1510,16 +1468,16 @@ export function useGeminiLiveVoice({
                     }
                   };
                 }
-                
+
                 if (c.name === 'get_current_time') {
                   const now = new Date();
-                  const result = now.toLocaleString('fr-FR', { 
-                    weekday: 'long', 
-                    year: 'numeric', 
-                    month: 'long', 
-                    day: 'numeric', 
-                    hour: '2-digit', 
-                    minute: '2-digit' 
+                  const result = now.toLocaleString('fr-FR', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
                   });
                   return { name: c.name, id: c.id, response: { result } };
                 }
@@ -1604,13 +1562,13 @@ export function useGeminiLiveVoice({
                   const p = await findProduct(prodName);
                   if (p && onRemoveItemRef.current) {
                     onRemoveItemRef.current(p, qty);
-                    return { 
-                      name: c.name, 
-                      id: c.id, 
-                      response: { 
-                        result: `CONFIRMATION : ${p.name} a été retiré du panier. Vérification système : ACTION_SUCCESS. Le panier est à jour.`, 
-                        status: 'verified' 
-                      } 
+                    return {
+                      name: c.name,
+                      id: c.id,
+                      response: {
+                        result: `CONFIRMATION : ${p.name} a été retiré du panier. Vérification système : ACTION_SUCCESS. Le panier est à jour.`,
+                        status: 'verified'
+                      }
                     };
                   }
                   return { name: c.name, id: c.id, response: { error: `Produit "${prodName}" non trouvé dans le panier.` } };
@@ -1622,13 +1580,13 @@ export function useGeminiLiveVoice({
                   const p = await findProduct(prodName);
                   if (p && onUpdateQuantityRef.current) {
                     onUpdateQuantityRef.current(p, qty);
-                    return { 
-                      name: c.name, 
-                      id: c.id, 
-                      response: { 
-                        result: `CONFIRMATION : La quantité de ${p.name} a été mise à jour à ${qty}. Vérification système : ACTION_SUCCESS. Le panier est à jour.`, 
-                        status: 'verified' 
-                      } 
+                    return {
+                      name: c.name,
+                      id: c.id,
+                      response: {
+                        result: `CONFIRMATION : La quantité de ${p.name} a été mise à jour à ${qty}. Vérification système : ACTION_SUCCESS. Le panier est à jour.`,
+                        status: 'verified'
+                      }
                     };
                   }
                   return { name: c.name, id: c.id, response: { error: `Produit "${prodName}" non trouvé dans le panier.` } };
@@ -1801,10 +1759,10 @@ export function useGeminiLiveVoice({
                   }
 
                   try {
-                    const data = await runVectorCatalogSearch(query);
+                    const data = await runHybridCatalogSearch(query);
                     if (data && data.length > 0) searchResultsRef.current = data as Product[];
                     const results = formatVoiceCatalogToolLines(data as Product[]);
-                    return { name: c.name, id: c.id, response: { results, note: 'Ce sont les produits les plus pertinents du catalogue complet.' } };
+                    return { name: c.name, id: c.id, response: { results, note: 'Résultats fusionnés (Text exact + Sémantique IA).' } };
                   } catch (e) {
                     if (shouldDisableSemanticSearch(e)) {
                       semanticSearchAvailableRef.current = false;
@@ -1945,19 +1903,19 @@ export function useGeminiLiveVoice({
                 if (c.name === 'save_preferences') {
                   if (onSavePrefsRef.current) {
                     const raw = args.new_prefs || args.new_pref || (args.prefs ? args.prefs : args);
-                    
+
                     // The raw data from AI might be { expertise: "Débutant" } 
                     // or { expertise: { value: "Débutant", confidence: 0.9 } }
                     // We want to pass it to onSavePrefs which will then be handled by useBudTenderMemory.updatePrefs
-                    
+
                     let finalPrefs = raw;
                     if (typeof raw === 'string') {
-                       try {
-                          if (raw.includes(':')) {
-                             const [k, v] = raw.split(':').map(s => s.trim());
-                             finalPrefs = { [k]: v };
-                          }
-                       } catch { /* ignore */ }
+                      try {
+                        if (raw.includes(':')) {
+                          const [k, v] = raw.split(':').map(s => s.trim());
+                          finalPrefs = { [k]: v };
+                        }
+                      } catch { /* ignore */ }
                     }
 
                     onSavePrefsRef.current(finalPrefs);
@@ -2049,7 +2007,7 @@ export function useGeminiLiveVoice({
                       return { name: c.name, id: c.id, response: { error: "La gestion des favoris est temporairement indisponible dans cette interface." } };
                     }
                   }
-                  
+
                   const missingLabel = prodName || prodId || 'inconnu';
                   return { name: c.name, id: c.id, response: { error: `Produit "${missingLabel}" non trouvé.` } };
                 }
@@ -2105,32 +2063,32 @@ export function useGeminiLiveVoice({
                   const pB = await findProduct(nameB);
                   if (!pA) return { name: c.name, id: c.id, response: { error: `Produit "${nameA}" introuvable dans le catalogue.` } };
                   if (!pB) return { name: c.name, id: c.id, response: { error: `Produit "${nameB}" introuvable dans le catalogue.` } };
-                  
+
                   if (onCompareProductsRef.current) {
                     onCompareProductsRef.current([pA, pB]);
                   }
-                  
+
                   const diff = pB.price - pA.price;
                   const priceLine = diff === 0
                     ? `Même prix (${pA.price}€).`
                     : diff > 0
                       ? `${pA.name} est ${Math.abs(diff).toFixed(2)}€ moins cher.`
                       : `${pB.name} est ${Math.abs(diff).toFixed(2)}€ moins cher.`;
-                  
+
                   const comparison = [
                     `📊 TABLEAU DE COMPARAISON AFFICHÉ : ${pA.name} vs ${pB.name}`,
                     `${pA.name} : ${pA.price}€ | Description: ${pA.description || 'N/A'}`,
                     `${pB.name} : ${pB.price}€ | Description: ${pB.description || 'N/A'}`,
                     `Verdict prix : ${priceLine}`
                   ].join('\n');
-                  
-                  return { 
-                    name: c.name, 
-                    id: c.id, 
-                    response: { 
-                      result: comparison, 
-                      note: 'Le tableau comparatif est apparu à l\'écran du client. Invite-le à le regarder et commente les points clés (prix, effets, arômes) pour l\'aider à choisir.' 
-                    } 
+
+                  return {
+                    name: c.name,
+                    id: c.id,
+                    response: {
+                      result: comparison,
+                      note: 'Le tableau comparatif est apparu à l\'écran du client. Invite-le à le regarder et commente les points clés (prix, effets, arômes) pour l\'aider à choisir.'
+                    }
                   };
                 }
 
@@ -2320,12 +2278,80 @@ export function useGeminiLiveVoice({
       setError(userMessage);
       setVoiceState('error');
     }
-  }, [cleanup, compatibilityError, fetchEphemeralToken, findProduct, playPcmChunk, runVectorCatalogSearch, setSearchingFeedback, startMicCapture, stopAllPlayback, stopSession, resetSilenceTimer]);
+  }, [cleanup, compatibilityError, fetchEphemeralToken, findProduct, playPcmChunk, runHybridCatalogSearch, setSearchingFeedback, startMicCapture, stopAllPlayback, stopSession, resetSilenceTimer]);
 
   // Keep startSession accessible inside the onclose retry callback via ref
   useEffect(() => {
     startSessionRef.current = startSession;
   }, [startSession]);
+
+  // ── Axe 4: Proactive token refresh ────────────────────────────────────────
+  // Pre-fetch a fresh token 10s before the current one expires to avoid
+  // any interruption when Gemini Live auto-reconnects.
+  useEffect(() => {
+    if (voiceState !== 'listening' && voiceState !== 'speaking') return;
+    const cached = cachedTokenRef.current;
+    if (!cached) return;
+
+    const msUntilExpiry = cached.expireAtMs - Date.now();
+    const refreshAt = Math.max(msUntilExpiry - 10_000, 5_000); // 10s before expiry, min 5s
+
+    const timer = window.setTimeout(() => {
+      audioMetricsRef.current.tokenRefreshCount++;
+      fetchEphemeralToken(true).catch((err: unknown) => {
+        console.warn('[Voice] Proactive token refresh failed:', err);
+      });
+    }, refreshAt);
+
+    return () => window.clearTimeout(timer);
+  }, [voiceState, fetchEphemeralToken]);
+
+  // ── Axe 6: Log audio metrics at session end ───────────────────────────────
+  // When the session ends (transitions to idle from an active state), persist
+  // the collected audio quality metrics to the budtender_interactions table.
+  const prevVoiceStateForMetricsRef = useRef<VoiceState>('idle');
+  useEffect(() => {
+    const prev = prevVoiceStateForMetricsRef.current;
+    prevVoiceStateForMetricsRef.current = voiceState;
+
+    if (voiceState === 'idle' && (prev === 'listening' || prev === 'speaking')) {
+      const m = audioMetricsRef.current;
+      if (m.rmsSampleCount > 0 && interactionIdRef.current) {
+        const avgRtt = m.roundTripSamples.length > 0
+          ? Math.round(m.roundTripSamples.reduce((a, b) => a + b, 0) / m.roundTripSamples.length)
+          : null;
+        console.info('[Voice][Metrics] Session audio quality:', {
+          avgRoundTripMs: avgRtt,
+          playbackGaps: m.playbackGapCount,
+          bargeIns: m.bargeInCount,
+          falseBargeIns: m.falseBargeInCount,
+          avgRms: m.avgRms.toFixed(4),
+          tokenRefreshes: m.tokenRefreshCount,
+          reconnects: m.reconnectCount,
+        });
+        // Best-effort persistence — non-blocking
+        supabase
+          .from('budtender_interactions')
+          .update({
+            metadata: {
+              audio_metrics: {
+                avg_round_trip_ms: avgRtt,
+                playback_gaps: m.playbackGapCount,
+                barge_ins: m.bargeInCount,
+                false_barge_ins: m.falseBargeInCount,
+                avg_rms: parseFloat(m.avgRms.toFixed(4)),
+                token_refreshes: m.tokenRefreshCount,
+                reconnects: m.reconnectCount,
+              },
+            },
+          })
+          .eq('id', interactionIdRef.current)
+          .then(({ error: updErr }) => {
+            if (updErr) console.warn('[Voice][Metrics] Failed to persist audio metrics:', updErr);
+          });
+      }
+    }
+  }, [voiceState]);
 
   const toggleMute = useCallback(() => {
     isMutedRef.current = !isMutedRef.current;

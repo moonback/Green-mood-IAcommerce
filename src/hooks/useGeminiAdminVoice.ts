@@ -3,89 +3,24 @@ import { GoogleGenAI, type FunctionResponse, type LiveServerMessage, type Sessio
 import { supabase, SUPABASE_URL, SUPABASE_ANON_KEY } from '../lib/supabase';
 import { getAdminVoicePrompt } from '../lib/adminVoicePrompts';
 import { useSettingsStore } from '../store/settingsStore';
+// Shared audio utilities (Axe 5: deduplicated core)
+import {
+  toBase64, wait, classifyError, getAdaptiveScheduleAhead,
+  NON_RETRYABLE_CODES, INPUT_SAMPLE_RATE, OUTPUT_SAMPLE_RATE,
+} from './audio/audioHelpers';
+import type { VoiceState } from './audio/types';
+export type { VoiceState } from './audio/types';
+import { usePlaybackWorklet } from './audio';
 
 // Stable GA model — the preview model has a known 1008 bug with function calling
-const LIVE_MODEL = 'models/gemini-2.5-flash-native-audio-latest';
+const LIVE_MODEL = 'models/gemini-3.1-flash-live-preview';
 const ADMIN_VOICE_NAME = 'Aoede';
 
-const INPUT_SAMPLE_RATE = 16000;
-const OUTPUT_SAMPLE_RATE = 24000;
-
 const CONNECTION_TIMEOUT_MS = 18000;
-const AUDIO_SCHEDULE_AHEAD_SEC = 0.008;
 const MAX_AUTO_RETRIES = 2;
 const RETRY_DELAY_MS = 2000;
 const TOKEN_MAX_RETRIES = 2;
 const TOKEN_RETRY_DELAY_MS = 1200;
-
-const NON_RETRYABLE_CODES = new Set([1000, 1001, 4000, 4001, 4003, 4008]);
-
-export type VoiceState = 'idle' | 'connecting' | 'listening' | 'speaking' | 'error';
-
-// ── Audio helpers (identical to useGeminiLiveVoice) ──────────────────────────
-
-function downsampleBuffer(buf: Float32Array, fromRate: number, toRate: number): Float32Array {
-  if (fromRate === toRate) return buf;
-  const ratio = fromRate / toRate;
-  const outLen = Math.floor(buf.length / ratio);
-  const out = new Float32Array(outLen);
-  for (let i = 0; i < outLen; i++) {
-    const start = Math.floor(i * ratio);
-    const end = Math.min(Math.floor((i + 1) * ratio), buf.length);
-    let sum = 0;
-    for (let j = start; j < end; j++) sum += buf[j];
-    out[i] = sum / (end - start);
-  }
-  return out;
-}
-
-function float32ToInt16(buf: Float32Array): Int16Array {
-  const out = new Int16Array(buf.length);
-  for (let i = 0; i < buf.length; i++) {
-    const s = Math.max(-1, Math.min(1, buf[i]));
-    out[i] = s < 0 ? s * 0x8000 : s * 0x7fff;
-  }
-  return out;
-}
-
-function toBase64(bytes: Uint8Array): string {
-  let binary = '';
-  for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
-  return btoa(binary);
-}
-
-function wait(ms: number): Promise<void> {
-  return new Promise(resolve => window.setTimeout(resolve, ms));
-}
-
-function classifyError(err: unknown): string {
-  if (err instanceof Error) {
-    const name = err.name;
-    const msg = err.message.toLowerCase();
-    if (name === 'NotAllowedError' || name === 'PermissionDeniedError') {
-      return 'Accès au microphone refusé. Veuillez l\'autoriser dans les paramètres du navigateur.';
-    }
-    if (name === 'NotFoundError' || name === 'DevicesNotFoundError') {
-      return 'Aucun microphone détecté sur cet appareil.';
-    }
-    if (name === 'NotReadableError' || name === 'TrackStartError') {
-      return 'Microphone déjà utilisé par une autre application.';
-    }
-    if (msg.includes('timeout') || msg.includes('délai')) {
-      return 'Délai de connexion dépassé. Vérifiez votre connexion internet.';
-    }
-    if (msg.includes('network') || msg.includes('failed to fetch')) {
-      return 'Problème réseau. Vérifiez votre connexion internet.';
-    }
-    if (msg.includes('bad gateway') || msg.includes('502') || msg.includes('gemini-token')) {
-      return 'Le service vocal est temporairement indisponible. Réessayez dans quelques instants.';
-    }
-    if (msg.includes('api key') || msg.includes('unauthorized') || msg.includes('403')) {
-      return 'Clé API invalide ou expirée.';
-    }
-  }
-  return 'Erreur de connexion. Appuyez sur "Réessayer".';
-}
 
 // ── Hook ─────────────────────────────────────────────────────────────────────
 
@@ -119,12 +54,10 @@ export function useGeminiAdminVoice({ adminName, storeName, onNavigate, onCloseS
   // Audio / session refs
   const sessionRef = useRef<Session | null>(null);
   const captureCtxRef = useRef<AudioContext | null>(null);
-  const playbackCtxRef = useRef<AudioContext | null>(null);
   const processorRef = useRef<AudioWorkletNode | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
-  const scheduledUntilRef = useRef<number>(0);
   const isMutedRef = useRef(false);
-  const activeSourcesRef = useRef<Set<AudioBufferSourceNode>>(new Set());
+  const playback = usePlaybackWorklet();
   const interruptedRef = useRef(false);
   const setupTimeoutRef = useRef<number | null>(null);
   const startInFlightRef = useRef(false);
@@ -149,12 +82,8 @@ export function useGeminiAdminVoice({ adminName, storeName, onNavigate, onCloseS
 
   const stopAllPlayback = useCallback(() => {
     interruptedRef.current = true;
-    activeSourcesRef.current.forEach(s => {
-      try { s.disconnect(); s.stop(0); } catch { /* ignore */ }
-    });
-    activeSourcesRef.current.clear();
-    scheduledUntilRef.current = 0;
-  }, []);
+    playback.clear();
+  }, [playback]);
 
   const cleanup = useCallback(() => {
     isManualCloseRef.current = true;
@@ -171,11 +100,9 @@ export function useGeminiAdminVoice({ adminName, storeName, onNavigate, onCloseS
     processorRef.current = null;
     captureCtxRef.current?.close().catch(() => { });
     captureCtxRef.current = null;
-    playbackCtxRef.current?.close().catch(() => { });
-    playbackCtxRef.current = null;
+    playback.dispose();
     streamRef.current?.getTracks().forEach(t => t.stop());
     streamRef.current = null;
-    scheduledUntilRef.current = 0;
     isMutedRef.current = false;
     interruptedRef.current = false;
     startInFlightRef.current = false;
@@ -193,29 +120,11 @@ export function useGeminiAdminVoice({ adminName, storeName, onNavigate, onCloseS
 
   const playPcmChunk = useCallback((base64: string) => {
     if (interruptedRef.current) return;
-    if (!playbackCtxRef.current) return;
-    const ctx = playbackCtxRef.current;
-    const bytes = Uint8Array.from(atob(base64), c => c.charCodeAt(0));
-    const int16 = new Int16Array(bytes.buffer);
-    const float32 = new Float32Array(int16.length);
-    for (let i = 0; i < int16.length; i++) float32[i] = int16[i] / 32768;
-    const buffer = ctx.createBuffer(1, float32.length, OUTPUT_SAMPLE_RATE);
-    buffer.copyToChannel(float32, 0);
-    const source = ctx.createBufferSource();
-    source.buffer = buffer;
-    source.connect(ctx.destination);
-    const startAt = Math.max(ctx.currentTime + AUDIO_SCHEDULE_AHEAD_SEC, scheduledUntilRef.current);
-    source.start(startAt);
-    scheduledUntilRef.current = startAt + buffer.duration;
-    activeSourcesRef.current.add(source);
-    setVoiceState('speaking');
-    source.onended = () => {
-      activeSourcesRef.current.delete(source);
-      if (!interruptedRef.current && ctx.currentTime >= scheduledUntilRef.current - 0.05) {
-        setVoiceState('listening');
-      }
-    };
-  }, []);
+    if (playback.isInitialized.current) {
+      playback.feedChunk(base64);
+      setVoiceState('speaking');
+    }
+  }, [playback]);
 
   const startMicCapture = useCallback(async (stream: MediaStream) => {
     const ctx = new AudioContext();
@@ -224,6 +133,9 @@ export function useGeminiAdminVoice({ adminName, storeName, onNavigate, onCloseS
     const source = ctx.createMediaStreamSource(stream);
     const worklet = new AudioWorkletNode(ctx, 'mic-processor');
     processorRef.current = worklet;
+
+    // The AudioWorklet now handles downsample + RMS + Int16 conversion inline,
+    // so we receive ready-to-send { rms, pcm } directly — no extra Worker needed.
     worklet.port.onmessage = (e) => {
       if (isMutedRef.current || !canSendRealtimeInput()) return;
       try {
@@ -231,10 +143,11 @@ export function useGeminiAdminVoice({ adminName, storeName, onNavigate, onCloseS
         if (ws && ws.readyState !== WebSocket.OPEN) return;
       } catch { /* ignore */ }
       try {
-        const down = downsampleBuffer(e.data, ctx.sampleRate, INPUT_SAMPLE_RATE);
-        const pcm = float32ToInt16(down);
+        const { pcm } = e.data;
+        const audioData = new Uint8Array(pcm.buffer);
+        if (audioData.length === 0) return;
         sessionRef.current?.sendRealtimeInput({
-          audio: { mimeType: 'audio/pcm', data: toBase64(new Uint8Array(pcm.buffer)) }
+          audio: { mimeType: 'audio/pcm', data: toBase64(audioData) }
         });
       } catch (err: any) {
         const msg = String(err?.message ?? err).toLowerCase();
@@ -242,6 +155,7 @@ export function useGeminiAdminVoice({ adminName, storeName, onNavigate, onCloseS
         console.warn('[AdminVoice] Mic capture error:', err);
       }
     };
+
     const silent = ctx.createGain();
     silent.gain.value = 0;
     source.connect(worklet);
@@ -698,7 +612,16 @@ export function useGeminiAdminVoice({ adminName, storeName, onNavigate, onCloseS
         throw new Error(`gemini-token failed: ${tokenErrorMessage}`);
       }
 
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      // Axe 3: AEC + noise suppression for superior audio quality
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+          channelCount: 1,
+          sampleRate: { ideal: INPUT_SAMPLE_RATE },
+        }
+      });
       streamRef.current = stream;
 
       const ai = new GoogleGenAI({ apiKey: tokenData.token, httpOptions: { apiVersion: 'v1alpha' } });
@@ -715,7 +638,11 @@ export function useGeminiAdminVoice({ adminName, storeName, onNavigate, onCloseS
             setVoiceState('listening');
             await startMicCapture(stream);
             startInFlightRef.current = false;
-            playbackCtxRef.current = new AudioContext({ sampleRate: OUTPUT_SAMPLE_RATE });
+            await playback.init(() => {
+              if (!interruptedRef.current) {
+                setVoiceState('listening');
+              }
+            });
 
             if (!isRetry) {
               const greeting = adminName
@@ -775,9 +702,7 @@ export function useGeminiAdminVoice({ adminName, storeName, onNavigate, onCloseS
                 processorRef.current = null;
                 captureCtxRef.current?.close().catch(() => { });
                 captureCtxRef.current = null;
-                playbackCtxRef.current?.close().catch(() => { });
-                playbackCtxRef.current = null;
-                scheduledUntilRef.current = 0;
+                playback.dispose();
                 interruptedRef.current = false;
                 startSessionRef.current?.();
               }, delay);
@@ -793,7 +718,6 @@ export function useGeminiAdminVoice({ adminName, storeName, onNavigate, onCloseS
             if (sessionIdRef.current !== sid) return;
 
             const setupTurn = () => {
-              scheduledUntilRef.current = playbackCtxRef.current?.currentTime ?? 0;
               setVoiceState('listening');
             };
 

@@ -134,8 +134,8 @@ const BUDTENDER_TOOLS = [{
       parameters: {
         type: 'OBJECT',
         properties: {
-          new_prefs: { 
-            type: 'OBJECT', 
+          new_prefs: {
+            type: 'OBJECT',
             description: "Objet contenant les traits. Chaque trait peut être un objet { value: string, confidence: number }.",
             properties: {
               expertise: { type: 'OBJECT', properties: { value: { type: 'STRING' }, confidence: { type: 'NUMBER' } } },
@@ -442,7 +442,7 @@ serve(async (req) => {
     }
 
     const { model, systemInstruction, voiceName = 'Puck', assistantType = 'budtender' } = await req.json().catch(() => ({
-      model: 'models/gemini-2.5-flash-native-audio-latest',
+      model: 'models/gemini-3.1-flash-live-preview',
       systemInstruction: '',
       voiceName: 'Puck',
       assistantType: 'budtender',

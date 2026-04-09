@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence, useMotionValue, useSpring, useTransform, MotionValue } from 'motion/react';
 import { Mic, MicOff, PhoneOff, Volume2, X, Radio, Headphones } from 'lucide-react';
 import { Product, Review } from '../lib/types';
 import { Product as PremiumProduct, Review as PremiumReview } from '../types/premiumProduct';
@@ -59,7 +59,7 @@ const STATUS_COLOR: Record<VoiceState, string> = {
 
 // ─── Animated waveform bars ──────────────────────────────────────────────────
 
-function WaveformBars({ state }: { state: VoiceState }) {
+function WaveformBars({ state, rms }: { state: VoiceState, rms: MotionValue<number> }) {
     const barsCount = 9;
     const isSpeaking = state === 'speaking';
     const isListening = state === 'listening';
@@ -81,22 +81,33 @@ function WaveformBars({ state }: { state: VoiceState }) {
                 const maxH = 28 - centerDist * 4;
                 const delay = i * 0.08;
 
+                // When listening, the height is driven directly by microphone RMS.
+                // We use useTransform to scale it per bar based on centerDist.
+                const micHeight = useTransform(rms, (val) => {
+                    const activeH = 3 + (val * 400) - (centerDist * 2);
+                    return `${Math.min(maxH, Math.max(3, activeH))}px`;
+                });
+
                 return (
                     <motion.div
                         key={i}
                         className={`w-[3px] rounded-full ${isSpeaking ? 'bg-emerald-500' : 'bg-emerald-500/40'}`}
-                        animate={{
-                            height: isSpeaking
-                                ? ['4px', `${maxH}px`, '4px']
-                                : isListening
-                                    ? ['3px', '8px', '3px']
-                                    : '3px',
-                            opacity: isSpeaking ? 1 : isListening ? [0.3, 0.6, 0.3] : 0.2
+                        style={{ height: isListening ? micHeight : undefined }}
+                        animate={isSpeaking ? {
+                            height: ['4px', `${maxH}px`, '4px'],
+                            opacity: 1
+                        } : {
+                            opacity: isListening ? [0.3, 0.6, 0.3] : 0.2
                         }}
-                        transition={{
-                            duration: isSpeaking ? 0.5 + centerDist * 0.05 : 2,
+                        transition={isSpeaking ? {
+                            duration: 0.5 + centerDist * 0.05,
                             repeat: Infinity,
-                            delay: isSpeaking ? delay : i * 0.2,
+                            delay: delay,
+                            ease: 'easeInOut'
+                        } : {
+                            duration: 2,
+                            repeat: Infinity,
+                            delay: i * 0.2,
                             ease: 'easeInOut'
                         }}
                     />
@@ -108,12 +119,17 @@ function WaveformBars({ state }: { state: VoiceState }) {
 
 // ─── Central mic orb ────────────────────────────────────────────────────────
 
-function MicOrb({ voiceState, isMuted, isSearching }: { voiceState: VoiceState; isMuted: boolean; isSearching: boolean }) {
+function MicOrb({ voiceState, isMuted, isSearching, rms }: { voiceState: VoiceState; isMuted: boolean; isSearching: boolean; rms: MotionValue<number> }) {
     const { resolvedTheme } = useTheme();
     const isLightTheme = resolvedTheme === 'light';
     const isActive = voiceState === 'listening' || voiceState === 'speaking';
     const isListening = voiceState === 'listening';
     const isSpeaking = voiceState === 'speaking';
+    const isMutedState = isMuted;
+
+    // React to actual user voice level
+    const micScale = useTransform(rms, (val) => 1 + (val * 8));
+    const micOpacity = useTransform(rms, (val) => Math.min(1, 0.1 + val * 4));
 
     return (
         <div className="relative flex items-center justify-center w-14 h-14 shrink-0">
@@ -137,19 +153,30 @@ function MicOrb({ voiceState, isMuted, isSearching }: { voiceState: VoiceState; 
 
             {/* Immersive glow layers */}
             <AnimatePresence>
-                {isActive && !isMuted && (
+                {isActive && !isMutedState && (
                     <>
+                        {/* Dynamic glow tracking user volume */}
+                        {isListening && (
+                            <motion.div
+                                style={{ scale: micScale, opacity: micOpacity }}
+                                className="absolute inset-[-4px] rounded-full bg-emerald-500/20 blur-[10px]"
+                            />
+                        )}
+                        {/* Background glow constant */}
                         <motion.div
                             initial={{ opacity: 0, scale: 0.8 }}
                             animate={{ opacity: 1, scale: 1 }}
                             exit={{ opacity: 0, scale: 0.8 }}
                             className="absolute inset-[-4px] rounded-full bg-emerald-500/5 blur-[15px]"
                         />
-                        <motion.div
-                            className="absolute inset-0 rounded-full border border-emerald-500/20"
-                            animate={{ scale: [1, 1.4], opacity: [0.5, 0] }}
-                            transition={{ duration: 2, repeat: Infinity, ease: 'easeOut' }}
-                        />
+
+                        {isSpeaking && (
+                            <motion.div
+                                className="absolute inset-0 rounded-full border border-emerald-500/20"
+                                animate={{ scale: [1, 1.4], opacity: [0.5, 0] }}
+                                transition={{ duration: 2, repeat: Infinity, ease: 'easeOut' }}
+                            />
+                        )}
                     </>
                 )}
             </AnimatePresence>
@@ -205,6 +232,9 @@ export default function VoiceAdvisor({
     const { settings } = useSettingsStore();
     const { resolvedTheme } = useTheme();
     const isLightTheme = resolvedTheme === 'light';
+    const rmsValue = useMotionValue(0);
+    // Use a spring with low mass and high stiffness to make the orb exactly mirror vocal peaks
+    const smoothRms = useSpring(rmsValue, { damping: 20, stiffness: 350, mass: 0.2 });
 
     const { voiceState, error, isMuted, isSupported, compatibilityError, toolActivity, startSession, stopSession, toggleMute } =
         useGeminiLiveVoice({
@@ -233,6 +263,7 @@ export default function VoiceAdvisor({
             prewarmToken: isOpen,
             wishlistItems,
             onToggleFavorite,
+            onVolumeLevel: (rms) => rmsValue.set(rms),
         });
 
     // Auto-start ONCE when the panel opens — never on subsequent voiceState changes.
@@ -360,7 +391,7 @@ export default function VoiceAdvisor({
                         {/* ── Body ── */}
                         <div className="px-3.5 py-3 flex items-center gap-3">
                             {/* Orb */}
-                            <MicOrb voiceState={voiceState} isMuted={isMuted} isSearching={!!toolActivity} />
+                            <MicOrb voiceState={voiceState} isMuted={isMuted} isSearching={!!toolActivity} rms={smoothRms} />
 
                             {/* Status + waveform */}
                             <div className="flex-1 min-w-0">
@@ -372,7 +403,7 @@ export default function VoiceAdvisor({
                                     >
                                         {STATUS(settings.budtender_name || 'BudTender')[voiceState]}
                                     </motion.p>
-                                    <WaveformBars state={voiceState} />
+                                    <WaveformBars state={voiceState} rms={smoothRms} />
                                 </div>
                                 <p className={`text-[10px] mt-0.5 truncate leading-tight ${isLightTheme ? 'text-slate-500' : 'text-zinc-500'}`} aria-live="polite">
                                     {compatibilityError || error || (
