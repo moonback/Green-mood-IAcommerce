@@ -18,7 +18,6 @@ import {
 import { useMemo, useState } from 'react';
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis } from 'recharts';
 import type { Order } from '../../lib/types';
-import AdminSetupWizard, { WizardTriggerCard } from './AdminSetupWizard';
 import AdminBadge from './ui/AdminBadge';
 import AdminButton from './ui/AdminButton';
 import AdminCard from './ui/AdminCard';
@@ -68,7 +67,6 @@ export default function AdminDashboardTab({
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<Order['status'] | 'all'>('all');
   const [dateFilter, setDateFilter] = useState<'today' | 'week' | 'month' | 'all'>('all');
-  const [wizardOpen, setWizardOpen] = useState(false);
 
   const filteredOrders = useMemo(() => {
     const now = new Date();
@@ -141,8 +139,6 @@ export default function AdminDashboardTab({
 
   return (
     <div className="space-y-6">
-      <WizardTriggerCard onOpen={() => setWizardOpen(true)} />
-      <AdminSetupWizard isOpen={wizardOpen} onClose={() => setWizardOpen(false)} />
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-4">
         {[

@@ -3,7 +3,7 @@ import { type StoreSettings } from '../store/settingsStore';
 
 /**
  * Persist all store settings to the `store_settings` table via upsert.
- * Used by AdminSettingsTab and AdminSetupWizard to avoid duplicated logic.
+ * Used by AdminSettingsTab to avoid duplicated logic.
  */
 export async function saveStoreSettings(settings: Partial<StoreSettings>): Promise<void> {
     const payload = Object.entries(settings)
