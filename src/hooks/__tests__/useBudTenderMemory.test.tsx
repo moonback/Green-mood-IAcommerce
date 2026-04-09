@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useAuthStore } from '../../store/authStore';
 
 const {
@@ -13,9 +14,9 @@ const {
     order: vi.fn().mockReturnThis(),
     limit: vi.fn().mockReturnThis(),
     maybeSingle: vi.fn().mockResolvedValue({ data: null, error: null }),
-    upsert: vi.fn().mockResolvedValue({ data: null, error: null }),
-    insert: vi.fn().mockResolvedValue({ data: null, error: null }),
-    update: vi.fn().mockResolvedValue({ data: null, error: null }),
+    upsert: vi.fn().mockReturnThis(),
+    insert: vi.fn().mockReturnThis(),
+    update: vi.fn().mockReturnThis(),
     delete: vi.fn().mockReturnThis(),
     then: vi.fn().mockImplementation((res: any) => Promise.resolve({ data: null, error: null }).then(res)),
   });
@@ -68,10 +69,27 @@ vi.mock('../../lib/constants', () => ({
 const { useBudTenderMemory } = await import('../useBudTenderMemory');
 
 describe('useBudTenderMemory', () => {
+  let queryClient: QueryClient;
+  let wrapper: React.FC<{ children: React.ReactNode }>;
+
   beforeEach(() => {
     vi.clearAllMocks();
     localStorage.clear();
     sessionStorage.clear();
+
+    queryClient = new QueryClient({
+      defaultOptions: {
+        queries: {
+          retry: false,
+          staleTime: 0,
+          gcTime: 0,
+        },
+      },
+    });
+
+    wrapper = ({ children }: { children: React.ReactNode }) => (
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    );
 
     getBudTenderSettingsMock.mockReturnValue({
       memory_enabled: true,
@@ -83,16 +101,14 @@ describe('useBudTenderMemory', () => {
     ordersQB.then.mockImplementation((res: any) => Promise.resolve({ data: null, error: null }).then(res));
     prefsQB.maybeSingle.mockResolvedValue({ data: null, error: null });
     prefsQB.upsert.mockResolvedValue({ data: null, error: null });
-    interactionsQB.maybeSingle.mockResolvedValue({ data: null, error: null });
-    interactionsQB.then.mockImplementation((res: any) => Promise.resolve({ data: null, error: null }).then(res));
-    interactionsQB.insert.mockResolvedValue({ data: { id: 'new-db-id' }, error: null });
-    interactionsQB.select.mockReturnThis();
+    interactionsQB.maybeSingle.mockResolvedValue({ data: { id: 'new-db-id' }, error: null });
+    interactionsQB.then.mockImplementation((res: any) => Promise.resolve({ data: { id: 'new-db-id' }, error: null }).then(res));
 
     useAuthStore.setState({ user: null, profile: null, isLoading: false, session: null });
   });
 
   it('returns initial anonymous state', async () => {
-    const { result } = renderHook(() => useBudTenderMemory());
+    const { result } = renderHook(() => useBudTenderMemory(), { wrapper });
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
     expect(result.current.isLoggedIn).toBe(false);
@@ -105,7 +121,7 @@ describe('useBudTenderMemory', () => {
     localStorage.setItem('budtender_prefs_v1', JSON.stringify({ tech_goal: 'gaming', experience_level: 'beginner', budget_range: 'mid' }));
     sessionStorage.setItem('playadvisor_chat_history_v1', JSON.stringify([{ id: '1', sender: 'bot', text: 'hello' }]));
 
-    const { result } = renderHook(() => useBudTenderMemory());
+    const { result } = renderHook(() => useBudTenderMemory(), { wrapper });
 
     await waitFor(() => expect(result.current.savedPrefs?.tech_goal).toBe('gaming'));
     expect(result.current.chatHistory).toHaveLength(1);
@@ -115,7 +131,7 @@ describe('useBudTenderMemory', () => {
     localStorage.setItem('budtender_prefs_v1', '{broken-json');
     sessionStorage.setItem('budtender_chat_history_v1', '{broken-json');
 
-    const { result } = renderHook(() => useBudTenderMemory());
+    const { result } = renderHook(() => useBudTenderMemory(), { wrapper });
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
     expect(result.current.savedPrefs).toBeNull();
@@ -173,7 +189,7 @@ describe('useBudTenderMemory', () => {
       }).then(resolve),
     );
 
-    const { result } = renderHook(() => useBudTenderMemory());
+    const { result } = renderHook(() => useBudTenderMemory(), { wrapper });
 
     expect(result.current.restockCandidates).toHaveLength(0); // Because thresholds are 30+ days and recent order is 2 days ago, and old order is 35 days ago but might not match threshold if it was 45
     // Actually p-1 is cateory 'huiles' which falls back to threshold_others (45). 35 < 45, so no restock.
@@ -187,7 +203,7 @@ describe('useBudTenderMemory', () => {
       Promise.resolve({ data: [{ id: 'o-1', order_items: [] }], error: null }).then(resolve),
     );
 
-    const { result } = renderHook(() => useBudTenderMemory());
+    const { result } = renderHook(() => useBudTenderMemory(), { wrapper });
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
     expect(result.current.pastProducts).toHaveLength(0);
@@ -196,7 +212,7 @@ describe('useBudTenderMemory', () => {
 
   it('savePrefs persists locally and syncs mapped payload to Supabase', async () => {
     useAuthStore.setState({ user, profile: null, isLoading: false, session: null });
-    const { result } = renderHook(() => useBudTenderMemory());
+    const { result } = renderHook(() => useBudTenderMemory(), { wrapper });
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
@@ -224,7 +240,7 @@ describe('useBudTenderMemory', () => {
 
   it('saveChatHistory syncs only when there is a user and non-empty history', async () => {
     useAuthStore.setState({ user, profile: null, isLoading: false, session: null });
-    const { result } = renderHook(() => useBudTenderMemory());
+    const { result } = renderHook(() => useBudTenderMemory(), { wrapper });
     const messages = [{ id: 'm-1', sender: 'user' as const, text: 'Je veux un conseil' }];
 
     await act(async () => {
@@ -274,7 +290,7 @@ describe('useBudTenderMemory', () => {
       }).then(resolve),
     );
 
-    const { result } = renderHook(() => useBudTenderMemory());
+    const { result } = renderHook(() => useBudTenderMemory(), { wrapper });
     await act(async () => {
       await result.current.fetchAllSessions();
     });
@@ -304,7 +320,7 @@ describe('useBudTenderMemory', () => {
         error: null,
       });
 
-    const { result } = renderHook(() => useBudTenderMemory());
+    const { result } = renderHook(() => useBudTenderMemory(), { wrapper });
 
     await waitFor(() => expect(result.current.savedPrefs?.tech_goal).toBe('gaming'), { timeout: 3000 });
     expect(result.current.savedPrefs?.experience_level).toBe('expert');
@@ -329,7 +345,7 @@ describe('useBudTenderMemory', () => {
       session: null,
     });
 
-    const { result } = renderHook(() => useBudTenderMemory());
+    const { result } = renderHook(() => useBudTenderMemory(), { wrapper });
 
     await act(async () => {
       await result.current.saveChatHistory([{ id: 'm-1', sender: 'bot', text: 'hey' }]);
