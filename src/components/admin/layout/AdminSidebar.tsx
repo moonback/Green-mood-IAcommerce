@@ -218,16 +218,15 @@ export default function AdminSidebar({
   return (
     <>
       <aside
-        className={`hidden md:flex h-screen sticky top-0 z-30 flex-col transition-all duration-300 ease-[cubic-bezier(.4,0,.2,1)] ${
-          isSidebarOpen ? 'w-[272px]' : 'w-[72px]'
-        }`}
+        className={`hidden md:flex h-screen sticky top-0 z-30 flex-col transition-all duration-300 ease-[cubic-bezier(.4,0,.2,1)] ${isSidebarOpen ? 'w-[272px]' : 'w-[72px]'
+          }`}
         style={{
           background: 'linear-gradient(180deg, rgba(8,15,28,0.97) 0%, rgba(6,12,24,0.99) 100%)',
           borderRight: '1px solid rgba(255,255,255,0.04)',
         }}
       >
         {/* ───── Logo / Brand ───── */}
-        <div className="relative flex items-center justify-center px-4 py-5 shrink-0">
+        <div className="relative flex items-center justify-center px-4 py-1 shrink-0">
           {/* Subtle glow behind logo */}
           <div
             className="absolute inset-0 opacity-30 blur-3xl pointer-events-none"
@@ -235,7 +234,7 @@ export default function AdminSidebar({
           />
 
           {isSidebarOpen ? (
-            <div className="relative w-full h-14 rounded-2xl overflow-hidden border border-white/[0.06] bg-white/[0.02] flex items-center justify-center">
+            <div className="relative w-full h-34 overflow-hidden flex items-center justify-center">
               {settings.store_logo_dark_url || settings.store_logo_url ? (
                 <img
                   src={settings.store_logo_dark_url || settings.store_logo_url}
@@ -292,9 +291,8 @@ export default function AdminSidebar({
                     {cat.label}
                   </span>
                   <ChevronDown
-                    className={`h-3 w-3 text-white/20 transition-transform duration-300 ${
-                      openCategories.includes(cat.key) ? '' : '-rotate-90'
-                    }`}
+                    className={`h-3 w-3 text-white/20 transition-transform duration-300 ${openCategories.includes(cat.key) ? '' : '-rotate-90'
+                      }`}
                   />
                 </button>
               ) : (
@@ -321,11 +319,10 @@ export default function AdminSidebar({
                             <button
                               key={item.key}
                               onClick={() => onTabChange(item.key)}
-                              className={`group relative flex w-full items-center gap-3 rounded-xl px-3 py-2 text-[13px] font-medium transition-all duration-200 ${
-                                isActive
-                                  ? 'text-white'
-                                  : 'text-white/40 hover:text-white/70 hover:bg-white/[0.03]'
-                              }`}
+                              className={`group relative flex w-full items-center gap-3 rounded-xl px-3 py-2 text-[13px] font-medium transition-all duration-200 ${isActive
+                                ? 'text-white'
+                                : 'text-white/40 hover:text-white/70 hover:bg-white/[0.03]'
+                                }`}
                             >
                               {/* Active indicator bar */}
                               {isActive && (
@@ -351,9 +348,8 @@ export default function AdminSidebar({
                                   />
                                 )}
                                 <item.icon
-                                  className={`relative z-10 h-[15px] w-[15px] transition-colors duration-200 ${
-                                    isActive ? '' : 'text-white/25 group-hover:text-white/50'
-                                  }`}
+                                  className={`relative z-10 h-[15px] w-[15px] transition-colors duration-200 ${isActive ? '' : 'text-white/25 group-hover:text-white/50'
+                                    }`}
                                   style={isActive ? { color: cat.color } : undefined}
                                 />
                               </div>
@@ -377,9 +373,8 @@ export default function AdminSidebar({
                           onClick={() => onTabChange(item.key)}
                           onMouseEnter={() => setHoveredItem(item.key)}
                           onMouseLeave={() => setHoveredItem(null)}
-                          className={`group relative flex w-full items-center justify-center rounded-xl py-2.5 transition-all duration-200 ${
-                            isActive ? 'text-white' : 'text-white/25 hover:text-white/50 hover:bg-white/[0.03]'
-                          }`}
+                          className={`group relative flex w-full items-center justify-center rounded-xl py-2.5 transition-all duration-200 ${isActive ? 'text-white' : 'text-white/25 hover:text-white/50 hover:bg-white/[0.03]'
+                            }`}
                         >
                           {isActive && (
                             <motion.div
@@ -451,9 +446,8 @@ export default function AdminSidebar({
           <div className={`grid gap-1.5 ${isSidebarOpen ? 'grid-cols-2' : 'grid-cols-1'}`}>
             <Link
               to="/"
-              className={`group flex items-center justify-center gap-2 rounded-xl py-2.5 text-white/30 hover:text-emerald-400 hover:bg-emerald-400/[0.06] transition-all duration-200 border border-transparent hover:border-emerald-400/10 ${
-                !isSidebarOpen ? 'px-1' : ''
-              }`}
+              className={`group flex items-center justify-center gap-2 rounded-xl py-2.5 text-white/30 hover:text-emerald-400 hover:bg-emerald-400/[0.06] transition-all duration-200 border border-transparent hover:border-emerald-400/10 ${!isSidebarOpen ? 'px-1' : ''
+                }`}
               title="Voir le site"
             >
               <ExternalLink className="h-3.5 w-3.5" />
@@ -462,9 +456,8 @@ export default function AdminSidebar({
             <button
               onClick={onSignOut}
               title="Déconnexion"
-              className={`group flex items-center justify-center gap-2 rounded-xl py-2.5 text-white/30 hover:text-rose-400 hover:bg-rose-400/[0.06] transition-all duration-200 border border-transparent hover:border-rose-400/10 ${
-                !isSidebarOpen ? 'px-1' : ''
-              }`}
+              className={`group flex items-center justify-center gap-2 rounded-xl py-2.5 text-white/30 hover:text-rose-400 hover:bg-rose-400/[0.06] transition-all duration-200 border border-transparent hover:border-rose-400/10 ${!isSidebarOpen ? 'px-1' : ''
+                }`}
             >
               <LogOut className="h-3.5 w-3.5" />
               {isSidebarOpen && <span className="text-xs font-medium">Sortir</span>}
