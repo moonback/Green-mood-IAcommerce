@@ -8,7 +8,7 @@ import { isMatchProductsRpcAvailable, matchProductsRpc } from '../lib/matchProdu
 import { supabase, SUPABASE_URL, SUPABASE_ANON_KEY } from '../lib/supabase';
 import { getRelevantKnowledge } from '../lib/budtenderKnowledge';
 import { getVoicePrompt } from '../lib/budtenderPrompts';
-import { loadOptionalVoiceSkill } from '../lib/voiceSkills';
+
 import { searchCannabisKnowledge } from '../lib/cannabisKnowledgeService';
 import { useSettingsStore } from '../store/settingsStore';
 import { useRecentlyViewedStore } from '../store/recentlyViewedStore';
@@ -399,7 +399,7 @@ export function useGeminiLiveVoice({
   const inputTranscriptTimerRef = useRef<number | null>(null);
   const outputTranscriptTimerRef = useRef<number | null>(null);
   const greetingTriggerSentRef = useRef(false);
-  const loadedVoiceSkillsRef = useRef<Set<string>>(new Set());
+
   const messageQueueRef = useRef<string[]>([]);
   const silenceTimerRef = useRef<number | null>(null);
   const productCacheRef = useRef<Map<string, Product>>(new Map());
@@ -818,7 +818,7 @@ export function useGeminiLiveVoice({
     productCacheRef.current.clear();
     vectorSearchCacheRef.current.clear();
     vectorSearchInFlightRef.current.clear();
-    loadedVoiceSkillsRef.current.clear();
+
 
     if (!preserveViewedProductsOnCleanupRef.current) {
       viewedProductIdsRef.current.clear();
@@ -1445,34 +1445,7 @@ export function useGeminiLiveVoice({
               console.info('[Voice][Tool] START', { name: c.name, id: c.id, args: safeArgs });
 
               try {
-                if (c.name === 'load_voice_skill') {
-                  const skillId = String(args.skill_id || '').trim();
-                  if (loadedVoiceSkillsRef.current.has(skillId)) {
-                    return {
-                      name: c.name,
-                      id: c.id,
-                      response: {
-                        result:
-                          "Ce skill est déjà chargé pour cette session. Applique les instructions déjà reçues. Rappelle load_voice_skill si tu as besoin du texte complet.",
-                        skill_id: skillId,
-                        already_loaded: true,
-                      },
-                    };
-                  }
-                  const loaded = await loadOptionalVoiceSkill(skillId);
-                  if (loaded.ok === true) {
-                    loadedVoiceSkillsRef.current.add(skillId);
-                    return {
-                      name: c.name,
-                      id: c.id,
-                      response: {
-                        skill_id: loaded.skill_id,
-                        content: loaded.content,
-                      },
-                    };
-                  }
-                  return { name: c.name, id: c.id, response: { error: loaded.error } };
-                }
+
 
                 const now = Date.now();
                 const recentMap = recentToolExecutionsRef.current;

@@ -1,7 +1,7 @@
 import { Product, Review as BaseReview } from '../lib/types';
 import { Product as PremiumProduct, Review as PremiumReview } from '../types/premiumProduct';
 import { QuizStep } from './budtenderSettings';
-import { buildCoreVoiceSkillsContext, buildOptionalVoiceSkillsInstruction } from './voiceSkills';
+import { buildCoreVoiceSkillsContext } from './voiceSkills';
 
 export type QuizAnswers = Record<string, string>;
 
@@ -400,7 +400,7 @@ export const getVoicePrompt = (
     VOICE_FORMAT_RULES,
     _buildAnalysisProtocol(),
     buildCoreVoiceSkillsContext(),
-    buildOptionalVoiceSkillsInstruction(),
+
     `## CONTEXTE CLIENT\n${clientContext}`,
     `## RÉFÉRENCE TEMPORELLE (TEMPS RÉEL)\nNous sommes le : ${timeStr}`,
     customPrompt?.trim() ? `## INSTRUCTIONS SPÉCIFIQUES\n${customPrompt.trim()}` : '',
