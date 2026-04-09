@@ -80,15 +80,16 @@ Les solutions génériques (Shopify, WooCommerce) imposent des dizaines de plugi
 Le cœur différenciant du projet. Un conseiller expert CBD disponible 24h/24 directement dans le navigateur, sans aucune application externe.
 
 - **Modèle** : `gemini-3.1-flash-live-preview` (Gemini Live Native Audio)
-- **Latence < 500ms** via AudioWorklet (capture) + Web Worker dédié (downsampling Int16 zero-copy)
+- **Latence Ressentie Nulle** : Système de feedback simultané ("Verbal Mirroring") où l'IA accuse réception professionnellement de la demande pendant que les outils de recherche s'exécutent.
+- **Mémoire Sémantique Évolutive** : Extraction automatique d'insights long-terme (expertise, goûts, objectifs) stockés en base (`user_ai_preferences`), injectés proactivement dans le contexte de l'IA.
+- **Persistance Multi-onglets** : Historique et préférences migrés vers `localStorage`, permettant une continuité de session fluide après un rafraîchissement ou l'ouverture de nouveaux onglets.
+- **UI Premium Réactive** : Indicateur visuel "Pulse" cyan/bleu ultra-fluide signalant l'activité de recherche IA en temps réel.
 - **20+ outils Function Calling** : recherche catalogue, navigation, ajout panier, comparaison produits, suivi commande, gestion favoris, application promo, quiz préférences, etc.
 - **Recherche floue 4 niveaux** : cache FIFO local → exact match → substring → fuzzy RPC PostgreSQL (`pg_trgm`, index GIST)
 - **Calibration adaptative du bruit** : seuil de détection recalibré toutes les 60s, barge-in avec fade-out 80ms
 - **Message Queue** : synchronisation panier / navigation sans perte pendant les gaps WebSocket
-- **Mémoire persistante** : préférences utilisateur stockées en Supabase JSONB, rechargées à chaque session
 - **Moteur de Skills modulaire** : 8 fichiers `.md` injectés dynamiquement, minifiés automatiquement pour le TTS
 - **Token éphémère sécurisé** : la clé API Gemini ne transite jamais dans le navigateur (Edge Function `gemini-token`)
-- **Retry automatique** : jusqu'à 2 reconnexions WebSocket avec back-off exponentiel + jitter
 - **Proactivité intelligente** : relance vocale après 8s (panier actif) ou 15s (navigation seule)
 
 ### Intelligence Omnicanale
@@ -217,21 +218,20 @@ WebSocket ──► Gemini Live API (gemini-3.1-flash-live-preview)
         ▼
 onmessage: serverContent | toolCall
         │
-   ┌────┴─────────────────────────────────┐
-   ▼                                      ▼
-Audio PCM chunks (24kHz)             Function Calls (20+ tools)
-   │                                      │
-   ▼                                      ▼
-playPcmChunk() → AudioContext       executeToolCall()
-  (scheduled, barge-in capable)       │
-                                  ┌───┴────────────────────────────┐
-                                  │  search_catalog → pgvector RPC  │
-                                  │  add_to_cart → cartStore        │
-                                  │  navigate_to → React Router     │
-                                  │  track_order → Supabase query   │
-                                  │  save_preferences → JSONB DB    │
-                                  │  compare_products → UI modal    │
-                                  └────────────────────────────────┘
+    ┌───┴──────────────────────────────────────────┐
+    ▼                                              ▼
+Audio PCM chunks (24kHz)                    Function Calls (20+ tools)
+    │                                              │
+    │  ◄── [DÉCLENCHEMENT AUDIO IMMÉDIAT]          │  ◄── [EXÉCUTION PARALLÈLE]
+    ▼                                              ▼
+playPcmChunk() → AudioContext                 executeToolCall()
+  (scheduled, barge-in capable)                │  (Pulse UI bleu activé)
+                                          ┌────┴───────────────────────────┐
+                                          │  search_catalog → pgvector RPC │
+                                          │  add_to_cart → cartStore       │
+                                          │  save_preferences → Memory     │
+                                          │  extract_insights → Semantic   │
+                                          └────────────────────────────────┘
 ```
 
 ### Modules et responsabilités
@@ -707,22 +707,17 @@ SELECT * FROM search_products_fuzzy(
 3. **Fallback Textuel** (L2) — Recherche `ILIKE` via `match_products_text` (Name, Desc, Specs)
 4. **Fuzzy Search** (L3) — Algorithme trigramme via `search_products_fuzzy`
 
-### Mémoire et personnalisation
+### Mémoire sémantique et personnalisation
 
-```typescript
-// Structure SavedPrefs persistée en Supabase JSONB (table: budtender_user_prefs)
-interface SavedPrefs {
-  usage_type?: string;       // Loisir / Bien-être / Médical
-  experience?: string;       // Débutant / Intermédiaire / Expert
-  preferred_effects?: string[];
-  terpene_preferences?: string[];
-  consumption_method?: string;
-  sensitivity?: string;
-  // ... champs personnalisables via quiz admin
-}
-```
+Le système utilise une architecture de mémoire à deux niveaux pour une expérience fluide et prédictive :
 
-La mémoire est rechargée à chaque session vocale et mise à jour en temps réel via le tool `save_preferences` (sync mid-session via `messageQueueRef`).
+1. **Mémoire Session (Court Terme)** : Persistance via `localStorage` (via `useBudTenderMemory`) pour une réactivité immédiate et une continuité entre les onglets/rafraîchissements.
+2. **Profil Évolutif (Long Terme)** :
+    - **JSONB Store** : Stockage direct des choix du quiz dans `budtender_user_prefs`.
+    - **Extraction d'Insights** : Après chaque interaction majeure, Gemini analyse l'historique pour en extraire des traits stables (ex: "Expert en terpènes", "Cherche une relaxation profonde pour le soir").
+    - **Confiance Statistique** : Chaque insight bénéficie d'un score de confiance ; seules les données > 80% influencent proactivement les conseils futurs.
+
+La synchronisation s'effectue en temps réel via `messageQueueRef`, garantissant que le "cerveau" de l'IA est toujours à jour des dernières préférences client, même en cas de coupure réseau temporaire.
 
 ---
 
