@@ -23,7 +23,8 @@ import {
     Upload,
     FileDown,
     FileText,
-    RefreshCw
+    RefreshCw,
+    Filter
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import type { Product, Category } from '../../lib/types';
@@ -719,61 +720,55 @@ export default function AdminProductsTab({ products, categories, onRefresh }: Ad
                     </div>
                 </div>
 
-                {/* Row 2: Filter Pills */}
-                <div className="flex flex-wrap items-center gap-2">
+                {/* Advanced Filters - Scrollable Row */}
+                <div className="flex items-end gap-5 overflow-x-auto no-scrollbar pb-2 pt-1 -mb-2">
                     {/* Stock */}
-                    <FilterGroup label="Stock">
+                    <FilterGroup label="Stock" icon={RefreshCw}>
                         {[
                             { key: 'all' as const, label: 'Tout' },
                             { key: 'in_stock' as const, label: 'En stock' },
                             { key: 'low' as const, label: 'Faible', color: '#f59e0b' },
                             { key: 'out' as const, label: 'Rupture', color: '#ef4444' },
                         ].map(f => (
-                            <FilterPill key={f.key} active={stockFilter === f.key} color={f.color}
+                            <FilterPill key={f.key} groupKey="stock" active={stockFilter === f.key} color={f.color}
                                 onClick={() => { setStockFilter(f.key); setCurrentPage(1); }}>{f.label}</FilterPill>
                         ))}
                     </FilterGroup>
 
-                    <div className="w-px h-5 mx-1" style={{ background: 'rgba(255,255,255,0.06)' }} />
-
                     {/* Status */}
-                    <FilterGroup label="Statut">
+                    <FilterGroup label="Statut" icon={Eye}>
                         {[
                             { key: 'all' as const, label: 'Tout' },
                             { key: 'active' as const, label: 'Actif', color: '#10b981' },
                             { key: 'inactive' as const, label: 'Masqué' },
                         ].map(f => (
-                            <FilterPill key={f.key} active={statusFilter === f.key} color={f.color}
+                            <FilterPill key={f.key} groupKey="status" active={statusFilter === f.key} color={f.color}
                                 onClick={() => { setStatusFilter(f.key); setCurrentPage(1); }}>{f.label}</FilterPill>
                         ))}
                     </FilterGroup>
 
-                    <div className="w-px h-5 mx-1" style={{ background: 'rgba(255,255,255,0.06)' }} />
-
-                    {/* AI */}
-                    <FilterGroup label="IA">
+                    {/* IA */}
+                    <FilterGroup label="Intelligence Artificielle" icon={Sparkles}>
                         {[
                             { key: 'all' as const, label: 'Tout' },
                             { key: 'complete' as const, label: 'Complète', color: '#10b981' },
                             { key: 'incomplete' as const, label: 'Partielle', color: '#f59e0b' },
                             { key: 'no_vector' as const, label: 'Sans vecteur', color: '#a855f7' },
                         ].map(f => (
-                            <FilterPill key={f.key} active={aiFilter === f.key} color={f.color}
+                            <FilterPill key={f.key} groupKey="ai" active={aiFilter === f.key} color={f.color}
                                 onClick={() => { setAiFilter(f.key); setCurrentPage(1); }}>{f.label}</FilterPill>
                         ))}
                     </FilterGroup>
 
-                    <div className="w-px h-5 mx-1" style={{ background: 'rgba(255,255,255,0.06)' }} />
-
                     {/* Type */}
-                    <FilterGroup label="Type">
+                    <FilterGroup label="Type Rapide" icon={Star}>
                         {[
                             { key: 'all' as const, label: 'Tout' },
-                            { key: 'featured' as const, label: '⭐ Vedette', color: '#eab308' },
-                            { key: 'subscribable' as const, label: '🔁 Abo', color: '#a855f7' },
-                            { key: 'bundle' as const, label: '📦 Pack' },
+                            { key: 'featured' as const, label: 'Vedette', color: '#eab308' },
+                            { key: 'subscribable' as const, label: 'Abo', color: '#a855f7' },
+                            { key: 'bundle' as const, label: 'Pack' },
                         ].map(f => (
-                            <FilterPill key={f.key} active={extraFilter === f.key} color={f.color}
+                            <FilterPill key={f.key} groupKey="type" active={extraFilter === f.key} color={f.color}
                                 onClick={() => { setExtraFilter(f.key); setCurrentPage(1); }}>{f.label}</FilterPill>
                         ))}
                     </FilterGroup>
@@ -782,10 +777,10 @@ export default function AdminProductsTab({ products, categories, onRefresh }: Ad
                     {(stockFilter !== 'all' || statusFilter !== 'all' || aiFilter !== 'all' || extraFilter !== 'all') && (
                         <button
                             onClick={() => { setStockFilter('all'); setStatusFilter('all'); setAiFilter('all'); setExtraFilter('all'); setCurrentPage(1); }}
-                            className="ml-auto flex items-center gap-1.5 text-[11px] font-semibold px-3 py-1.5 rounded-lg transition-all hover:bg-red-500/[0.06]"
-                            style={{ color: 'rgba(239,68,68,0.6)', border: '1px solid rgba(239,68,68,0.15)' }}
+                            className="ml-auto flex shrink-0 items-center gap-1.5 text-[10px] font-bold px-3 py-2 rounded-xl transition-all hover:bg-red-500/[0.08]"
+                            style={{ color: 'rgba(239,68,68,0.8)', background: 'rgba(239,68,68,0.05)', border: '1px solid rgba(239,68,68,0.2)', marginBottom: '5px' }}
                         >
-                            <X className="w-3 h-3" />
+                            <X className="w-3.5 h-3.5" />
                             Réinitialiser
                         </button>
                     )}
@@ -1692,33 +1687,37 @@ export default function AdminProductsTab({ products, categories, onRefresh }: Ad
 
 /* ── Filter UI helpers ───────────────────────────────────────────────── */
 
-function FilterGroup({ label, children }: { label: string; children: React.ReactNode }) {
+function FilterGroup({ label, icon: Icon, children }: { label: string; icon?: React.ElementType; children: React.ReactNode }) {
     return (
-        <div className="flex items-center gap-1.5">
-            <span className="text-[9px] font-bold text-white/15 uppercase tracking-widest mr-1 select-none">{label}</span>
-            {children}
+        <div className="flex flex-col gap-2 shrink-0">
+            <span className="text-[9px] font-bold text-white/35 uppercase tracking-[0.1em] pl-1.5 select-none flex items-center gap-1.5">
+                {Icon && <Icon className="w-[11px] h-[11px] text-white/30" />}
+                {label}
+            </span>
+            <div className="flex p-1 rounded-[14px]" style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)' }}>
+                {children}
+            </div>
         </div>
     );
 }
 
-function FilterPill({ active, onClick, children, color }: { active: boolean; onClick: () => void; children: React.ReactNode; color?: string }) {
+function FilterPill({ active, onClick, children, color, groupKey }: { active: boolean; onClick: () => void; children: React.ReactNode; color?: string; groupKey: string }) {
     const accentColor = color || '#ffffff';
     return (
         <button
             onClick={onClick}
-            className="text-[11px] font-semibold px-2.5 py-1 rounded-lg transition-all duration-200"
-            style={active ? {
-                background: `${accentColor}12`,
-                color: accentColor,
-                border: `1px solid ${accentColor}30`,
-                boxShadow: `0 0 8px ${accentColor}08`,
-            } : {
-                background: 'transparent',
-                color: 'rgba(255,255,255,0.2)',
-                border: '1px solid transparent',
-            }}
+            className={`relative px-3.5 py-1.5 rounded-[10px] text-[10px] font-semibold transition-colors duration-300 z-10 ${active ? '' : 'hover:text-white/60'}`}
+            style={{ color: active ? accentColor : 'rgba(255,255,255,0.3)' }}
         >
-            {children}
+            {active && (
+                <motion.div
+                    layoutId={`filter-bg-${groupKey}`}
+                    className="absolute inset-0 rounded-[10px] -z-10"
+                    style={{ background: `${accentColor}12`, border: `1px solid ${accentColor}25`, boxShadow: `0 4px 12px ${accentColor}08` }}
+                    transition={{ type: 'spring', bounce: 0.2, duration: 0.6 }}
+                />
+            )}
+            <span className="relative z-10 drop-shadow-sm flex items-center gap-1.5">{children}</span>
         </button>
     );
 }
