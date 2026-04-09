@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef, useMemo, useEffect } from 'react';
 import { GoogleGenAI, type FunctionResponse, type LiveServerMessage, type Session } from '@google/genai';
-import { Product, Review as BaseReview } from '../lib/types';
+import { Product, Review as BaseReview, SubscriptionFrequency } from '../lib/types';
 import { Product as PremiumProduct, Review } from '../types/premiumProduct';
 import { PastProduct, SavedPrefs, PastOrderSummary } from './useBudTenderMemory';
 import { generateEmbedding } from '../lib/embeddings';
@@ -205,9 +205,9 @@ interface Options {
   savedPrefs?: SavedPrefs | null;
   userName?: string | null;
   cartItems?: { product: Product; quantity: number }[];
-  onAddItem?: (product: Product, quantity: number) => void;
-  onRemoveItem?: (product: Product, quantity?: number) => void;
-  onUpdateQuantity?: (product: Product, quantity: number) => void;
+  onAddItem?: (product: Product, quantity: number, subscriptionFrequency?: SubscriptionFrequency) => void;
+  onRemoveItem?: (product: Product, quantity?: number, subscriptionFrequency?: SubscriptionFrequency) => void;
+  onUpdateQuantity?: (product: Product, quantity: number, subscriptionFrequency?: SubscriptionFrequency) => void;
   deliveryFee?: number;
   deliveryFreeThreshold?: number;
   onCloseSession?: () => void;
@@ -1429,7 +1429,8 @@ export function useGeminiLiveVoice({
               'get_favorites', 'filter_catalog', 'get_referral_link',
               'compare_products', 'suggest_bundle', 'watch_stock',
               'submit_review', 'apply_promo', 'open_product_modal', 'save_preferences',
-              'get_current_time', 'get_cart', 'remove_from_cart', 'update_cart_quantity'
+              'get_current_time', 'get_cart', 'remove_from_cart', 'update_cart_quantity',
+              'add_to_cart_subscription', 'manage_subscription', 'get_active_subscriptions'
             ]);
             const phase1Calls = calls.filter(c => PHASE_1_TOOLS.has(c.name!));
             const phase2Calls = calls.filter(c => !PHASE_1_TOOLS.has(c.name!));
@@ -1571,6 +1572,40 @@ export function useGeminiLiveVoice({
                   return { name: c.name, id: c.id, response: { error: `Produit "${prodName}" non trouvé dans le catalogue.` } };
                 }
 
+                if (c.name === 'add_to_cart_subscription') {
+                  const prodName = (args.product_name || '').trim();
+                  const frequency = (args.frequency || 'monthly') as any;
+                  let qty = Number(args.quantity) || 1;
+
+                  let p = await findProduct(prodName);
+
+                  if (p) {
+                    if (!viewedProductIdsRef.current.has(p.id)) {
+                      return {
+                        name: c.name,
+                        id: c.id,
+                        response: {
+                          error: `Abonnement bloqué : "${p.name}" doit d'abord être affiché avec view_product avant add_to_cart_subscription.`
+                        }
+                      };
+                    }
+
+                    if (onAddItemRef.current) {
+                      onAddItemRef.current(p, qty, frequency);
+                      return { 
+                        name: c.name, 
+                        id: c.id, 
+                        response: { 
+                          result: `CONFIRMATION : Abonnement à ${p.name} (${frequency}) ajouté au panier. Vérification système : ACTION_SUCCESS.`,
+                          status: 'verified', 
+                          product_id: p.id 
+                        } 
+                      };
+                    }
+                  }
+                  return { name: c.name, id: c.id, response: { error: `Produit "${prodName}" non trouvé dans le catalogue.` } };
+                }
+
                 if (c.name === 'remove_from_cart') {
                   const prodName = (args.product_name || '').trim();
                   const qty = Number(args.quantity) || 0;
@@ -1606,6 +1641,58 @@ export function useGeminiLiveVoice({
                   }
                   return { name: c.name, id: c.id, response: { error: `Produit "${prodName}" non trouvé dans le panier.` } };
                 }
+
+                if (c.name === 'get_active_subscriptions') {
+                  const { data: { user } } = await supabase.auth.getUser();
+                  if (!user) return { name: c.name, id: c.id, response: { error: "Vous devez être connecté pour voir vos abonnements." } };
+
+                  const { data: subs, error } = await supabase
+                    .from('subscriptions')
+                    .select('*, product:products(name)')
+                    .eq('user_id', user.id)
+                    .neq('status', 'cancelled');
+
+                  if (error) return { name: c.name, id: c.id, response: { error: "Erreur lors de la récupération des abonnements." } };
+
+                  if (!subs || subs.length === 0) {
+                    return { name: c.name, id: c.id, response: { result: "Vous n'avez aucun abonnement actif actuellement." } };
+                  }
+
+                  const lines = subs.map(s => `- ID: ${(s as any).id.slice(0, 8)} | Produit: ${(s as any).product?.name} | Fréquence: ${s.frequency} | Statut: ${s.status} | Prochaine livraison: ${new Date(s.next_delivery_date).toLocaleDateString('fr-FR')}`);
+                  return { name: c.name, id: c.id, response: { result: "Voici vos abonnements actifs :\n" + lines.join('\n') } };
+                }
+
+                if (c.name === 'manage_subscription') {
+                  const subIdInput = (args.subscription_id || '').trim();
+                  const action = args.action as 'pause' | 'resume' | 'cancel';
+                  
+                  const { data: { user } } = await supabase.auth.getUser();
+                  if (!user) return { name: c.name, id: c.id, response: { error: "Vous devez être connecté." } };
+
+                  // Find the sub (support partial ID)
+                  const { data: subs } = await supabase
+                    .from('subscriptions')
+                    .select('id, status')
+                    .eq('user_id', user.id);
+                  
+                  const sub = subs?.find(s => s.id === subIdInput || s.id.startsWith(subIdInput));
+                  if (!sub) return { name: c.name, id: c.id, response: { error: "Abonnement non trouvé. Utilisez get_active_subscriptions pour voir la liste." } };
+
+                  let newStatus: string = sub.status;
+                  if (action === 'pause') newStatus = 'paused';
+                  else if (action === 'resume') newStatus = 'active';
+                  else if (action === 'cancel') newStatus = 'cancelled';
+
+                  const { error: updateError } = await supabase
+                    .from('subscriptions')
+                    .update({ status: newStatus })
+                    .eq('id', sub.id);
+
+                  if (updateError) return { name: c.name, id: c.id, response: { error: "Erreur lors de la mise à jour de l'abonnement." } };
+
+                  return { name: c.name, id: c.id, response: { result: `L'abonnement a été mis à jour avec succès : statut ${newStatus}.` } };
+                }
+
 
                 if (c.name === 'close_session') {
                   if (!allowCloseSession) {

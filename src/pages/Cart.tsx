@@ -41,17 +41,18 @@ export default function Cart() {
     };
   }, []);
 
-  const handleRemoveItem = (product: typeof items[number]['product'], quantity: number) => {
+  const handleRemoveItem = (product: typeof items[number]['product'], quantity: number, subscriptionFrequency?: any) => {
     const productId = product.id;
-    const existingUndoTimeout = pendingUndoTimeouts.current[productId];
+    const itemKey = `${productId}-${subscriptionFrequency || 'none'}`;
+    const existingUndoTimeout = pendingUndoTimeouts.current[itemKey];
     if (existingUndoTimeout) {
       clearTimeout(existingUndoTimeout);
     }
 
-    removeItem(productId);
+    removeItem(productId, subscriptionFrequency);
 
     const timeoutId = setTimeout(() => {
-      delete pendingUndoTimeouts.current[productId];
+      delete pendingUndoTimeouts.current[itemKey];
       addToast({
         type: 'info',
         message: `${product.name} supprimé définitivement du panier`,
@@ -59,7 +60,7 @@ export default function Cart() {
       });
     }, 5000);
 
-    pendingUndoTimeouts.current[productId] = timeoutId;
+    pendingUndoTimeouts.current[itemKey] = timeoutId;
 
     addToast({
       type: 'info',
@@ -68,16 +69,16 @@ export default function Cart() {
       action: {
         label: 'Annuler (5s)',
         onClick: () => {
-          const currentTimeout = pendingUndoTimeouts.current[productId];
+          const currentTimeout = pendingUndoTimeouts.current[itemKey];
           if (currentTimeout) {
             clearTimeout(currentTimeout);
-            delete pendingUndoTimeouts.current[productId];
+            delete pendingUndoTimeouts.current[itemKey];
             const { items: currentItems, addItem, updateQuantity } = useCartStore.getState();
-            const existingItem = currentItems.find((item) => item.product.id === productId);
+            const existingItem = currentItems.find((item) => item.product.id === productId && item.subscriptionFrequency === subscriptionFrequency);
             if (existingItem) {
-              updateQuantity(productId, existingItem.quantity + quantity);
+              updateQuantity(productId, existingItem.quantity + quantity, subscriptionFrequency);
             } else {
-              addItem(product, quantity);
+              addItem(product, quantity, subscriptionFrequency);
             }
           }
         },
@@ -226,9 +227,9 @@ export default function Cart() {
             {/* Items List */}
             <div className="lg:col-span-8 space-y-6">
               <AnimatePresence mode="popLayout">
-                {items.map(({ product, quantity }) => (
+                {items.map(({ product, quantity, subscriptionFrequency }) => (
                   <motion.div
-                    key={product.id}
+                    key={`${product.id}-${subscriptionFrequency || 'once'}`}
                     layout
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
@@ -256,7 +257,7 @@ export default function Cart() {
                             {product.name}
                           </Link>
                           <button
-                            onClick={() => handleRemoveItem(product, quantity)}
+                            onClick={() => handleRemoveItem(product, quantity, subscriptionFrequency)}
                             aria-label={`Retirer ${product.name} du panier`}
                             className="p-3 text-[color:var(--color-text-subtle)] hover:text-red-400 hover:bg-red-400/10 rounded-2xl transition-all"
                           >
@@ -264,6 +265,12 @@ export default function Cart() {
                           </button>
                         </div>
                         <div className="flex flex-wrap gap-3">
+                          {subscriptionFrequency && (
+                            <span className="text-xs font-black uppercase tracking-wider text-amber-500 bg-amber-500/10 px-3 py-1.5 rounded-full border border-amber-500/20 flex items-center gap-2">
+                              <CreditCard className="w-3.5 h-3.5" />
+                              Abonnement : {subscriptionFrequency === 'weekly' ? 'Hebdomadaire' : subscriptionFrequency === 'biweekly' ? 'Toutes les 2 semaines' : 'Mensuel'}
+                            </span>
+                          )}
                           {product.attributes?.brand && (
                             <span className="text-xs font-black uppercase tracking-wider text-[color:var(--color-primary)] bg-[color:var(--color-primary)]/10 px-3 py-1.5 rounded-full border border-emerald-500/20">
                               {product.attributes.brand}
@@ -280,15 +287,23 @@ export default function Cart() {
                           <span className="text-xs font-black uppercase tracking-wider text-[color:var(--color-text-subtle)] block px-1">Quantité</span>
                           <QuantitySelector
                             quantity={quantity}
-                            onChange={(q) => updateQuantity(product.id, q)}
+                            onChange={(q) => updateQuantity(product.id, q, subscriptionFrequency)}
                             max={product.stock_quantity}
                           />
                         </div>
                         <div className="text-right">
                           <span className="text-xs font-black uppercase tracking-wider text-[color:var(--color-text-subtle)] block mb-1">Total Article</span>
-                          <p className="text-3xl font-black text-[color:var(--color-text)]">
-                            {(product.price * quantity).toFixed(2)}<span className="text-[color:var(--color-primary)] text-sm ml-1">€</span>
-                          </p>
+                          <div className="flex flex-col items-end">
+                            {subscriptionFrequency && (
+                              <p className="text-xs text-[color:var(--color-text-subtle)] line-through">
+                                {(product.price * quantity).toFixed(2)} €
+                              </p>
+                            )}
+                            <p className="text-3xl font-black text-[color:var(--color-text)]">
+                              {(product.price * (1 - (subscriptionFrequency === 'weekly' ? 0.15 : subscriptionFrequency === 'biweekly' ? 0.10 : subscriptionFrequency === 'monthly' ? 0.05 : 0)) * quantity).toFixed(2)}
+                              <span className="text-[color:var(--color-primary)] text-sm ml-1">€</span>
+                            </p>
+                          </div>
                         </div>
                       </div>
                     </div>

@@ -92,24 +92,24 @@ export default function BudTender() {
         allowCloseSession={settings?.voice_close_session_enabled ?? true}
         onClose={() => closeVoice()}
         onHangup={() => closeVoice()}
-        onAddItem={(product, quantity) => {
-          addItem(product, quantity);
+        onAddItem={(product, quantity, subscriptionFrequency) => {
+          addItem(product, quantity, subscriptionFrequency);
           openSidebarWithAutoClose();
         }}
-        onRemoveItem={(product, quantity) => {
+        onRemoveItem={(product, quantity, subscriptionFrequency) => {
           if (quantity && quantity > 0) {
-            const item = cartItems.find(i => i.product.id === product.id);
+            const item = cartItems.find(i => i.product.id === product.id && i.subscriptionFrequency === subscriptionFrequency);
             if (item) {
               const newQty = item.quantity - quantity;
-              useCartStore.getState().updateQuantity(product.id, newQty);
+              useCartStore.getState().updateQuantity(product.id, newQty, subscriptionFrequency);
             }
           } else {
-            useCartStore.getState().removeItem(product.id);
+            useCartStore.getState().removeItem(product.id, subscriptionFrequency);
           }
           openSidebarWithAutoClose();
         }}
-        onUpdateQuantity={(product, quantity) => {
-          useCartStore.getState().updateQuantity(product.id, quantity);
+        onUpdateQuantity={(product, quantity, subscriptionFrequency) => {
+          useCartStore.getState().updateQuantity(product.id, quantity, subscriptionFrequency);
           openSidebarWithAutoClose();
         }}
         onViewProduct={(product) => {

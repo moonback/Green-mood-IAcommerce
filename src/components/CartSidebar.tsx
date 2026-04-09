@@ -159,7 +159,7 @@ export default function CartSidebar() {
                         <AnimatePresence mode="popLayout">
                           {items.map((item) => (
                             <motion.div
-                              key={item.product.id}
+                              key={`${item.product.id}-${item.subscriptionFrequency || 'once'}`}
                               layout
                               initial={{ opacity: 0, scale: 0.95 }}
                               animate={{ opacity: 1, scale: 1 }}

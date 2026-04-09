@@ -20,14 +20,14 @@ interface Props {
     isOpen: boolean;
     onClose: () => void;
     onHangup?: () => void;
-    onAddItem?: (product: Product, quantity: number) => void;
+    onAddItem?: (product: Product, quantity: number, subscriptionFrequency?: any) => void;
     onViewProduct?: (product: Product) => void;
     onNavigate?: (path: string) => void;
     onOpenModal?: (modalName: string) => void;
     onSavePrefs?: (prefs: any) => void;
     onApplyPromo?: (code: string) => Promise<{ success: boolean; discount?: number; message?: string }>;
-    onRemoveItem?: (product: Product, quantity?: number) => void;
-    onUpdateQuantity?: (product: Product, quantity: number) => void;
+    onRemoveItem?: (product: Product, quantity?: number, subscriptionFrequency?: any) => void;
+    onUpdateQuantity?: (product: Product, quantity: number, subscriptionFrequency?: any) => void;
     onToggleFavorite?: (productId: string) => void;
     onCompareProducts?: (products: any[]) => void;
     activeProduct?: (PremiumProduct & { reviews: PremiumReview[]; relatedProducts?: Product[] }) | null;

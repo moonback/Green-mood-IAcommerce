@@ -23,6 +23,23 @@ const BUDTENDER_TOOLS = [{
       },
     },
     {
+      name: 'add_to_cart_subscription',
+      description: "Ajouter un produit au panier en tant qu'abonnement récurrent. Proposez cette option pour les produits consommables (CBD, huiles, etc.).",
+      parameters: {
+        type: 'OBJECT',
+        properties: {
+          product_name: { type: 'STRING', description: "Le nom du produit à abonner." },
+          frequency: { 
+            type: 'STRING', 
+            enum: ['weekly', 'biweekly', 'monthly'],
+            description: "Fréquence de l'abonnement : 'weekly' (chaque semaine), 'biweekly' (toutes les 2 semaines), 'monthly' (chaque mois)."
+          },
+          quantity: { type: 'NUMBER', description: "Nombre d'unités (optionnel, par défaut 1)." },
+        },
+        required: ['product_name', 'frequency'],
+      },
+    },
+    {
       name: 'view_product',
       description: "Ouvrir la fiche détaillée d'un produit. Vous DEVEZ impérativement fournir le nom exact du produit pour que l'affichage fonctionne.",
       parameters: {
@@ -288,6 +305,30 @@ const BUDTENDER_TOOLS = [{
           quantity: { type: 'NUMBER', description: "Nouvelle quantité souhaitée." },
         },
         required: ['product_name', 'quantity'],
+      },
+    },
+    {
+      name: 'get_active_subscriptions',
+      description: "Lister les abonnements récurrents actifs du client. Utilisez cet outil si le client demande ses abonnements en cours.",
+      parameters: {
+        type: 'OBJECT',
+        properties: {},
+      },
+    },
+    {
+      name: 'manage_subscription',
+      description: "Mettre à jour un abonnement existant (mettre en pause, reprendre ou annuler). Vérifiez toujours l'identifiant de l'abonnement via get_active_subscriptions avant.",
+      parameters: {
+        type: 'OBJECT',
+        properties: {
+          subscription_id: { type: 'STRING', description: "L'identifiant de l'abonnement." },
+          action: { 
+            type: 'STRING', 
+            enum: ['pause', 'resume', 'cancel'],
+            description: "L'action à effectuer : 'pause' (suspendre), 'resume' (reprendre), 'cancel' (annuler définitivement)." 
+          },
+        },
+        required: ['subscription_id', 'action'],
       },
     },
     {

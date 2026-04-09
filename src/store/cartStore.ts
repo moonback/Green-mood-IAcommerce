@@ -103,7 +103,12 @@ export const useCartStore = create<CartStore>()(
       itemCount: () => get().items.reduce((sum, i) => sum + i.quantity, 0),
 
       subtotal: () =>
-        get().items.reduce((sum, i) => sum + i.product.price * i.quantity, 0),
+        get().items.reduce((sum, i) => {
+          const discount = i.subscriptionFrequency === 'weekly' ? 0.15 : 
+                           i.subscriptionFrequency === 'biweekly' ? 0.10 : 
+                           i.subscriptionFrequency === 'monthly' ? 0.05 : 0;
+          return sum + i.product.price * (1 - discount) * i.quantity;
+        }, 0),
 
       deliveryFee: () => {
         if (get().deliveryType === 'click_collect') return 0;
