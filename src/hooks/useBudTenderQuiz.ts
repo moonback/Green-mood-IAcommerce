@@ -4,13 +4,15 @@ import { Product } from '../lib/types';
 import { QuizOption, BudTenderSettings } from '../lib/budtenderSettings';
 import { SavedPrefs } from './useBudTenderMemory';
 import { useAuthStore } from '../store/authStore';
-import { Answers, Message, scoreProduct, scoreTechFeatures, generateAdvice, callAI, callAIDynamicStep } from '../lib/budtenderHelpers';
+import { Answers, Message, scoreProduct, scoreTechFeatures, generateAdvice, callAI, callAIDynamicStep, extractInsights } from '../lib/budtenderHelpers';
 
 interface BudTenderMemoryLike {
     savePrefs: (prefs: SavedPrefs) => Promise<void> | void;
     updatePrefs: (newPrefs: Partial<SavedPrefs>) => Promise<void> | void;
     pastProducts: { product_name: string }[];
     savedPrefs: SavedPrefs | null;
+    extractedInsights: string[];
+    setExtractedInsights: (insights: string[]) => void;
 }
 
 interface UseBudTenderQuizParams {
@@ -74,8 +76,10 @@ export function useBudTenderQuiz({
                 role: m.sender === 'user' ? 'user' : ('assistant' as const),
                 content: m.text || '',
             }));
-
-        const aiText = await callAI(finalAnswers, products, settings, history, geminiContext);
+        
+        // Use extracted insights for better context
+        const aiResponse = await callAI(finalAnswers, products, settings, history, geminiContext, memory.extractedInsights);
+        const aiText = aiResponse.text;
         const adviceText = aiText ?? generateAdvice(finalAnswers, terpeneSelection);
 
         setMessages((prev) => [...prev, {
@@ -100,6 +104,17 @@ export function useBudTenderQuiz({
             } catch (err) {
                 console.error('[Cortex] Recommendation log exception:', err);
             }
+        }
+
+        // Asynchronously update semantic insights for long-term memory
+        if (history.length >= 2) {
+            extractInsights(history, memory.extractedInsights).then(newInsights => {
+                if (newInsights && newInsights.length > 0) {
+                    memory.setExtractedInsights(newInsights);
+                    // Also update prefs to sync to Supabase
+                    memory.updatePrefs({ semantic_insights: newInsights });
+                }
+            });
         }
 
         setIsTyping(false);

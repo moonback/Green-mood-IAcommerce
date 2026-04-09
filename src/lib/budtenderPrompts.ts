@@ -119,14 +119,37 @@ Si tu es prêt à recommander :
 ${contextBlock}
 ${customPrompt?.trim() ? `\n📌 INSTRUCTIONS ADDITIONNELLES :\n${customPrompt.trim()}` : ''}
 
-📦 CATALOGUE ACTUEL (RÉSUMÉ) :
-${catalog}
-
 [HISTORIQUE DE LA CONVERSATION DU QUIZ]
 ${history.map(m => `${m.role.toUpperCase()} : ${m.content}`).join('\n')}
 
 Réponds UNIQUEMENT en JSON.
 `;
+};
+
+
+/**
+ * Prompt pour extraire des insights sémantiques de l'historique
+ */
+export const getInsightExtractionPrompt = (
+  history: { role: string; content: string }[],
+  currentInsights: string[] = []
+) => {
+  return `Tu es un analyste expert en comportement client pour une boutique de CBD.
+  Ton objectif est d'extraire des préférences ou des traits de personnalité STABLES et FIABLES de l'utilisateur à partir de l'historique de conversation.
+  
+  RÈGLES :
+  1. Retourne UNIQUEMENT un tableau JSON de chaînes de caractères (ex: ["Préfère le vapotage", "Sensible aux arômes boisés"]).
+  2. Max 5 insights clés.
+  3. Ne répète pas les insights déjà existants s'ils sont encore valides.
+  4. Sois factuel et utile pour une personnalisation future.
+
+  INSIGHTS EXISTANTS : ${currentInsights.join(', ') || 'Aucun'}
+
+  HISTORIQUE :
+  ${history.map(h => `${h.role.toUpperCase()}: ${h.content}`).join('\n')}
+
+  Réponds UNIQUEMENT avec le JSON.
+  `;
 };
 
 

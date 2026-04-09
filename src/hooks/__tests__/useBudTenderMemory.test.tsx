@@ -118,18 +118,20 @@ describe('useBudTenderMemory', () => {
   });
 
   it('loads prefs/chat from browser storage', async () => {
-    localStorage.setItem('budtender_prefs_v1', JSON.stringify({ tech_goal: 'gaming', experience_level: 'beginner', budget_range: 'mid' }));
-    sessionStorage.setItem('playadvisor_chat_history_v1', JSON.stringify([{ id: '1', sender: 'bot', text: 'hello' }]));
+    localStorage.setItem('budtender_prefs_v1', JSON.stringify({ tech_goal: 'gaming', experience_level: 'beginner', budget_range: 'mid', semantic_insights: ['loves sleep aid'] }));
+    localStorage.setItem('budtender_chat_history_v1', JSON.stringify([{ id: '1', sender: 'bot', text: 'hello' }]));
 
     const { result } = renderHook(() => useBudTenderMemory(), { wrapper });
 
     await waitFor(() => expect(result.current.savedPrefs?.tech_goal).toBe('gaming'));
     expect(result.current.chatHistory).toHaveLength(1);
+    expect(result.current.extractedInsights).toContain('loves sleep aid');
+    expect(result.current.sessionId).toBeDefined();
   });
 
   it('handles corrupted storage payloads', async () => {
     localStorage.setItem('budtender_prefs_v1', '{broken-json');
-    sessionStorage.setItem('budtender_chat_history_v1', '{broken-json');
+    localStorage.setItem('budtender_chat_history_v1', '{broken-json');
 
     const { result } = renderHook(() => useBudTenderMemory(), { wrapper });
 
@@ -251,7 +253,7 @@ describe('useBudTenderMemory', () => {
     expect(interactionsQB.insert).toHaveBeenCalledWith(
       expect.objectContaining({
         interaction_type: 'chat_session',
-        quiz_answers: expect.objectContaining({ session_id: 'm-1' })
+        quiz_answers: expect.objectContaining({ session_id: expect.any(String) })
       })
     );
 
