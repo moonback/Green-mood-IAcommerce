@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
+import { describe, it, expect } from 'vitest';
 import ProductCardV2 from '../ProductCardV2';
 
 const baseProduct = {

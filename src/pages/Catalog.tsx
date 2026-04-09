@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { generateEmbedding } from '../lib/embeddings';
-import { matchProductsRpc } from '../lib/matchProductsRpc';
+import { matchProductsRpc, matchProductsTextRpc } from '../lib/matchProductsRpc';
 import { Category, CategoryNode, Product } from '../lib/types';
 import { buildCategoryTree, getCategorySubtreeIds } from '../lib/categoryTree';
 import { applyProductImageFallback, getProductImageSrc } from '../lib/productImage';
@@ -330,32 +330,41 @@ export default function Catalog() {
     async function fetchProducts() {
       if (currentPage === 1) setIsLoading(true);
 
-      // ── Mode RECHERCHE : vectoriel uniquement (Sémantique IA) ──
+      // ── Mode RECHERCHE : hybride (Sémantique IA + Fallback Texte) ──
       if (searchQuery.trim().length >= 2) {
         try {
           const text = searchQuery.trim();
-          const embedding = await generateEmbedding(text);
-
-          if (embedding?.length) {
-            const { data: vectorData } = await matchProductsRpc<Product>({
-              embedding,
-              matchThreshold: 0.3, // Seulement les correspondances sémantiques fortes
-              matchCount: 30,
-            });
-
-            if (vectorData?.length) {
-              setProducts(vectorData as Product[]);
-              setTotalCount(vectorData.length);
-            } else {
-              setProducts([]);
-              setTotalCount(0);
+          let results: Product[] = [];
+          
+          // 1. Try semantic search first
+          try {
+            const embedding = await generateEmbedding(text);
+            if (embedding?.length) {
+              const { data: vectorData } = await matchProductsRpc<Product>({
+                embedding,
+                matchThreshold: 0.3, // Correspondances sémantiques
+                matchCount: 30,
+              });
+              if (vectorData?.length) {
+                results = vectorData as Product[];
+              }
             }
-          } else {
-            setProducts([]);
-            setTotalCount(0);
+          } catch (embedErr) {
+            console.warn('[Catalog] Semantic search failed or unavailable, falling back to text search:', embedErr);
           }
+
+          // 2. Fallback to Text Search if no results or semantic failed
+          if (results.length === 0) {
+            const { data: textData } = await matchProductsTextRpc<Product>(text, 40);
+            if (textData?.length) {
+              results = textData as Product[];
+            }
+          }
+
+          setProducts(results);
+          setTotalCount(results.length);
         } catch (err) {
-          console.error('[Catalog] Erreur recherche sémantique:', err);
+          console.error('[Catalog] Erreur recherche hybride:', err);
           setProducts([]);
           setTotalCount(0);
         }

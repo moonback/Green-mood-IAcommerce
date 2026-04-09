@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Package, Truck, Clock, ChevronDown, ShoppingBag, RotateCcw, Star, FileText } from 'lucide-react';
+import { Package, Truck, Clock, ChevronDown, ShoppingBag, RotateCcw, Star, FileText, ArrowLeft } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { Order, OrderItem } from '../lib/types';
 import { useAuthStore } from '../store/authStore';

@@ -57,6 +57,8 @@ export function makeProduct(overrides: Partial<Product> = {}): Product {
     is_active: true,
     is_bundle: false,
     is_subscribable: false,
+    cbd_percentage: null,
+    thc_max: null,
     attributes: {},
     created_at: new Date().toISOString(),
     ...overrides,

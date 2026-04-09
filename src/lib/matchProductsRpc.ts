@@ -129,3 +129,17 @@ export async function matchProductsRpc<T = unknown>({
     error: normalizeError(secondAttempt.error),
   };
 }
+
+/**
+ * Text search fallback for products.
+ * Uses match_products_text RPC which uses ILIKE matching on name, description, and specs.
+ */
+export async function matchProductsTextRpc<T = unknown>(
+  queryText: string,
+  matchCount: number = 30
+): Promise<{ data: T[] | null; error: { message?: string; code?: string } | null }> {
+  return await supabase.rpc('match_products_text', {
+    query_text: queryText,
+    match_count: matchCount
+  });
+}

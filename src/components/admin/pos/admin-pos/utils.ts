@@ -1,4 +1,4 @@
-import { Category, Order, Product } from '../../../../lib/types';
+import { Category, Order, OrderItem, Product } from '../../../../lib/types';
 import { AppliedPromo, CartLine, DailyReport } from '../types';
 
 export const POS_UNLOCK_PIN = '1234';
@@ -74,7 +74,7 @@ export function getCategoryName(categories: Category[], selectedCategory: string
   return categories.find((category) => category.id === selectedCategory)?.name || 'Produits';
 }
 
-export function buildDailyReport(orders: Pick<Order, 'total' | 'notes'>[] & Array<{ order_items?: Array<{ quantity: number; product_name?: string; total_price?: number }> }>, date: Date): DailyReport {
+export function buildDailyReport(orders: (Pick<Order, 'total' | 'notes'> & { order_items?: OrderItem[] })[], date: Date): DailyReport {
   const report: DailyReport = {
     totalSales: 0,
     cashTotal: 0,

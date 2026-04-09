@@ -340,13 +340,14 @@ export interface TrafficSource {
 export interface UserAIPreferences {
   id: string;
   user_id: string;
-  goal: string | null;           // usage: 'home' | 'bar' | 'arcade' | 'event'
-  experience_level: string | null; // unused — kept for DB compatibility
-  preferred_format: string | null; // category: 'arcade' | 'flipper' | 'simulator' | 'bar_game'
-  budget_range: string | null;   // 'low' | 'mid' | 'high' | 'premium'
+  goal: string | null;           // ex: 'sleep', 'stress', 'pain'
+  experience_level: string | null; // ex: 'beginner', 'intermediate', 'expert'
+  preferred_format: string | null; // ex: 'oil', 'flower', 'infusion'
+  budget_range: string | null;   // 'low', 'mid', 'high'
   updated_at: string | null;
-  age_range: string | null;      // unused — kept for DB compatibility
-  intensity_preference: string | null; // players: 'solo' | 'duo' | 'group' | 'multi'
+  age_range: string | null;      // 'adult', 'senior'
+  intensity_preference: string | null; // 'low', 'mid', 'high'
+  terpene_preferences?: string[] | null; // ex: ['limonene', 'myrcene']
   extra_prefs: Record<string, any> | null;
 }
 

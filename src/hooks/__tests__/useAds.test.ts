@@ -16,11 +16,14 @@ function makeAd(overrides: Partial<Ad> = {}): Ad {
   return {
     id: 'ad-1',
     title: 'Test Ad',
+    tagline: 'Tagline',
+    description: 'Desc',
     image_url: '/ad.jpg',
-    link_url: '/promo',
+    cta_label: 'Click',
+    cta_url: '/promo',
     position: 4,
     is_active: true,
-    target_categories: null,
+    target_categories: [],
     ...overrides,
   };
 }
