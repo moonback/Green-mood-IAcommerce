@@ -22,7 +22,8 @@ import {
     ChevronDown,
     Upload,
     FileDown,
-    FileText
+    FileText,
+    RefreshCw
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import type { Product, Category } from '../../lib/types';

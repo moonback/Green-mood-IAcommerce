@@ -572,7 +572,7 @@ export default function ProductDetail() {
               <p className="text-xl font-black text-[color:var(--color-text)]">{subtotal} <span className="text-sm text-[color:var(--color-text-muted)]">€</span></p>
             </div>
             <button
-              onClick={handleAddToCart}
+              onClick={() => handleAddToCart()}
               className="flex items-center gap-2 rounded-xl bg-[color:var(--color-primary)] px-5 py-3 font-bold text-[color:var(--color-primary-contrast)] text-sm shadow-lg transition-all active:scale-95"
             >
               <ShoppingBag className="w-4 h-4" />
