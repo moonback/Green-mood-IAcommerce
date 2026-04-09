@@ -950,7 +950,7 @@ npm run dev:importer     # Serveur Express import produits
 npx tsx scripts/generate-sitemap.ts
 npx tsx scripts/sync-embeddings.ts
 npx tsx scripts/import-cannabis-conditions.ts
-npx tsx scripts/sync-obsidian-vault.ts "path/to/vault"
+npx tsx scripts/sync-obsidian-vault.ts "C:/Users/Mayss/Documents/GitHub/Green-mood-IAcommerce/src/skills"
 ```
 
 ---

@@ -14,14 +14,21 @@ dotenv.config({ path: resolve(__dirname, '../.env') });
 dotenv.config({ path: resolve(__dirname, '../.env.local') });
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL;
-const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY;
+const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-if (!supabaseUrl || !supabaseKey) {
+if (!supabaseUrl || !supabaseAnonKey) {
   console.error("❌ Missing VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY.");
   process.exit(1);
 }
 
-const supabase = createClient(supabaseUrl, supabaseKey);
+// prioritize service key for admin sync
+const supabase = createClient(supabaseUrl, supabaseServiceKey || supabaseAnonKey);
+
+if (!supabaseServiceKey) {
+  console.warn("⚠️  SUPABASE_SERVICE_ROLE_KEY is missing in .env. Script might fail due to RLS policies.");
+  console.warn("👉 Add it to bypass security and sync as an admin.");
+}
 
 async function generateEmbedding(text: string): Promise<number[]> {
   const OPENROUTER_EMBED_MODEL = process.env.VITE_OPENROUTER_EMBED_MODEL || 'openai/text-embedding-3-large';
@@ -66,19 +73,44 @@ async function syncVault(vaultPath: string) {
       
       const vector = await generateEmbedding(`${parsed.title}\n\n${parsed.content}`);
       
-      // Upsert based on title (or you could use a slug)
-      const { error: upsertError } = await supabase.from('knowledge_base').upsert({
-        title: parsed.title,
-        content: parsed.content,
-        category: parsed.category,
-        embedding: vector,
-        updated_at: new Date().toISOString()
-      }, { onConflict: 'title' });
+      // Manual check instead of upsert to avoid unique constraint requirement
+      const { data: existing } = await supabase
+        .from('knowledge_base')
+        .select('id')
+        .eq('title', parsed.title)
+        .single();
 
-      if (upsertError) {
-        console.error(`❌ Error syncing "${parsed.title}":`, upsertError.message);
+      if (existing) {
+        const { error: updateError } = await supabase
+          .from('knowledge_base')
+          .update({
+            content: parsed.content,
+            category: parsed.category,
+            embedding: vector,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', existing.id);
+
+        if (updateError) {
+          console.error(`❌ Error updating "${parsed.title}":`, updateError.message);
+        } else {
+          console.log(`✅ Updated "${parsed.title}" successfully.`);
+        }
       } else {
-        console.log(`✅ Indexed "${parsed.title}" successfully.`);
+        const { error: insertError } = await supabase
+          .from('knowledge_base')
+          .insert({
+            title: parsed.title,
+            content: parsed.content,
+            category: parsed.category,
+            embedding: vector,
+          });
+
+        if (insertError) {
+          console.error(`❌ Error inserting "${parsed.title}":`, insertError.message);
+        } else {
+          console.log(`✅ Indexed "${parsed.title}" successfully.`);
+        }
       }
     }
 
