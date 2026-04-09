@@ -879,142 +879,183 @@ export default function AdminProductsTab({ products, categories, onRefresh }: Ad
                     </div>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                    {paginatedProducts.map((product) => (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
+                    {paginatedProducts.map((product, index) => {
+                        const aiComplete = isAIComplete(product);
+                        const lowStock = product.stock_quantity <= 5;
+                        const outOfStock = product.stock_quantity === 0;
+
+                        return (
                         <motion.div
                             key={product.id}
-                            initial={{ opacity: 0, y: 8 }}
+                            initial={{ opacity: 0, y: 12 }}
                             animate={{ opacity: 1, y: 0 }}
-                            className="rounded-2xl overflow-hidden group flex flex-col transition-all duration-200"
-                            style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)' }}
+                            transition={{ delay: index * 0.03, duration: 0.35, ease: [0.4, 0, 0.2, 1] }}
+                            whileHover={{ y: -3 }}
+                            className="group relative rounded-2xl overflow-hidden flex flex-col"
+                            style={{
+                                background: 'rgba(255,255,255,0.015)',
+                                border: '1px solid rgba(255,255,255,0.04)',
+                                transition: 'box-shadow 0.3s ease, border-color 0.3s ease',
+                            }}
+                            onMouseEnter={(e) => {
+                                (e.currentTarget as HTMLElement).style.borderColor = 'rgba(16,185,129,0.12)';
+                                (e.currentTarget as HTMLElement).style.boxShadow = '0 8px 40px rgba(16,185,129,0.06)';
+                            }}
+                            onMouseLeave={(e) => {
+                                (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.04)';
+                                (e.currentTarget as HTMLElement).style.boxShadow = 'none';
+                            }}
                         >
-                            <div className="relative aspect-square bg-zinc-800 overflow-hidden">
-                                <div className="absolute top-2 left-2 z-10 bg-black/40 rounded p-1 backdrop-blur-md">
+                            {/* ── Image Area ── */}
+                            <div className="relative aspect-[4/3] overflow-hidden" style={{ background: 'rgba(0,0,0,0.3)' }}>
+                                {/* Checkbox */}
+                                <div className="absolute top-3 left-3 z-10">
                                     <input
                                         type="checkbox"
                                         checked={selectedProductIds.includes(product.id)}
                                         onChange={() => toggleSelection(product.id)}
-                                        className="w-5 h-5 rounded border-zinc-700 bg-zinc-800 text-emerald-400 focus:ring-emerald-500 cursor-pointer shadow-lg"
+                                        className="w-4 h-4 rounded border-white/10 bg-black/30 text-emerald-400 focus:ring-0 cursor-pointer backdrop-blur-md"
                                     />
                                 </div>
+
+                                {/* Product image */}
                                 <img
                                     src={product.image_url || PLACEHOLDER_IMAGE}
                                     alt={product.name}
-                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                    className="w-full h-full object-cover group-hover:scale-[1.04] transition-transform duration-700 ease-out"
                                 />
-                                <div className="absolute top-2 right-2 flex flex-col gap-2">
-                                    <div className="flex items-center gap-1.5 flex-wrap">
-                                        <span className={`px-2 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider backdrop-blur-md border ${product.is_active ? 'bg-green-950/40 text-green-400 border-green-800/50' : 'bg-zinc-950/40 text-zinc-400 border-zinc-800'}`}>
-                                            {product.is_active ? 'En ligne' : 'Masqué'}
-                                        </span>
-                                        {product.is_subscribable && (
-                                            <span className="px-2 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider bg-purple-500 text-white border border-purple-600 flex items-center gap-1">
-                                                <RefreshCw className="w-2.5 h-2.5" />
-                                                ABO
-                                            </span>
-                                        )}
-                                    </div>
-                                    {product.is_featured && !product.is_bundle && (
-                                        <span className="px-2 py-1 rounded-lg text-[10px] font-bold uppercase bg-yellow-400 text-black border border-yellow-500 flex items-center gap-1">
-                                            <Star className="w-3 h-3 fill-current" />
-                                            Top
+
+                                {/* Top-right status indicators (subtle dots/pills) */}
+                                <div className="absolute top-3 right-3 flex items-center gap-1.5">
+                                    {!product.is_active && (
+                                        <span className="text-[9px] font-bold px-2 py-0.5 rounded-full backdrop-blur-md"
+                                            style={{ background: 'rgba(0,0,0,0.5)', color: 'rgba(255,255,255,0.4)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                                            Masqué
                                         </span>
                                     )}
-                                    {isAIComplete(product) ? (
-                                        <span className="px-2 py-1 rounded-lg text-[10px] font-bold uppercase bg-green-500 text-white border border-green-600 flex items-center gap-1">
-                                            <Sparkles className="w-3 h-3" />
-                                            IA OK
+                                    {product.is_subscribable && (
+                                        <span className="w-5 h-5 rounded-full flex items-center justify-center backdrop-blur-md"
+                                            style={{ background: 'rgba(168,85,247,0.25)', border: '1px solid rgba(168,85,247,0.3)' }}
+                                            title="Abonnement disponible">
+                                            <RefreshCw className="w-2.5 h-2.5 text-purple-300" />
                                         </span>
-                                    ) : (
-                                        <div className="flex gap-1">
-                                            {(product.attributes?.specs?.length ?? 0) > 0 && (
-                                                <span className="bg-zinc-800/80 backdrop-blur-md p-1 rounded-md border border-zinc-700" title="Spécifications">
-                                                    <Settings className="w-3 h-3 text-zinc-400" />
-                                                </span>
-                                            )}
-                                            {(product.attributes?.benefits?.length ?? 0) > 0 && (
-                                                <span className="bg-zinc-800/80 backdrop-blur-md p-1 rounded-md border border-zinc-700" title="Bénéfices">
-                                                    <Zap className="w-3 h-3 text-zinc-400" />
+                                    )}
+                                    {product.is_featured && !product.is_bundle && (
+                                        <span className="w-5 h-5 rounded-full flex items-center justify-center backdrop-blur-md"
+                                            style={{ background: 'rgba(234,179,8,0.25)', border: '1px solid rgba(234,179,8,0.3)' }}
+                                            title="Produit vedette">
+                                            <Star className="w-2.5 h-2.5 text-yellow-300 fill-yellow-300" />
+                                        </span>
+                                    )}
+                                    {aiComplete && (
+                                        <span className="w-5 h-5 rounded-full flex items-center justify-center backdrop-blur-md"
+                                            style={{ background: 'rgba(16,185,129,0.25)', border: '1px solid rgba(16,185,129,0.3)' }}
+                                            title="IA complète">
+                                            <Sparkles className="w-2.5 h-2.5 text-emerald-300" />
+                                        </span>
+                                    )}
+                                </div>
+
+                                {/* Bottom gradient with price */}
+                                <div className="absolute inset-x-0 bottom-0 h-20" style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.85), transparent)' }}>
+                                    <div className="absolute bottom-3 left-3.5 right-3.5 flex items-end justify-between">
+                                        <span className="text-[17px] font-bold text-white tracking-tight">{product.price.toFixed(2)} €</span>
+                                        {product.original_value && product.original_value > product.price && (
+                                            <span className="text-[11px] text-white/25 line-through">{product.original_value.toFixed(2)} €</span>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Stock indicator bar at very bottom of image */}
+                                <div className="absolute bottom-0 inset-x-0 h-[2px]"
+                                    style={{ background: outOfStock ? '#ef4444' : lowStock ? '#f59e0b' : '#10b981', opacity: outOfStock ? 0.8 : 0.4 }} />
+                            </div>
+
+                            {/* ── Info Area ── */}
+                            <div className="p-4 flex-1 flex flex-col gap-3">
+                                {/* Name + category */}
+                                <div>
+                                    <h3 className="text-sm font-semibold text-white/80 group-hover:text-white transition-colors line-clamp-1 mb-1">
+                                        {product.name}
+                                    </h3>
+                                    <div className="flex items-center justify-between gap-2">
+                                        <p className="text-[10px] text-white/20 font-medium uppercase tracking-widest truncate">
+                                            {(product.category as Category | undefined)?.name ?? 'Divers'}
+                                        </p>
+                                        <div className="flex items-center gap-1">
+                                            {product.attributes?.seo_title && product.attributes?.seo_meta_description && (
+                                                <span className="text-[8px] font-bold px-1.5 py-0.5 rounded"
+                                                    style={{ background: 'rgba(16,185,129,0.08)', color: 'rgba(16,185,129,0.5)', border: '1px solid rgba(16,185,129,0.12)' }}>
+                                                    SEO
                                                 </span>
                                             )}
                                         </div>
-                                    )}
-                                </div>
-                                <div className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/80 to-transparent flex justify-between items-end">
-                                    <span className="text-lg font-bold text-white leading-none">{product.price.toFixed(2)} €</span>
-                                </div>
-                            </div>
-
-                            <div className="p-4 flex-1 flex flex-col space-y-3">
-                                <div>
-                                    <h3 className="font-semibold text-white group-hover:text-emerald-400 transition-colors line-clamp-1">{product.name}</h3>
-                                    <div className="flex items-center justify-between gap-2 mt-0.5">
-                                        <p className="text-[10px] text-zinc-500 font-medium uppercase tracking-wider">
-                                            {(product.category as Category | undefined)?.name ?? 'Divers'}
-                                        </p>
-                                        <span className={`text-[9px] px-1.5 py-0.5 rounded border ${product.attributes?.seo_title && product.attributes?.seo_meta_description ? 'border-emerald-500/40 text-emerald-400 bg-emerald-500/10' : 'border-zinc-700 text-zinc-500 bg-zinc-800'}`}>
-                                            SEO {product.attributes?.seo_title && product.attributes?.seo_meta_description ? 'OK' : '—'}
-                                        </span>
                                     </div>
                                 </div>
 
-                                <div className="flex items-center justify-between text-xs py-2.5" style={{ borderTop: '1px solid rgba(255,255,255,0.04)', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                                {/* Stats row */}
+                                <div className="flex items-center justify-between py-2.5" style={{ borderTop: '1px solid rgba(255,255,255,0.03)', borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
                                     <div className="flex flex-col">
-                                        <span className="text-zinc-500 text-[10px] uppercase font-bold tracking-tighter">Stock</span>
-                                        <span className={`font-bold ${product.stock_quantity <= 5 ? 'text-orange-400' : 'text-white'}`}>
-                                            {product.stock_quantity}
-                                        </span>
+                                        <span className="text-[9px] text-white/15 uppercase tracking-widest font-medium">Stock</span>
+                                        <div className="flex items-center gap-2">
+                                            <span className={`text-sm font-bold ${outOfStock ? 'text-red-400' : lowStock ? 'text-amber-400' : 'text-white/60'}`}>
+                                                {product.stock_quantity}
+                                            </span>
+                                            {outOfStock && <span className="text-[8px] font-bold text-red-400/60 uppercase">Rupture</span>}
+                                        </div>
                                     </div>
                                     <div className="flex flex-col items-end">
-                                        <span className="text-zinc-500 text-[10px] uppercase font-bold tracking-tighter">Culture</span>
-                                        <span className="font-bold text-emerald-400 text-xs truncate max-w-[80px]">{product.attributes?.culture_method || 'Indoor'}</span>
+                                        <span className="text-[9px] text-white/15 uppercase tracking-widest font-medium">Culture</span>
+                                        <span className="text-xs font-semibold text-white/40 truncate max-w-[90px]">
+                                            {product.attributes?.culture_method || '—'}
+                                        </span>
                                     </div>
                                 </div>
 
-                                <div className="flex items-center gap-1.5 pt-1">
+                                {/* Actions — visible on hover for cleaner look */}
+                                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                                     <button
                                         onClick={() => setPreviewProduct(product)}
-                                        className="p-2 rounded-xl text-white/20 hover:text-white/50 hover:bg-white/[0.04] transition-all"
-                                        style={{ border: '1px solid rgba(255,255,255,0.06)' }}
+                                        className="p-2 rounded-lg text-white/15 hover:text-white/50 hover:bg-white/[0.04] transition-all"
                                         title="Aperçu"
                                     >
                                         <Eye className="w-3.5 h-3.5" />
                                     </button>
                                     <button
                                         onClick={() => openProductModal(product)}
-                                        className="flex-1 flex items-center justify-center gap-2 text-white/50 text-xs font-bold py-2 rounded-xl hover:bg-white/[0.04] transition-all"
-                                        style={{ border: '1px solid rgba(255,255,255,0.06)' }}
+                                        className="flex-1 flex items-center justify-center gap-1.5 text-white/30 text-[11px] font-semibold py-1.5 rounded-lg hover:bg-white/[0.04] hover:text-white/60 transition-all"
                                     >
-                                        <Edit3 className="w-3.5 h-3.5" />
+                                        <Edit3 className="w-3 h-3" />
                                         Modifier
                                     </button>
                                     <button
                                         onClick={() => handleSingleAIFillSync(product)}
                                         disabled={isGeneratingAI === product.id}
-                                        className={`p-2 rounded-xl transition-all ${isGeneratingAI === product.id ? 'text-emerald-400 animate-pulse' : 'text-white/20 hover:text-emerald-400 hover:bg-white/[0.04]'}`}
-                                        style={{ border: '1px solid rgba(255,255,255,0.06)' }}
-                                        title="Remplir via IA"
+                                        className={`p-2 rounded-lg transition-all ${isGeneratingAI === product.id ? 'text-emerald-400 animate-pulse' : 'text-white/15 hover:text-emerald-400/60 hover:bg-white/[0.04]'}`}
+                                        title="IA"
                                     >
                                         <Sparkles className="w-3.5 h-3.5" />
                                     </button>
                                     <button
                                         onClick={() => setStockAdjust({ id: product.id, qty: '', note: '' })}
-                                        className="p-2 rounded-xl text-white/20 hover:text-emerald-400 hover:bg-white/[0.04] transition-all"
-                                        style={{ border: '1px solid rgba(255,255,255,0.06)' }}
+                                        className="p-2 rounded-lg text-white/15 hover:text-white/50 hover:bg-white/[0.04] transition-all"
+                                        title="Stock"
                                     >
                                         <ArrowUpDown className="w-3.5 h-3.5" />
                                     </button>
                                     <button
                                         onClick={() => handleDeleteProduct(product.id)}
-                                        className="p-2 rounded-xl text-white/20 hover:text-red-400 hover:bg-red-500/[0.06] transition-all"
-                                        style={{ border: '1px solid rgba(255,255,255,0.06)' }}
+                                        className="p-2 rounded-lg text-white/15 hover:text-red-400/60 hover:bg-red-500/[0.04] transition-all"
+                                        title="Supprimer"
                                     >
                                         <Trash2 className="w-3.5 h-3.5" />
                                     </button>
                                 </div>
                             </div>
                         </motion.div>
-                    ))}
+                        );
+                    })}
                 </div>
             )}
 
