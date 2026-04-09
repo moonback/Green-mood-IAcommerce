@@ -86,6 +86,10 @@ export default function AdminProductsTab({ products, categories, onRefresh }: Ad
     const [viewMode, setViewMode] = useState<'list' | 'grid'>('grid');
     const [isSaving, setIsSaving] = useState(false);
     const [isActionsMenuOpen, setIsActionsMenuOpen] = useState(false);
+    const [stockFilter, setStockFilter] = useState<'all' | 'in_stock' | 'low' | 'out'>('all');
+    const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
+    const [aiFilter, setAiFilter] = useState<'all' | 'complete' | 'incomplete' | 'no_vector'>('all');
+    const [extraFilter, setExtraFilter] = useState<'all' | 'featured' | 'subscribable' | 'bundle'>('all');
 
     const { isSyncingAI, aiSyncProgress, startMassAIFill, isSyncingVectors, startVectorSync, isAutoCategorizing, startMassAutoCategorize } = useBackgroundTaskStore();
     const addToast = useToastStore(s => s.addToast);
@@ -409,7 +413,26 @@ export default function AdminProductsTab({ products, categories, onRefresh }: Ad
 
             const matchesCategory = selectedCategoryFilter === 'all' || p.category_id === selectedCategoryFilter;
 
-            return matchesSearch && matchesCategory;
+            const matchesStock = stockFilter === 'all' ||
+                (stockFilter === 'out' && p.stock_quantity === 0) ||
+                (stockFilter === 'low' && p.stock_quantity > 0 && p.stock_quantity <= 5) ||
+                (stockFilter === 'in_stock' && p.stock_quantity > 5);
+
+            const matchesStatus = statusFilter === 'all' ||
+                (statusFilter === 'active' && p.is_active) ||
+                (statusFilter === 'inactive' && !p.is_active);
+
+            const matchesAI = aiFilter === 'all' ||
+                (aiFilter === 'complete' && isAIComplete(p)) ||
+                (aiFilter === 'incomplete' && !isAIComplete(p)) ||
+                (aiFilter === 'no_vector' && !hasEmbedding(p.embedding));
+
+            const matchesExtra = extraFilter === 'all' ||
+                (extraFilter === 'featured' && p.is_featured) ||
+                (extraFilter === 'subscribable' && p.is_subscribable) ||
+                (extraFilter === 'bundle' && p.is_bundle);
+
+            return matchesSearch && matchesCategory && matchesStock && matchesStatus && matchesAI && matchesExtra;
         }
     );
 
@@ -661,38 +684,111 @@ export default function AdminProductsTab({ products, categories, onRefresh }: Ad
             </div>
 
             {/* Filters & Search */}
-            <div className="rounded-2xl p-4 flex flex-wrap items-center gap-3" style={{ background: 'rgba(255,255,255,0.015)', border: '1px solid rgba(255,255,255,0.04)' }}>
-                <div className="relative flex-1 min-w-[200px]">
-                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/20" />
-                    <input
-                        value={searchQuery}
-                        onChange={(e) => {
-                            setSearchQuery(e.target.value);
-                            setCurrentPage(1);
-                        }}
-                        placeholder="Rechercher par nom, SKU ou description…"
-                        className="w-full rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-white/20 focus:outline-none transition-all"
-                        style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}
-                    />
+            <div className="rounded-2xl p-4 flex flex-col gap-3" style={{ background: 'rgba(255,255,255,0.015)', border: '1px solid rgba(255,255,255,0.04)' }}>
+                {/* Row 1: Search + Category */}
+                <div className="flex flex-wrap items-center gap-3">
+                    <div className="relative flex-1 min-w-[200px]">
+                        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/20" />
+                        <input
+                            value={searchQuery}
+                            onChange={(e) => {
+                                setSearchQuery(e.target.value);
+                                setCurrentPage(1);
+                            }}
+                            placeholder="Rechercher par nom, SKU…"
+                            className="w-full rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-white/20 focus:outline-none transition-all"
+                            style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}
+                        />
+                    </div>
+                    <div className="relative min-w-[180px]">
+                        <select
+                            value={selectedCategoryFilter}
+                            onChange={(e) => {
+                                setSelectedCategoryFilter(e.target.value);
+                                setCurrentPage(1);
+                            }}
+                            className="w-full rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none transition-all appearance-none cursor-pointer"
+                            style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}
+                        >
+                            <option value="all">Toutes catégories</option>
+                            {categories.map((cat) => (
+                                <option key={cat.id} value={cat.id}>{cat.name}</option>
+                            ))}
+                        </select>
+                        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/20 pointer-events-none" />
+                    </div>
                 </div>
-                <div className="relative min-w-[200px]">
-                    <select
-                        value={selectedCategoryFilter}
-                        onChange={(e) => {
-                            setSelectedCategoryFilter(e.target.value);
-                            setCurrentPage(1);
-                        }}
-                        className="w-full rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none transition-all appearance-none cursor-pointer"
-                        style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}
-                    >
-                        <option value="all">Toutes les catégories</option>
-                        {categories.map((cat) => (
-                            <option key={cat.id} value={cat.id}>
-                                {cat.name}
-                            </option>
+
+                {/* Row 2: Filter Pills */}
+                <div className="flex flex-wrap items-center gap-2">
+                    {/* Stock */}
+                    <FilterGroup label="Stock">
+                        {[
+                            { key: 'all' as const, label: 'Tout' },
+                            { key: 'in_stock' as const, label: 'En stock' },
+                            { key: 'low' as const, label: 'Faible', color: '#f59e0b' },
+                            { key: 'out' as const, label: 'Rupture', color: '#ef4444' },
+                        ].map(f => (
+                            <FilterPill key={f.key} active={stockFilter === f.key} color={f.color}
+                                onClick={() => { setStockFilter(f.key); setCurrentPage(1); }}>{f.label}</FilterPill>
                         ))}
-                    </select>
-                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/20 pointer-events-none" />
+                    </FilterGroup>
+
+                    <div className="w-px h-5 mx-1" style={{ background: 'rgba(255,255,255,0.06)' }} />
+
+                    {/* Status */}
+                    <FilterGroup label="Statut">
+                        {[
+                            { key: 'all' as const, label: 'Tout' },
+                            { key: 'active' as const, label: 'Actif', color: '#10b981' },
+                            { key: 'inactive' as const, label: 'Masqué' },
+                        ].map(f => (
+                            <FilterPill key={f.key} active={statusFilter === f.key} color={f.color}
+                                onClick={() => { setStatusFilter(f.key); setCurrentPage(1); }}>{f.label}</FilterPill>
+                        ))}
+                    </FilterGroup>
+
+                    <div className="w-px h-5 mx-1" style={{ background: 'rgba(255,255,255,0.06)' }} />
+
+                    {/* AI */}
+                    <FilterGroup label="IA">
+                        {[
+                            { key: 'all' as const, label: 'Tout' },
+                            { key: 'complete' as const, label: 'Complète', color: '#10b981' },
+                            { key: 'incomplete' as const, label: 'Partielle', color: '#f59e0b' },
+                            { key: 'no_vector' as const, label: 'Sans vecteur', color: '#a855f7' },
+                        ].map(f => (
+                            <FilterPill key={f.key} active={aiFilter === f.key} color={f.color}
+                                onClick={() => { setAiFilter(f.key); setCurrentPage(1); }}>{f.label}</FilterPill>
+                        ))}
+                    </FilterGroup>
+
+                    <div className="w-px h-5 mx-1" style={{ background: 'rgba(255,255,255,0.06)' }} />
+
+                    {/* Type */}
+                    <FilterGroup label="Type">
+                        {[
+                            { key: 'all' as const, label: 'Tout' },
+                            { key: 'featured' as const, label: '⭐ Vedette', color: '#eab308' },
+                            { key: 'subscribable' as const, label: '🔁 Abo', color: '#a855f7' },
+                            { key: 'bundle' as const, label: '📦 Pack' },
+                        ].map(f => (
+                            <FilterPill key={f.key} active={extraFilter === f.key} color={f.color}
+                                onClick={() => { setExtraFilter(f.key); setCurrentPage(1); }}>{f.label}</FilterPill>
+                        ))}
+                    </FilterGroup>
+
+                    {/* Active filters count + reset */}
+                    {(stockFilter !== 'all' || statusFilter !== 'all' || aiFilter !== 'all' || extraFilter !== 'all') && (
+                        <button
+                            onClick={() => { setStockFilter('all'); setStatusFilter('all'); setAiFilter('all'); setExtraFilter('all'); setCurrentPage(1); }}
+                            className="ml-auto flex items-center gap-1.5 text-[11px] font-semibold px-3 py-1.5 rounded-lg transition-all hover:bg-red-500/[0.06]"
+                            style={{ color: 'rgba(239,68,68,0.6)', border: '1px solid rgba(239,68,68,0.15)' }}
+                        >
+                            <X className="w-3 h-3" />
+                            Réinitialiser
+                        </button>
+                    )}
                 </div>
             </div>
 
@@ -1591,5 +1687,38 @@ export default function AdminProductsTab({ products, categories, onRefresh }: Ad
                 onClose={() => setPreviewProduct(null)}
             />
         </div>
+    );
+}
+
+/* ── Filter UI helpers ───────────────────────────────────────────────── */
+
+function FilterGroup({ label, children }: { label: string; children: React.ReactNode }) {
+    return (
+        <div className="flex items-center gap-1.5">
+            <span className="text-[9px] font-bold text-white/15 uppercase tracking-widest mr-1 select-none">{label}</span>
+            {children}
+        </div>
+    );
+}
+
+function FilterPill({ active, onClick, children, color }: { active: boolean; onClick: () => void; children: React.ReactNode; color?: string }) {
+    const accentColor = color || '#ffffff';
+    return (
+        <button
+            onClick={onClick}
+            className="text-[11px] font-semibold px-2.5 py-1 rounded-lg transition-all duration-200"
+            style={active ? {
+                background: `${accentColor}12`,
+                color: accentColor,
+                border: `1px solid ${accentColor}30`,
+                boxShadow: `0 0 8px ${accentColor}08`,
+            } : {
+                background: 'transparent',
+                color: 'rgba(255,255,255,0.2)',
+                border: '1px solid transparent',
+            }}
+        >
+            {children}
+        </button>
     );
 }
