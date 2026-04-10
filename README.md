@@ -88,7 +88,7 @@ Le cœur différenciant du projet. Un conseiller expert CBD disponible 24h/24 di
 - **Recherche floue 4 niveaux** : cache FIFO local → exact match → substring → fuzzy RPC PostgreSQL (`pg_trgm`, index GIST)
 - **Calibration adaptative du bruit** : seuil de détection recalibré toutes les 60s, barge-in avec fade-out 80ms
 - **Message Queue** : synchronisation panier / navigation sans perte pendant les gaps WebSocket
-- **Moteur de Skills modulaire** : 8 fichiers `.md` injectés dynamiquement, minifiés automatiquement pour le TTS
+- **Moteur de Skills modulaire** : fichiers `.md` injectés dynamiquement, minifiés automatiquement pour le TTS
 - **Token éphémère sécurisé** : la clé API Gemini ne transite jamais dans le navigateur (Edge Function `gemini-token`)
 - **Proactivité intelligente** : relance vocale après 8s (panier actif) ou 15s (navigation seule)
 
@@ -143,7 +143,6 @@ Le cœur différenciant du projet. Un conseiller expert CBD disponible 24h/24 di
 | **Display** | Configuration affichage TV / digital signage |
 | **Modèles IA** | Sélection et configuration des modèles OpenRouter |
 | **Paramètres** | Configuration globale + export/import JSON + reset |
-| **Setup Wizard** | Onboarding guidé 9 étapes (< 5 min pour lancer une boutique) |
 
 ### SEO & Contenu Automatisé
 
@@ -181,16 +180,16 @@ Le cœur différenciant du projet. Un conseiller expert CBD disponible 24h/24 di
 │                       SUPABASE BACKEND                               │
 │                                                                      │
 │  ┌─────────────────┐  ┌──────────────────┐  ┌──────────────────┐   │
-│  │   PostgreSQL     │  │  Edge Functions  │  │    Storage       │   │
-│  │  20+ tables      │  │  (Deno runtime)  │  │  product-images  │   │
-│  │  pgvector        │  │                  │  │  store / ads     │   │
-│  │  pg_trgm         │  │  ai-chat         │  │  categories      │   │
-│  │  RLS policies    │  │  ai-embeddings   │  └──────────────────┘   │
-│  │  RPC functions   │  │  gemini-token    │                         │
+│  │   PostgreSQL    │  │  Edge Functions  │  │    Storage       │   │
+│  │  20+ tables     │  │  (Deno runtime)  │  │  product-images  │   │
+│  │  pgvector       │  │                  │  │  store / ads     │   │
+│  │  pg_trgm        │  │  ai-chat         │  │  categories      │   │
+│  │  RLS policies   │  │  ai-embeddings   │  └──────────────────┘   │
+│  │  RPC functions  │  │  gemini-token    │                         │
 │  └─────────────────┘  │  stripe-payment  │                         │
-│                        │  stripe-webhook  │                         │
-│                        │  admin-action    │                         │
-│                        └──────────────────┘                         │
+│                       │  stripe-webhook  │                         │
+│                       │  admin-action    │                         │
+│                       └──────────────────┘                         │
 └──────────────────────────────┬──────────────────────────────────────┘
                                │
           ┌────────────────────┼────────────────────┐
