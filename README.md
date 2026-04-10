@@ -361,11 +361,6 @@ npm run preview
 # Serveur d'import produits (optionnel)
 npm run dev:importer
 ```
-
-### Étape 6 — Configuration initiale via Setup Wizard
-
-Accéder à `/admin` (se connecter avec un compte ayant `is_admin = true` dans Supabase), puis cliquer sur **"Lancer le Setup Wizard"** depuis le Dashboard pour configurer la boutique en 9 étapes guidées.
-
 ---
 
 ## Variables d'environnement
@@ -506,12 +501,7 @@ green-mood/
 │   ├── skills/                        # 8 fichiers Markdown (skills IA)
 │   │   ├── skill.md                   # Déclaration tools (toujours injecté en premier)
 │   │   ├── vocal_actions.md           # Protocole vocal, phrases de transition
-│   │   ├── botanique_expert.md        # Expertise terpènes, cannabinoïdes
-│   │   ├── cross_selling.md           # Stratégie bundles, upselling
-│   │   ├── objections.md              # Levée de doutes, hésitations
-│   │   ├── fidelite.md                # Programme Carats, parrainage
-│   │   ├── faq_boutique.md            # Livraison, paiement, retours
-│   │   └── legal_confidentialite.md   # Disclaimers médicaux, RGPD
+│   │   
 │   │
 │   ├── seo/
 │   │   └── SEOProvider.tsx            # Context SEO global (title, OG, canonical)
@@ -633,11 +623,7 @@ Les skills sont des fichiers Markdown qui définissent le comportement de l'IA. 
 |-------|-------|------|
 | `skill.md` | Vocal uniquement | Déclaration et orchestration des 20+ Action Tools |
 | `vocal_actions.md` | Vocal uniquement | Protocole feedback simultané, gestion délai, transitions |
-| `botanique_expert.md` | Vocal | Expertise terpènes, cannabinoïdes, effet d'entourage |
-| `cross_selling.md` | Vocal | Stratégie bundles, associations, upselling discret |
-| `fidelite.md` | Vocal | Gestion points, statut VIP, offres exclusives |
-| `livraison.md` | Vocal | Suivi colis, adresse, délais, points relais |
-| `quiz.md` | Vocal | Profilage client, recommandations personnalisées |
+
 
 
 **Règles de chargement** :
