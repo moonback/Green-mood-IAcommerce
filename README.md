@@ -462,7 +462,6 @@ green-mood/
 │   │   │   ├── AdminProductsTab.tsx   # CRUD produits (99 KB, feature-rich)
 │   │   │   ├── AdminSettingsTab.tsx   # Configuration globale (114 KB)
 │   │   │   ├── AdminBudTenderTab.tsx  # Config IA BudTender (88 KB)
-│   │   │   └── AdminSetupWizard.tsx   # Wizard 9 étapes (89 KB)
 │   │   │
 │   │   ├── budtender/                 # Composants IA advisor (recommandations, quiz)
 │   │   ├── budtender-ui/              # Atoms UI du widget BudTender
@@ -779,21 +778,20 @@ Pour créer un admin :
 UPDATE profiles SET is_admin = true WHERE id = 'YOUR_USER_UUID';
 ```
 
-### Setup Wizard (9 étapes)
+---
 
-Le wizard guide l'onboarding complet d'une boutique en < 5 minutes :
+## Focus : Gestion des Abonnements (Kanban)
 
-| Étape | Contenu |
-|-------|---------|
-| **1 - Identité** | Nom boutique, slogan, description, secteur, upload logo |
-| **2 - Design** | Palette couleurs (présets), typographie, thème clair/sombre |
-| **3 - Contenu** | Hero, marquee ticker, bannière promotionnelle |
-| **4 - Livraison** | Frais, seuil livraison gratuite, mentions légales |
-| **5 - Réseaux sociaux** | Instagram, Facebook, Twitter, TikTok |
-| **6 - Modules** | Toggles de toutes les fonctionnalités (voix, quiz, avis, etc.) |
-| **7 - IA & Fidélité** | Config BudTender (ton, expertise), taux points, nom monnaie |
-| **8 - Paiement** | Stripe (clé publique, mode Test/Live) |
-| **9 - Récapitulatif** | Validation et sauvegarde complète Supabase |
+L'administration intègre désormais un module de gestion des abonnements ultra-moderne conçu pour la logistique quotidienne.
+
+### Fonctionnalités Clés
+- **Vue Kanban Dynamique** : Visualisez vos préparations par jour ou par mois.
+- **Workflow de Validation** : Validez une livraison en un clic. Le système génère automatiquement la commande Stripe/Interne, met à jour les stocks et calcule la prochaine date de livraison selon la fréquence (Hebdo, Mensuel, etc.).
+- **Planification Flexible** :
+    - **Sélecteur de date** : Choisissez n'importe quelle date de départ pour votre planning.
+    - **Glisser-Déposer** : Reprogrammez une livraison ou mettez un abonnement en pause par simple drag-and-drop.
+- **Preview Logistique** : Survolez l'indicateur "Prévision Demain" pour voir instantanément le récapitulatif des produits et quantités à préparer pour la journée suivante.
+- **Mode Plein Écran** : Interface immersive pour une gestion dédiée en entrepôt ou tablette.
 
 ### Commandes admin disponibles
 
@@ -900,7 +898,6 @@ Les secrets Gemini / OpenRouter / Stripe côté serveur restent dans Supabase se
 - [ ] Variables d'environnement VITE_* configurées sur la plateforme
 - [ ] Domaine custom configuré (Vercel / Netlify)
 - [ ] HTTPS actif (requis pour `getUserMedia` / AudioWorklet)
-- [ ] Setup Wizard complété depuis `/admin`
 
 ---
 
@@ -971,27 +968,6 @@ git commit -m "feat: description courte"
 # Pull Request vers main
 git push origin feature/ma-fonctionnalite
 ```
-
----
-
-## Licence
-
-Voir le fichier [LICENSE](LICENSE) pour les conditions d'utilisation.
-
----
-
-## Focus : Gestion des Abonnements (Kanban)
-
-L'administration intègre désormais un module de gestion des abonnements ultra-moderne conçu pour la logistique quotidienne.
-
-### Fonctionnalités Clés
-- **Vue Kanban Dynamique** : Visualisez vos préparations par jour ou par mois.
-- **Workflow de Validation** : Validez une livraison en un clic. Le système génère automatiquement la commande Stripe/Interne, met à jour les stocks et calcule la prochaine date de livraison selon la fréquence (Hebdo, Mensuel, etc.).
-- **Planification Flexible** :
-    - **Sélecteur de date** : Choisissez n'importe quelle date de départ pour votre planning.
-    - **Glisser-Déposer** : Reprogrammez une livraison ou mettez un abonnement en pause par simple drag-and-drop.
-- **Preview Logistique** : Survolez l'indicateur "Prévision Demain" pour voir instantanément le récapitulatif des produits et quantités à préparer pour la journée suivante.
-- **Mode Plein Écran** : Interface immersive pour une gestion dédiée en entrepôt ou tablette.
 
 ---
 
