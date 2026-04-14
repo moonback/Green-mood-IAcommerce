@@ -84,7 +84,8 @@ Le cœur différenciant du projet. Un conseiller expert CBD disponible 24h/24 di
 - **Mémoire Sémantique Évolutive** : Extraction automatique d'insights long-terme (expertise, goûts, objectifs) stockés en base (`user_ai_preferences`), injectés proactivement dans le contexte de l'IA.
 - **Persistance Multi-onglets** : Historique et préférences migrés vers `localStorage`, permettant une continuité de session fluide après un rafraîchissement ou l'ouverture de nouveaux onglets.
 - **UI Premium Réactive** : Indicateur visuel "Pulse" cyan/bleu ultra-fluide signalant l'activité de recherche IA en temps réel.
-- **20+ outils Function Calling** : recherche catalogue, navigation, ajout panier, comparaison produits, suivi commande, gestion favoris, application promo, quiz préférences, etc.
+- **25+ outils Function Calling** : recherche catalogue, navigation, ajout panier, retrait panier, modification quantités, consultation panier, comparaison produits, suivi commande, gestion favoris, application promo, parrainage, soumission avis, quiz préférences, etc.
+- **Synchronisation d'État Omnicanale** : Les actions effectuées par l'IA (ajout au panier, application de promo) sont instantanément répercutées et visibles sur toutes les pages (Sidebar, Panier, Checkout, POS) via un store global réactif.
 - **Recherche floue 4 niveaux** : cache FIFO local → exact match → substring → fuzzy RPC PostgreSQL (`pg_trgm`, index GIST)
 - **Calibration adaptative du bruit** : seuil de détection recalibré toutes les 60s, barge-in avec fade-out 80ms
 - **Message Queue** : synchronisation panier / navigation sans perte pendant les gaps WebSocket
@@ -660,6 +661,11 @@ Les skills sont des fichiers Markdown qui définissent le comportement de l'IA. 
 | `remove_from_cart` | Retrait article panier |
 | `update_cart_quantity` | Mise à jour quantité panier |
 | `load_voice_skill` | Chargement dynamique skill optionnel |
+| `get_cart` | Consultation dynamique du contenu du panier |
+| `get_referral_link` | Récupération du lien unique de parrainage |
+| `apply_promo` | Application et validation temps réel d'un code promo |
+| `submit_review` | Soumission d'un avis client (vocal ou texte) |
+| `close_session` | Fermeture sécurisée de la session vocale |
 
 **Phase 2 — Après Phase 1** :
 

@@ -2286,9 +2286,34 @@ export function useGeminiLiveVoice({
                     const { data: userData } = await supabase.auth.getUser();
                     const userId = userData?.user?.id;
                     if (!userId) return { name: c.name, id: c.id, response: { error: 'Client non connecté.' } };
+
+                    // Find if the user has purchased this product to get a valid order_id
+                    const { data: purchase, error: purchaseErr } = await supabase
+                      .from('order_items')
+                      .select('order_id, orders!inner(user_id, status)')
+                      .eq('product_id', p.id)
+                      .eq('orders.user_id', userId)
+                      .eq('orders.payment_status', 'paid')
+                      .limit(1)
+                      .maybeSingle();
+
+                    if (purchaseErr || !purchase) {
+                      return { 
+                        name: c.name, 
+                        id: c.id, 
+                        response: { error: `Désolé, vous ne pouvez laisser un avis que sur les produits que vous avez déjà achetés et payés.` } 
+                      };
+                    }
+
                     const { error: insertErr } = await supabase
                       .from('reviews')
-                      .insert({ product_id: p.id, user_id: userId, rating, comment: comment || null });
+                      .insert({ 
+                        product_id: p.id, 
+                        user_id: userId, 
+                        order_id: purchase.order_id,
+                        rating, 
+                        comment: comment || null 
+                      });
                     if (insertErr) throw insertErr;
                     return { name: c.name, id: c.id, response: { result: `Avis ${rating}/5 enregistré pour "${p.name}". Merci au client !` } };
                   } catch (e) {
