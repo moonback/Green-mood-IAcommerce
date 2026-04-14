@@ -8,13 +8,16 @@ vi.mock('../../lib/supabase', () => ({
     from: vi.fn(() => ({
       select: vi.fn().mockReturnThis(),
       eq: vi.fn().mockReturnThis(),
+      order: vi.fn().mockReturnThis(),
+      limit: vi.fn().mockReturnThis(),
       single: (...args: any[]) => mockSingle(...args),
+      maybeSingle: (...args: any[]) => mockSingle(...args),
     })),
   },
 }));
 
 import PromoCodeInput from '../PromoCodeInput';
-import type { AppliedPromo } from '../PromoCodeInput';
+import { AppliedPromo } from '../../lib/types';
 
 const validPromo = {
   code: 'PROMO10',

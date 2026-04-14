@@ -139,7 +139,15 @@ ${customPrompt?.trim() ? `\nINSTRUCTIONS PRIORITAIRES :\n${customPrompt.trim()}`
 [HISTORIQUE DE LA CONVERSATION DU QUIZ]
 ${history.map(m => `${m.role.toUpperCase()} : ${m.content}`).join('\n')}
 
-Réponds UNIQUEMENT en JSON.
+Réponds UNIQUEMENT en JSON selon ce schéma :
+{
+  "status": "question" | "complete",
+  "question": "Texte de la prochaine question (si status=question)",
+  "options": [{ "label": "Texte", "value": "ID" }] (si status=question),
+  "reason": "Brève explication marketing"
+}
+
+Si status=complete, l'interface affichera les recommandations basées sur l'analyse de l'historique que tu as faite.
 `;
 };
 
@@ -171,8 +179,8 @@ export const getInsightExtractionPrompt = (
 
 
 
-const VOICE_PROMPT_MAX_CHARS = 7600;
-const VOICE_CONTEXT_MAX_CHARS = 2200;
+const VOICE_PROMPT_MAX_CHARS = 16000;
+const VOICE_CONTEXT_MAX_CHARS = 4000;
 
 const VOICE_FORMAT_RULES = `## RÈGLES AUDIO — OBLIGATOIRE
 1. TON : Très professionnel, expert, chaleureux mais formel.

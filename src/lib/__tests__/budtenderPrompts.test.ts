@@ -171,7 +171,7 @@ describe('getVoicePrompt (Gemini Live)', () => {
     })) as any;
 
     const prompt = getVoicePrompt(hugeProducts, hugePrefs, 'Client');
-    expect(prompt.length).toBeLessThanOrEqual(7600);
+    expect(prompt.length).toBeLessThanOrEqual(16000);
     expect(prompt).not.toContain('... (truncated for stability)');
   });
 });
