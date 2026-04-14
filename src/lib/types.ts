@@ -189,6 +189,17 @@ export interface StockMovement {
   product?: Product;
 }
 
+// ─── Promo Types ─────────────────────────────────────────────────────────────
+
+export interface AppliedPromo {
+  code: string;
+  description: string | null;
+  discount_type: 'percent' | 'fixed';
+  discount_value: number;
+  /** montant réel déduit calculé par le parent */
+  discount_amount: number;
+}
+
 // ─── Cart Types ──────────────────────────────────────────────────────────────
 
 export interface CartItem {

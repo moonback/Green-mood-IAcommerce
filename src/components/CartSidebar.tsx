@@ -23,6 +23,8 @@ export default function CartSidebar() {
   const subtotal = useCartStore(s => s.subtotal());
   const deliveryFee = useCartStore(s => s.deliveryFee());
   const pointsDiscount = useCartStore(s => s.pointsDiscount);
+  const appliedPromo = useCartStore(s => s.appliedPromo);
+  const promoDiscountStore = useCartStore(s => s.promoDiscount);
 
   const settings = useSettingsStore((s) => s.settings);
   const { profile } = useAuthStore();
@@ -48,7 +50,9 @@ export default function CartSidebar() {
     }
   }
 
-  const tot = Math.max(0, sub + fee - vipDiscount - pointsVal);
+  const promoDiscount = promoDiscountStore();
+
+  const tot = Math.max(0, sub + fee - vipDiscount - pointsVal - promoDiscount);
   const count = itemCount;
 
   if (typeof document === 'undefined') return null;
@@ -271,6 +275,14 @@ export default function CartSidebar() {
                               <Coins className="w-2.5 h-2.5" /> Remise fidélité
                             </span>
                             <span>−{pointsVal.toFixed(2)} €</span>
+                          </div>
+                        )}
+                        {appliedPromo && (
+                          <div className="flex justify-between text-[10px] font-bold text-emerald-500 bg-emerald-400/5 px-2 py-1 rounded-md border border-emerald-400/10">
+                            <span className="flex items-center gap-1">
+                              <ShoppingBag className="w-3 h-3" /> Code : {appliedPromo.code}
+                            </span>
+                            <span>−{promoDiscount.toFixed(2)} €</span>
                           </div>
                         )}
                       </div>

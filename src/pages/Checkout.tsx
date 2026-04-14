@@ -91,13 +91,15 @@ export default function Checkout() {
     total,
     usePoints,
     setUsePoints,
+    appliedPromo,
+    setAppliedPromo,
+    promoDiscount: promoDiscountStore,
   } = useCartStore();
   const { settings } = useSettingsStore();
 
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [selectedAddress, setSelectedAddress] = useState<string | null>(null);
   const [showAddressForm, setShowAddressForm] = useState(false);
-  const [appliedPromo, setAppliedPromo] = useState<AppliedPromo | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [checkoutStep, setCheckoutStep] = useState<'form' | 'payment'>('form');
@@ -131,7 +133,7 @@ export default function Checkout() {
   }
 
   const pointsValue = usePoints && profile ? Math.floor(profile.loyalty_points / 100) * (settings.loyalty_redeem_rate || 5) : 0;
-  const promoDiscount = appliedPromo ? appliedPromo.discount_amount : 0;
+  const promoDiscount = promoDiscountStore();
 
   // Flags for UI
   const isGold = currentTier?.id === 'gold';

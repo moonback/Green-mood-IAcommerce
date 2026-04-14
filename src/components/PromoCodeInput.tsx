@@ -2,15 +2,9 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Tag, CheckCircle2, X, Loader2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { AppliedPromo } from '../lib/types';
 
-export interface AppliedPromo {
-    code: string;
-    description: string | null;
-    discount_type: 'percent' | 'fixed';
-    discount_value: number;
-    /** montant réel déduit calculé par le parent */
-    discount_amount: number;
-}
+
 
 interface PromoCodeInputProps {
     subtotal: number;
@@ -34,7 +28,7 @@ export default function PromoCodeInput({ subtotal, onApply, applied }: PromoCode
             .select('*')
             .eq('code', code)
             .eq('is_active', true)
-            .single();
+            .maybeSingle();
 
         setLoading(false);
 

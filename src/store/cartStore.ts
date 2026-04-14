@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { CartItem, DeliveryType, Product, SubscriptionFrequency } from '../lib/types';
+import { AppliedPromo, CartItem, DeliveryType, Product, SubscriptionFrequency } from '../lib/types';
 import { trackEvent } from '../lib/analytics';
 
 import { useSettingsStore } from './settingsStore';
@@ -9,6 +9,7 @@ interface CartStore {
   items: CartItem[];
   isOpen: boolean;
   deliveryType: DeliveryType;
+  appliedPromo: AppliedPromo | null;
   // actions
   addItem: (product: Product, quantity?: number, subscriptionFrequency?: SubscriptionFrequency) => void;
   removeItem: (productId: string, subscriptionFrequency?: SubscriptionFrequency) => void;
@@ -18,10 +19,12 @@ interface CartStore {
   openSidebar: () => void;
   closeSidebar: () => void;
   setDeliveryType: (type: DeliveryType) => void;
+  setAppliedPromo: (promo: AppliedPromo | null) => void;
   // computed helpers
   itemCount: () => number;
   subtotal: () => number;
   deliveryFee: () => number;
+  promoDiscount: () => number;
   total: () => number;
   pointsDiscount: (points: number, rate: number) => number;
   usePoints: boolean;
@@ -34,6 +37,7 @@ export const useCartStore = create<CartStore>()(
       items: [],
       isOpen: false,
       deliveryType: 'click_collect',
+      appliedPromo: null,
       usePoints: false,
 
       addItem: (product, quantity = 1, subscriptionFrequency) => {
@@ -100,6 +104,8 @@ export const useCartStore = create<CartStore>()(
 
       setUsePoints: (use) => set({ usePoints: use }),
 
+      setAppliedPromo: (promo) => set({ appliedPromo: promo }),
+
       itemCount: () => get().items.reduce((sum, i) => sum + i.quantity, 0),
 
       subtotal: () =>
@@ -116,7 +122,22 @@ export const useCartStore = create<CartStore>()(
         return get().subtotal() >= settings.delivery_free_threshold ? 0 : settings.delivery_fee;
       },
 
-      total: () => get().subtotal() + get().deliveryFee(),
+      promoDiscount: () => {
+        const promo = get().appliedPromo;
+        if (!promo) return 0;
+        const sub = get().subtotal();
+        if (promo.discount_type === 'percent') {
+          return Math.round(sub * (promo.discount_value / 100) * 100) / 100;
+        }
+        return Math.min(sub, promo.discount_value);
+      },
+
+      total: () => {
+        const sub = get().subtotal();
+        const fee = get().deliveryFee();
+        const promo = get().promoDiscount();
+        return Math.max(0, sub + fee - promo);
+      },
 
       pointsDiscount: (points, rate) => {
         if (!get().usePoints) return 0;
@@ -128,7 +149,8 @@ export const useCartStore = create<CartStore>()(
       partialize: (state) => ({ 
         items: state.items, 
         deliveryType: state.deliveryType,
-        usePoints: state.usePoints
+        usePoints: state.usePoints,
+        appliedPromo: state.appliedPromo
       }),
     }
   )

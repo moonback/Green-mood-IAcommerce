@@ -14,6 +14,7 @@ import ProductCompareModal from "./ProductCompareModal";
 // UI Components
 import { BudTenderWidget } from "./budtender-ui";
 import VoiceAdvisor from "./VoiceAdvisor";
+import { supabase } from "../lib/supabase";
 
 export default function BudTender() {
   const navigate = useNavigate();
@@ -126,6 +127,38 @@ export default function BudTender() {
         }}
         onSavePrefs={memory.updatePrefs}
         onCompareProducts={(prods) => setComparisonProducts(prods)}
+        onApplyPromo={async (code) => {
+          const { data, error } = await supabase
+            .from('promo_codes')
+            .select('*')
+            .eq('code', code)
+            .eq('is_active', true)
+            .maybeSingle();
+
+          if (error || !data) return { success: false, message: "Code promo invalide ou inexistant." };
+
+          const sub = useCartStore.getState().subtotal();
+          if (sub < data.min_order_value) {
+            return { 
+              success: false, 
+              message: `Ce code nécessite un minimum de commande de ${parseFloat(data.min_order_value).toFixed(2)} €.` 
+            };
+          }
+
+          const discount_amount = data.discount_type === 'percent'
+            ? Math.min(sub, (sub * parseFloat(data.discount_value)) / 100)
+            : Math.min(sub, parseFloat(data.discount_value));
+
+          useCartStore.getState().setAppliedPromo({
+            code: data.code,
+            description: data.description,
+            discount_type: data.discount_type,
+            discount_value: parseFloat(data.discount_value),
+            discount_amount: parseFloat(discount_amount.toFixed(2))
+          });
+
+          return { success: true };
+        }}
         wishlistItems={wishlistItems}
         onToggleFavorite={toggleFavorite}
         showUI={true}

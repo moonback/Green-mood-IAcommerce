@@ -209,7 +209,7 @@ export function useAdminPOS({ storeName, storeAddress, storePhone }: AdminPOSTab
         .select('*')
         .eq('code', code)
         .eq('is_active', true)
-        .single();
+        .maybeSingle();
 
       if (error || !data) {
         setPromoError('Code promo invalide ou inactif.');
@@ -261,7 +261,7 @@ export function useAdminPOS({ storeName, storeAddress, storePhone }: AdminPOSTab
       .select('*')
       .eq('sku', sku)
       .eq('is_active', true)
-      .single();
+      .maybeSingle();
 
     if (data) {
       addToCart(data as Product);
