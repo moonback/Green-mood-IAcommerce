@@ -24,6 +24,8 @@ export default function Cart() {
     deliveryFee,
     total,
     pointsDiscount,
+    appliedPromo,
+    promoDiscount: promoDiscountStore,
   } = useCartStore();
   const { profile } = useAuthStore();
   const { settings } = useSettingsStore();
@@ -33,7 +35,8 @@ export default function Cart() {
   const sub = subtotal();
   const fee = deliveryFee();
   const pointsVal = pointsDiscount(profile?.loyalty_points || 0, settings.loyalty_redeem_rate || 5);
-  const tot = Math.max(0, sub + fee - pointsVal);
+  const promoDiscount = promoDiscountStore();
+  const tot = Math.max(0, sub + fee - pointsVal - promoDiscount);
 
   useEffect(() => {
     return () => {
@@ -384,6 +387,14 @@ export default function Cart() {
                         <Coins className="w-3.5 h-3.5" /> Fidélité
                       </span>
                       <span className="font-black">−{pointsVal.toFixed(2)} €</span>
+                    </div>
+                  )}
+                  {appliedPromo && (
+                    <div className="flex justify-between items-center text-xs text-emerald-500">
+                      <span className="font-bold uppercase tracking-widest flex items-center gap-1.5">
+                        <ShoppingBag className="w-3.5 h-3.5" /> Code : {appliedPromo.code}
+                      </span>
+                      <span className="font-black">−{promoDiscount.toFixed(2)} €</span>
                     </div>
                   )}
                   <div className="pt-6 flex justify-between items-end">
