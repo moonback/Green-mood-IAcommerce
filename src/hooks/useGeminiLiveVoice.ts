@@ -1511,20 +1511,32 @@ export function useGeminiLiveVoice({
                       },
                     };
                   }
+                  
                   const cartLines = items.map((item: any) => {
                     const p = item.product;
-                    const subtotal = (p.price * item.quantity).toFixed(2);
-                    return `${item.quantity}x ${p.name} (${p.price}\u20AC l'unit\u00E9) = ${subtotal}\u20AC`;
+                    const discount = item.subscriptionFrequency === 'weekly' ? 0.15 : 
+                                   item.subscriptionFrequency === 'biweekly' ? 0.10 : 
+                                   item.subscriptionFrequency === 'monthly' ? 0.05 : 0;
+                    const unitPrice = p.price * (1 - discount);
+                    const lineTotal = (unitPrice * item.quantity).toFixed(2);
+                    const freqLabel = item.subscriptionFrequency ? ` (Abonnement ${item.subscriptionFrequency})` : '';
+                    
+                    return `${item.quantity}x ${p.name}${freqLabel} — ${unitPrice.toFixed(2)}\u20AC l'unit\u00E9 = ${lineTotal}\u20AC`;
                   });
-                  const total = items.reduce(
-                    (acc: number, item: any) => acc + item.product.price * item.quantity,
-                    0
-                  );
+                  
+                  const total = items.reduce((acc: number, item: any) => {
+                    const discount = item.subscriptionFrequency === 'weekly' ? 0.15 : 
+                                   item.subscriptionFrequency === 'biweekly' ? 0.10 : 
+                                   item.subscriptionFrequency === 'monthly' ? 0.05 : 0;
+                    return acc + (item.product.price * (1 - discount) * item.quantity);
+                  }, 0);
+
                   const result = [
                     `Panier (${items.length} article${items.length > 1 ? 's' : ''}) :`,
                     ...cartLines,
-                    `Total : ${total.toFixed(2)}\u20AC`,
+                    `Total : ${total.toFixed(2)}\u20AC (Remises abonnement incluses)`,
                   ].join('\n');
+                  
                   return {
                     name: c.name,
                     id: c.id,
