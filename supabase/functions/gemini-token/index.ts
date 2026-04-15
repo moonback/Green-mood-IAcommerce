@@ -1,9 +1,40 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+
+function jsonResponse(payload: Record<string, unknown>, status: number) {
+  return new Response(JSON.stringify(payload), {
+    status,
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+  });
+}
+
+function isAllowedOrigin(req: Request): boolean {
+  const origin = req.headers.get('origin');
+  if (!origin) return true;
+
+  const allowed = [
+    Deno.env.get('SITE_URL'),
+    Deno.env.get('PUBLIC_SITE_URL'),
+    Deno.env.get('URL'),
+  ]
+    .filter((v): v is string => Boolean(v))
+    .map((v) => {
+      try {
+        return new URL(v).origin;
+      } catch {
+        return null;
+      }
+    })
+    .filter((v): v is string => Boolean(v));
+
+  return allowed.length === 0 ? true : allowed.includes(origin);
+}
 
 // Tool definitions MUST live in the ephemeral token's bidiGenerateContentSetup.
 // When using ephemeral tokens, Gemini uses the server-side setup exclusively —
@@ -471,6 +502,36 @@ serve(async (req) => {
   }
 
   try {
+
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
+    const anonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
+    const authHeader = req.headers.get('Authorization');
+
+    if (!supabaseUrl || !anonKey) {
+      return jsonResponse({ error: 'Supabase env vars are missing' }, 500);
+    }
+
+    if (!isAllowedOrigin(req)) {
+      return jsonResponse({ error: 'Origin not allowed' }, 403);
+    }
+
+    if (!authHeader) {
+      return jsonResponse({ error: 'Missing Authorization header' }, 401);
+    }
+
+    const bearerToken = authHeader.replace(/^Bearer\s+/i, '').trim();
+    const isAnonToken = bearerToken.length > 0 && bearerToken === anonKey;
+
+    if (!isAnonToken) {
+      const supabaseAuth = createClient(supabaseUrl, anonKey, {
+        global: { headers: { Authorization: authHeader } },
+      });
+
+      const { data: userData, error: userError } = await supabaseAuth.auth.getUser();
+      if (userError || !userData.user) {
+        return jsonResponse({ error: 'Unauthorized' }, 401);
+      }
+    }
     const apiKey = Deno.env.get('GEMINI_API_KEY');
     console.log('[gemini-token] apiKey present:', !!apiKey, 'length:', apiKey?.length ?? 0);
 
@@ -490,6 +551,10 @@ serve(async (req) => {
     }));
 
     const tools = assistantType === 'admin' ? ADMIN_TOOLS : BUDTENDER_TOOLS;
+
+    if (isAnonToken && assistantType === 'admin') {
+      return jsonResponse({ error: 'Forbidden for anonymous callers' }, 403);
+    }
 
 
 
