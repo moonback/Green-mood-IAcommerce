@@ -688,11 +688,14 @@ export function useGeminiLiveVoice({
           };
           console.info('[Voice][Setup] Sending config to Edge Function:', body);
 
+          const { data: authData } = await supabase.auth.getSession();
+          const accessToken = authData.session?.access_token;
+
           const response = await fetch(`${SUPABASE_URL}/functions/v1/gemini-token`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+              'Authorization': `Bearer ${accessToken ?? SUPABASE_ANON_KEY}`
             },
             body: JSON.stringify(body)
           });
