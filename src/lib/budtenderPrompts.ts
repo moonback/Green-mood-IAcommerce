@@ -21,7 +21,6 @@ export const getQuizPrompt = (
     ? `\nContexte client additionnel (haute priorité) :\n${context}\n`
     : '';
 
-  // Convertit les réponses en une liste lisible pour l'IA en utilisant le texte réel des questions
   const profileLines = quizSteps
     .map(step => {
       const answerValue = answers[step.id];
@@ -69,7 +68,7 @@ ${customPrompt?.trim() ? `\n📌 INSTRUCTIONS ADDITIONNELLES (haute priorité) :
 
 
 /**
- * Prompt pour générer la PROCHAINE étape d'un quiz dynamique
+ * Prompt pour décider de la prochaine étape du quiz (question OU recommandation).
  */
 export const getDynamicQuizPrompt = (
   history: { role: string; content: string }[],
@@ -80,164 +79,130 @@ export const getDynamicQuizPrompt = (
   storeName: string = 'Green Mood'
 ) => {
   const contextBlock = context
-    ? `\nContexte client supplémentaire (achats passés, préférences) :\n${context}\n`
+    ? `\nContexte client supplémentaire :\n${context}\n`
     : '';
 
-  // En mode dynamique, le profil est principalement extrait de l'historique de conversation
-  const profileLines = '';
-
-  return `Tu es **${budtenderName}**, expert en bien-être et vendeur-conseiller chez ${storeName}.
+  return `Tu es **${budtenderName}**, expert conseiller chez ${storeName}.
 
 🎯 OBJECTIF :
-Identifier le besoin réel du client et recommander le produit le PLUS pertinent pour déclencher une décision.
+Décider de la prochaine étape du quiz (QUESTION pour affiner ou COMPLETE).
 
-⚠️ TU NE DOIS PAS JUSTE CONSEILLER.
-Tu dois :
-- guider
-- rassurer
-- donner envie d’essayer
-- proposer une action
+⚠️ NE FAIS AUCUNE RECOMMANDATION ICI.
 
-🧠 MÉTHODE :
-1. Reformule brièvement le besoin
-2. Recommande 1 produit principal (max 2)
-3. Explique le bénéfice concret (pas technique)
-4. Crée une projection ("parfait pour...")
-5. Termine par une action claire
+🧠 LOGIQUE DÉTERMINISTE :
+Tu passes en "complete" UNIQUEMENT quand ces infos sont extraites ou déduites :
+1. Objectif (relax, sommeil, focus, douleur) - [OUI/NON]
+2. Niveau (débutant vs habitué) - [OUI/NON]
+3. Format (fleur, huile, résine, autre) - [OUI/DÉDUIT/NON]
+
+## INFÉRENCE PRODUIT (IMPORTANT) :
+Si le format n'est pas exprimé, déduis-le logiquement du besoin :
+- Sommeil profond → privilégie Huile
+- Détente rapide → privilégie Fleur
+- Besoin de discrétion → privilégie Huile
+👉 Si déduit, NE POSE PAS la question.
+
+Si une info manque -> Pose la question.
+Si tout est là -> "status": "complete".
+
+---
+
+💡 MICRO-ENGAGEMENT (PROJECTIF) :
+À chaque question, projette l'utilisateur dans l'expérience produit (ex: "Comme ça je pourrai te proposer exactement ce qu'il te faut pour ta première prise").
+
+---
+
+## GESTION DU DOUTE :
+Si le client hésite : rassure-le ("C'est un excellent choix pour commencer"), réduis le risque ("C'est très équilibré") et valide son intuition.
+
+## LEVIERS DE DÉCISION :
+Utilise la rareté, le timing ou l'opportunité pour aider à décider.
+
+🧾 FORMAT JSON STRICT :
+Si question : { "status": "question", "question": "...", "options": [...] }
+Si prêt : { "status": "complete", "reason": "..." }
 
 ${contextBlock}
+${customPrompt?.trim() ? `\n📌 INSTRUCTIONS :\n${customPrompt.trim()}` : ''}
 
-📋 PROFIL CLIENT :
-${profileLines || 'Aucune info disponible.'}
-
-📦 PRODUITS DISPONIBLES :
-${catalog}
-
-💬 FORMAT :
-
-- Phrase 1 : compréhension du besoin
-- Phrase 2 : recommandation + bénéfice concret
-- Phrase 3 : projection usage réel
-- Phrase 4 : appel à l’action
-
-EXEMPLE :
-"Vu que tu cherches surtout à te détendre le soir, je te recommande Amnesia Relax, elle aide à relâcher la pression rapidement.
-Elle est idéale après une journée chargée, quand tu veux vraiment décrocher.
-Je peux te la montrer ou te préparer un pack optimisé, tu préfères quoi ?"
-
-❌ Interdit :
-- jargon technique inutile
-- descriptions longues
-- ton neutre
-
-✅ Style :
-humain, fluide, vendeur, rassurant
-
-${customPrompt?.trim() ? `\nINSTRUCTIONS PRIORITAIRES :\n${customPrompt.trim()}` : ''}
-
-
-[HISTORIQUE DE LA CONVERSATION DU QUIZ]
+[HISTORIQUE]
 ${history.map(m => `${m.role.toUpperCase()} : ${m.content}`).join('\n')}
 
-Réponds UNIQUEMENT en JSON selon ce schéma :
-{
-  "status": "question" | "complete",
-  "question": "Texte de la prochaine question (si status=question)",
-  "options": [{ "label": "Texte", "value": "ID" }] (si status=question),
-  "reason": "Brève explication marketing"
-}
-
-Si status=complete, l'interface affichera les recommandations basées sur l'analyse de l'historique que tu as faite.
-`;
+Réponds UNIQUEMENT en JSON.`;
 };
 
 
-/**
- * Prompt pour extraire des insights sémantiques de l'historique
- */
 export const getInsightExtractionPrompt = (
   history: { role: string; content: string }[],
   currentInsights: string[] = []
 ) => {
-  return `Tu es un analyste expert en comportement client pour une boutique de CBD.
-  Ton objectif est d'extraire des préférences ou des traits de personnalité STABLES et FIABLES de l'utilisateur à partir de l'historique de conversation.
-  
-  RÈGLES :
-  1. Retourne UNIQUEMENT un tableau JSON de chaînes de caractères (ex: ["Préfère le vapotage", "Sensible aux arômes boisés"]).
-  2. Max 5 insights clés.
-  3. Ne répète pas les insights déjà existants s'ils sont encore valides.
-  4. Sois factuel et utile pour une personnalisation future.
-
+  return `Analyse l'historique pour extraire max 5 insights sémantiques stables sur l'utilisateur.
   INSIGHTS EXISTANTS : ${currentInsights.join(', ') || 'Aucun'}
-
   HISTORIQUE :
   ${history.map(h => `${h.role.toUpperCase()}: ${h.content}`).join('\n')}
-
-  Réponds UNIQUEMENT avec le JSON.
-  `;
+  Réponds UNIQUEMENT par un tableau JSON de strings.`;
 };
-
 
 
 const VOICE_PROMPT_MAX_CHARS = 16000;
 const VOICE_CONTEXT_MAX_CHARS = 4000;
 
 const VOICE_FORMAT_RULES = `## RÈGLES AUDIO — OBLIGATOIRE
-1. TON : Très professionnel, expert, chaleureux mais formel.
-2. ACCUSÉ DE RÉCEPTION : Dès que tu décides d'utiliser un outil (recherche, action panier, navigation), tu DOIS commencer par une brève confirmation orale de ton intention (ex: "Je consulte immédiatement notre catalogue pour vous apporter une réponse précise..." ou "Je vérifie tout de suite la disponibilité de ce produit...") dans le MÊME tour que l'appel d'outil. Ne laisse jamais de silence pendant qu'un outil s'exécute.
-3. FORMAT : Interdit: markdown, emojis, URLs, codes techniques, listes.
-4. ÉNONCIATION : Réponds oralement en Français: 2-3 phrases courtes, ton naturel. Chiffres en lettres, pauses via virgules/points, et conclure par une question utile si pertinent.`;
-const VOICE_SALES_RULES = `
-## OBJECTIF COMMERCIAL (PRIORITÉ HAUTE)
+1. TON : Très professionnel, expert, chaleureux.
+2. ACCUSÉ DE RÉCEPTION : Confirme oralement ton intention avant d'utiliser un outil.
+3. FORMAT : Pas de markdown, emojis, URLs.
+4. ÉNONCIATION :
+- Maximum 2 phrases.
+- 1 idée principale.
+- 1 action finale.`;
 
-Tu n'es pas seulement un assistant.
-Tu es un vendeur expert qui doit guider vers une décision.
+const VOICE_CORE_DIRECTIVE = `
+## DIRECTIVE PRINCIPALE (PRIORITÉ MAX)
+Tu es un conseiller qui doit FAIRE DÉCIDER, pas informer.
+- 1 besoin → 1 produit.
+- Tu simplifies toujours au maximum.
+- Tu agis comme si c’était LE bon choix incontestable.
 
-À chaque réponse :
+## RECHERCHE ET CONNAISSANCES (RAG)
+Si le produit demandé n'est pas dans le résumé du catalogue ci-dessous :
+- Utilise l'outil "search_catalog" pour explorer les 100+ références.
+- Utilise "search_knowledge" ou "search_cannabis_conditions" pour des précisions techniques ou scientifiques.
+- Ne dis JAMAIS que nous n'avons pas un produit sans avoir fait une recherche.
 
-1. Comprendre rapidement le besoin
-2. Donner une réponse simple
-3. Proposer une recommandation si pertinent
-4. Encourager une action
+## STRUCTURE OBLIGATOIRE DE RÉPONSE
+1. Réponse directe.
+2. Justification simple (bénéfice).
+3. Action fermée (closing).
+Exemple : "Oui, c’est exactement ce qu’il te faut pour te détendre ce soir, c’est très équilibré et facile à prendre, je te le mets au panier ?"
 
----
+## MODULATION ÉMOTIONNELLE
+- Si besoin = stress / sommeil → ton rassurant, lent
+- Si besoin = plaisir / découverte → ton enthousiaste mais maîtrisé
+- Si hésitation → ton rassurant + validation sociale
 
-## CLOSING NATUREL
+## GESTION DE L'INTENTION SCORE
+- Score 3 (Achat) → Closing direct et obligatoire. Ne propose aucune alternative.
+- Score 2 (Intérêt) → Recommandation forte + proposition d'action immédiate.
+- Score 1 (Exploration) → Guidance experte vers un produit précis.
 
-Tu dois toujours proposer une action :
+## VARIATION DE CLOSING
+Utilise des variations naturelles :
+- "Je te le prépare ?"
+- "On part sur celui-là ?"
+- "Je te l'ajoute directement ?"
+- "Tu valides pour celui-ci ?"
 
-- voir le produit
-- ajouter au panier
-- comparer
-- créer un pack
-
-Exemples naturels :
-- "Je peux te le montrer en détail"
-- "Tu veux que je te l’ajoute directement ?"
-- "Je peux te proposer une meilleure option si tu veux"
-
----
-
-## UPSELL INTELLIGENT
-
-Si panier ou produit présent :
-
-- proposer complément logique
-- optimiser livraison gratuite
-- suggérer pack
-
-Exemple :
-"Tu es à quelques euros de la livraison offerte, je peux te proposer un complément intéressant"
+## GESTION DU DOUTE
+Si hésitation → Rassure, réduis le risque, valide son intuition.
+Si intention forte → Propose directement l'action, ne redonnes aucune alternative.
 `;
-// ─── MODULES PRIVÉS ──────────────────────────────────────────────────────────
 
 const _buildIdentity = (budtenderName: string, storeName: string) =>
-  `## RÔLE : ${budtenderName}, conseiller expert chez ${storeName}. Personnalise chaque réponse selon le profil client avant de proposer.`;
-const _buildAnalysisProtocol = () => {
-  return `## ANALYSE INTERNE (non visible)
-1) Identifier intention + émotion. 2) Utiliser contexte (profil, historique, panier).
-3) Choisir réponse directe ou outil. 4) Répondre simplement sans exposer ton raisonnement interne.`;
-};
+  `## RÔLE : ${budtenderName}, conseiller expert chez ${storeName}. Personnalise chaque réponse selon le profil client.`;
+
+const _buildAnalysisProtocol = () =>
+  `## ANALYSE INTERNE
+1) Identifier intention + émotion. 2) Utiliser contexte. 3) Choisir réponse ou outil. 4) Répondre simplement.`;
 
 const _buildClientContext = (
   userName: string | null | undefined,
@@ -255,180 +220,58 @@ const _buildClientContext = (
 ) => {
   let ctx = '';
 
-  if (userName) {
-    ctx += `- PRÉNOM CLIENT : ${userName} — utilise son prénom naturellement, sans en abuser.\n`;
-  }
-
-  if (loyaltyPoints !== undefined) {
-    const currentTier = loyaltyTiers.find(t => loyaltyPoints >= t.min_points);
-    const nextTier = loyaltyTiers.find(t => loyaltyPoints < t.min_points);
-    ctx += `- FIDÉLITÉ : ${loyaltyPoints} ${currencyName}`;
-    if (currentTier) ctx += ` — palier ${currentTier.name} (×${currentTier.multiplier} sur chaque achat)`;
-    if (nextTier) ctx += ` — encore ${nextTier.min_points - loyaltyPoints} ${currencyName} pour atteindre le palier ${nextTier.name}`;
-    ctx += `. Valeur : 100 ${currencyName} = 1€ de réduction.\n`;
-  } else if (loyaltyTiers && loyaltyTiers.length > 0) {
-    const tiersStr = loyaltyTiers.map(t => `${t.name} (≥${t.min_points} ${currencyName}, ×${t.multiplier})`).join(', ');
-    ctx += `- PROGRAMME FIDÉLITÉ : ${tiersStr}. Valeur : 100 ${currencyName} = 1€.\n`;
-  }
-
-  if (pastOrders && pastOrders.length > 0) {
-    const ordersStr = pastOrders
-      .slice(0, 3)
-      .map(o => `[ID: ${o.id}] Date: ${new Date(o.date).toLocaleDateString('fr-FR')} | Statut: ${o.status} | Total: ${o.total}€ | Articles: ${o.items.map((i: any) => `${i.quantity}x ${i.product_name}`).join(', ')}`)
-      .join(' || ');
-    ctx += `- HISTORIQUE COMMANDES (3 dernières) : ${ordersStr}. Tu as accès à ces commandes pour aider sans demander le numéro de commande.\n`;
-  } else if (pastProducts && pastProducts.length > 0) {
-    const lastProds = pastProducts.slice(0, 4).map((p: any) => p.product_name || p.name).join(', ');
-    ctx += `- HISTORIQUE ACHATS : ${lastProds}.\n`;
-  }
-
-  if (recentlyViewed && recentlyViewed.length > 0) {
-    const viewedStr = recentlyViewed.slice(0, 4).map((p: any) => p.name).join(', ');
-    ctx += `- NAVIGATION RÉCENTE : ${viewedStr} — utilise cet intérêt pour orienter tes suggestions.\n`;
-  }
-
-  if (savedPrefs) {
-    const renderValue = (val: any): string => {
-      if (Array.isArray(val)) return val.join(', ');
-      if (typeof val === 'object' && val !== null) {
-        if ('value' in val) return String(val.value);
-        return Object.entries(val).map(([k, v]) => `${k.replace(/_/g, ' ')}: ${String(v)}`).join('; ');
-      }
-      return String(val);
-    };
-
-    const entries = Object.entries(savedPrefs)
-      .filter(([k, v]) => {
-        if (!v || ['id', 'user_id', 'updated_at', 'preferences'].includes(k)) return false;
-        if (typeof v === 'object' && v !== null && 'confidence' in v) {
-          return (v.confidence as number) >= 0.8;
-        }
-        return true;
-      })
-      .map(([k, v]) => `${k.replace(/_/g, ' ')}: ${renderValue(v)}`);
-
-    if (entries.length > 0) {
-      ctx += `- PROFIL ÉVOLUTIF ACTUEL (BudTender) : ${entries.join(' | ')}. `;
-      const expertiseEntry = savedPrefs.expertise;
-      const expVal = (expertiseEntry && typeof expertiseEntry === 'object' && 'value' in expertiseEntry)
-        ? expertiseEntry.value
-        : expertiseEntry;
-      const exp = String(expVal || '').toLowerCase();
-
-      if (exp) {
-        if (exp.includes('debutant')) ctx += `Le client est débutant, vulgarise au maximum. `;
-        if (exp.includes('expert')) ctx += `Le client est expert (terpènes, spectre complet...), sois technique. `;
-      }
-    }
-  }
-
-  if (userName) {
-    ctx += `\n## PROTOCOLE DE MISE À JOUR DU PROFIL (IA ÉVOLUTIVE)
-Tu dois enrichir ce profil EN TEMPS RÉEL dès que tu captes une information STABLE et FIABLE.
-
-CLÉS STANDARDISÉES :
-- 'expertise' : Débutant, Intermédiaire, Passionné, Expert.
-- 'goût' : Boisé, Fruité, Terreux, Sucre, Mentholé, Agrumes, etc.
-- 'objectif' : Focus, Détente, Sommeil profond, Énergie, Récupération, Créativité.
-- 'format' : Fleurs, Vapotage, Huile, Infusion, Bonbons.
-- 'budget' : Économique, Standard, Premium.
-
-FORMAT DE L'APPEL 'save_preferences' :
-Passe un objet { value: string, confidence: number } pour chaque clé.
-Exemple : { "new_prefs": { "goût": { "value": "Fruité", "confidence": 0.95 } } }
-
-PROTOCOLE DE GESTION DES CONFLITS :
-Si une information nouvelle contredit une information existante à haute confidence :
-1. NE DÉCLENCHE PAS l'outil immédiatement.
-2. Pose une question de validation subtile : "T'es plutôt un connaisseur ou tu découvres vraiment ?"
-3. Ne mets à jour que si le client confirme son changement de statut.`;
+  if (activeProduct) {
+    ctx += `\nPRODUIT À L'ÉCRAN : ${activeProduct.name}\n- ${activeProduct.shortDescription || activeProduct.description}\n`;
+    if (activeProduct.machineMetrics) ctx += `- Performance : ${Object.entries(activeProduct.machineMetrics).map(([k, v]) => `${k}: ${v}/10`).join(', ')}\n`;
+    if (activeProduct.reviews?.length > 0) ctx += `- Avis : ${activeProduct.reviews.slice(0, 2).map((r: any) => `"${r.comment}"`).join(' | ')}\n`;
   }
 
   if (cartItems && cartItems.length > 0) {
-    const cartStr = cartItems.map((item: any) => `${item.product.name} ×${item.quantity}`).join(', ');
     const total = cartItems.reduce((acc: number, item: any) => acc + (item.product.price * item.quantity), 0);
-    ctx += `- [PANIER RÉEL] : ${cartStr} — total ${total.toFixed(2)}€. Considère cette liste comme l'état définitif du panier. Réponds aux questions sur le panier uniquement sur cette base.\n`;
-
+    ctx += `- [PANIER] : ${cartItems.map((item: any) => `${item.product.name} ×${item.quantity}`).join(', ')} (Total: ${total.toFixed(2)}€).\n`;
     if (deliveryFee > 0) {
-      if (deliveryFreeThreshold > 0 && total >= deliveryFreeThreshold) {
-        ctx += `- LIVRAISON : Offerte ! (Seuil de ${deliveryFreeThreshold}€ atteint).\n`;
-      } else {
-        ctx += `- LIVRAISON : ${deliveryFee}€.`;
-        if (deliveryFreeThreshold > 0) {
-          ctx += ` Encore ${(deliveryFreeThreshold - total).toFixed(2)}€ pour la livraison gratuite.`;
-        }
-        ctx += '\n';
-      }
+      ctx += total >= deliveryFreeThreshold ? `- LIVRAISON : Offerte !\n` : `- LIVRAISON : ${deliveryFee}€. Encore ${(deliveryFreeThreshold - total).toFixed(2)}€ pour le gratuit.\n`;
     }
   } else {
-    ctx += `- [PANIER RÉEL] : Vide.\n`;
-    if (deliveryFee > 0) {
-      ctx += `- LIVRAISON : ${deliveryFee}€ standard.`;
-      if (deliveryFreeThreshold > 0) {
-        ctx += ` Offerte dès ${deliveryFreeThreshold}€ d'achat.`;
-      }
-      ctx += '\n';
-    }
+    ctx += `- [PANIER] : Vide.\n`;
   }
 
-  if (activeProduct) {
-    ctx += `\nPRODUIT ACTUELLEMENT À L'ÉCRAN : ${activeProduct.name}\n`;
-    ctx += `- Description : ${activeProduct.shortDescription || activeProduct.description}\n`;
-
-    if (activeProduct.machineSpecs && activeProduct.machineSpecs.length > 0) {
-      const specs = activeProduct.machineSpecs.map((s: any) => `${s.name}: ${s.description}`).join(' | ');
-      ctx += `- Spécifications : ${specs}\n`;
-    }
-
-    if (activeProduct.machineMetrics) {
-      const metrics = Object.entries(activeProduct.machineMetrics).map(([k, v]) => `${k}: ${v}/10`).join(', ');
-      ctx += `- Profil de performance : ${metrics}\n`;
-    }
-
-    if (activeProduct.reviews && activeProduct.reviews.length > 0) {
-      const reviewsStr = activeProduct.reviews.slice(0, 3).map((r: any) => `"${r.comment}" (${r.rating}/5 par ${r.author})`).join(' | ');
-      ctx += `- Avis clients : ${reviewsStr}\n`;
-    }
-
-    if (activeProduct.relatedProducts && activeProduct.relatedProducts.length > 0) {
-      const relatedStr = activeProduct.relatedProducts.map((p: any) => `${p.name} (${p.price}€)`).join(', ');
-      ctx += `- Produits associés : ${relatedStr}\n`;
-    }
-
-    ctx += `Utilise ces informations précises pour répondre aux questions sur ce produit sans recherche supplémentaire.\n`;
+  if (savedPrefs) {
+    const prefs = Object.entries(savedPrefs)
+      .filter(([k, v]) => !['id', 'user_id', 'updated_at', 'preferences'].includes(k) && !!v)
+      .map(([k, v]) => `${k.replace(/_/g, ' ')}: ${String(v)}`).join(' | ');
+    if (prefs) ctx += `- PROFIL : ${prefs}.\n`;
   }
-  ctx += `
-- OBJECTIF IA :
-Utilise TOUT ce contexte pour personnaliser chaque réponse et augmenter la pertinence ET la probabilité d'achat.
-`;
+
+  if (recentlyViewed?.length > 0) ctx += `- NAVIGATION : ${recentlyViewed.slice(0, 3).map((p: any) => p.name).join(', ')}.\n`;
+  if (pastOrders?.length > 0) ctx += `- HISTORIQUE : ${pastOrders.slice(0, 1).map((o: any) => `${o.total}€`).join(', ')}.\n`;
+  if (userName) ctx += `- CLIENT : ${userName}.\n`;
+  if (loyaltyPoints !== undefined) ctx += `- FIDÉLITÉ : ${loyaltyPoints} ${currencyName}.\n`;
+
+  const intentionScore = cartItems.length > 0 ? 3 : (activeProduct ? 2 : (recentlyViewed.length > 0 ? 1 : 0));
+  ctx += `- INTENTION SCORE : ${intentionScore}/3.\n`;
+
+  ctx += `\n## PROTOCOLE IA : Priorise l'action de vente selon l'Intention Score.\n`;
   return ctx;
 };
 
 const _trimContextForVoice = (raw: string, maxLen: number) => {
-  const lines = raw
-    .split('\n')
-    .map(l => l.trim())
-    .filter(Boolean);
-  const kept: string[] = [];
-  let used = 0;
-  for (const line of lines) {
-    const candidate = line.length > 280 ? `${line.slice(0, 277)}…` : line;
-    if (used + candidate.length + 1 > maxLen) break;
-    kept.push(candidate);
-    used += candidate.length + 1;
-  }
-  return kept.join('\n');
+  if (raw.length <= maxLen) return raw;
+  return raw.slice(0, maxLen) + '…';
 };
 
-const _buildCatalog = (products: Product[], limit = 10) =>
-  products
-    .slice(0, limit)
-    .map(p => `${p.name}${p.category?.name ? ` (${p.category.name})` : ''} — ${p.price}€`)
-    .join('\n');
+const _buildCatalog = (products: Product[], limit = 8) => {
+  const total = products.length;
+  const header = `## CATALOGUE (${total} références au total)\n`;
+  
+  if (total > 15) {
+    const subset = products.slice(0, 5).map(p => `${p.name} — ${p.price}€`).join('\n');
+    return `${header}Échantillon :\n${subset}\n\n⚠️ CATALOGUE LARGE : Utilise obligatoirement "search_catalog" pour trouver d'autres variétés ou répondre à des besoins spécifiques.`;
+  }
+  
+  return header + products.slice(0, limit).map(p => `${p.name} — ${p.price}€`).join('\n');
+};
 
-/**
- * Prompt pour Gemini Live Voice (Audio)
- */
 export const getVoicePrompt = (
   products: Product[],
   savedPrefs: any,
@@ -454,60 +297,22 @@ export const getVoicePrompt = (
     deliveryFee, deliveryFreeThreshold
   );
   const clientContext = _trimContextForVoice(rawClientContext, VOICE_CONTEXT_MAX_CHARS);
-  const now = new Date();
-  const timeStr = now.toLocaleString('fr-FR', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  });
+  const timeStr = new Date().toLocaleString('fr-FR');
 
-  let finalPrompt = [
+  const finalPrompt = [
     _buildIdentity(budtenderName, storeName),
+    VOICE_CORE_DIRECTIVE,
     VOICE_FORMAT_RULES,
-    VOICE_SALES_RULES,
     _buildAnalysisProtocol(),
     buildCoreVoiceSkillsContext(),
-
     `## CONTEXTE CLIENT\n${clientContext}`,
-    `## RÉFÉRENCE TEMPORELLE (TEMPS RÉEL)\nNous sommes le : ${timeStr}`,
-    customPrompt?.trim() ? `## INSTRUCTIONS SPÉCIFIQUES\n${customPrompt.trim()}` : '',
-    allowCloseSession ? "## FIN DE SESSION\nSi le client exprime explicitement le souhait de partir ou s'il n'a plus besoin d'aide, tu peux clore la session chaleureusement." : "",
-    `## CATALOGUE DISPONIBLE (RÉSUMÉ)\n${_buildCatalog(products)}`,
+    `## RÉGIME TEMPOREL : ${timeStr}`,
+    customPrompt?.trim() ? `## INSTRUCTIONS : ${customPrompt.trim()}` : '',
+    allowCloseSession ? "## FIN : Tu peux clore si le client n'a plus besoin d'aide." : "",
+    `## CATALOGUE :\n${_buildCatalog(products)}`,
   ].filter(Boolean).join('\n\n');
 
-  let sanitized = finalPrompt
-    .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F-\u009F]/g, '')
-    .replace(/[ \t]+/g, ' ')
-    .replace(/\n{3,}/g, '\n\n')
-    .trim();
-
-  if (sanitized.length > VOICE_PROMPT_MAX_CHARS) {
-    finalPrompt = [
-      _buildIdentity(budtenderName, storeName),
-      VOICE_FORMAT_RULES,
-      VOICE_SALES_RULES,
-      _buildAnalysisProtocol(),
-      buildCoreVoiceSkillsContext(),
-      `## CONTEXTE CLIENT\n${_trimContextForVoice(rawClientContext, 1200)}`,
-      customPrompt?.trim() ? `## INSTRUCTIONS SPÉCIFIQUES\n${customPrompt.trim().slice(0, 450)}` : '',
-      `## CATALOGUE DISPONIBLE (RÉSUMÉ)\n${_buildCatalog(products, 6)}`,
-    ].filter(Boolean).join('\n\n');
-
-    sanitized = finalPrompt
-      .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F-\u009F]/g, '')
-      .replace(/[ \t]+/g, ' ')
-      .replace(/\n{3,}/g, '\n\n')
-      .trim();
-  }
-
-  if (sanitized.length > VOICE_PROMPT_MAX_CHARS) {
-    console.warn('[Voice][Prompt] Prompt too long (', sanitized.length, '), trimming to', VOICE_PROMPT_MAX_CHARS);
-    return sanitized.slice(0, VOICE_PROMPT_MAX_CHARS);
-  }
-  return sanitized;
+  return finalPrompt.replace(/\n{3,}/g, '\n\n').trim();
 };
 
 export const getBirthdayGiftPrompt = (
@@ -518,41 +323,6 @@ export const getBirthdayGiftPrompt = (
   budtenderName: string = 'Assistant',
   storeName: string = 'Green Mood'
 ) => {
-  const catalogStr = products.map(p => `- ID : ${p.id}, Nom : ${p.name}, Description : ${p.description}, Catégorie : ${p.category?.name}`).join('\n');
-
-  let historyStr = '';
-  if (pastOrders && pastOrders.length > 0) {
-    historyStr = pastOrders.map(o => o.items.map((i: any) => i.product_name).join(', ')).join(' | ');
-  } else if (pastProducts && pastProducts.length > 0) {
-    historyStr = pastProducts.map(p => p.product_name || p.name).join(', ');
-  }
-
-  return `
-Tu es **${budtenderName}**, un Personal Shopper passionné expert en tendances mondiales chez ${storeName}.
-C'est l'anniversaire de l'un de nos clients privilégiés et tu dois lui offrir un cadeau exceptionnel (accessoire ou pack promotionnel).
-
-🎯 TON OBJECTIF :
-Sélectionner le produit le plus pertinent dans la liste fournie.
-CRITÈRE PRINCIPAL : L'historique des achats réels. Un client régulier a déjà montré de l'intérêt pour certaines catégories. Base-toi sur ces achats pour proposer quelque chose de complémentaire ou de gamme supérieure.
-Si l'historique est vide, repose-toi sur ses préférences déclarées.
-
-🧠 HISTORIQUE D'ACHATS RÉEL (Très important) :
-${historyStr || "Aucun historique d'achat disponible. Ce client est probablement nouveau."}
-
-🧠 PRÉFÉRENCES CLIENT DÉCLARÉES :
-${Object.entries(savedPrefs || {})
-      .filter(([k, v]) => v && !['id', 'user_id', 'updated_at'].includes(k))
-      .map(([k, v]) => `- ${k.replace('_', ' ')} : ${Array.isArray(v) ? v.join(', ') : v}`)
-      .join('\n') || "Aucune préférence spécifique déclarée."}
-
-📦 LISTE DES PRODUITS DISPONIBLES :
-${catalogStr}
-
-📏 RÈGLES DE RÉPONSE :
-1. Analyser l'historique réel pour trouver une logique d'équipement, complétée par les préférences.
-2. Répondre UNIQUEMENT avec l'ID du produit choisi au format JSON suivant :
-{"productId": "PRODUCT_UUID"}
-
-Sois précis et stratégique dans ton choix.
-`;
+  const catalogStr = products.slice(0, 10).map(p => `- ${p.id}: ${p.name}`).join('\n');
+  return `ID : ${budtenderName}. Anniversaire client. Choisis un cadeau (JSON: {"productId": "..."}).\nCATALOGUE:\n${catalogStr}`;
 };
