@@ -4,12 +4,12 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Package, Truck, MapPin, Plus, CreditCard, Coins, ArrowLeft, ShieldCheck, Sparkles, CheckCircle2, Check, Star, Crown, FlaskConical, ArrowRight } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { trackEvent } from '../lib/analytics';
-import { Address } from '../lib/types';
+import { Address, AppliedPromo } from '../lib/types';
 import { useCartStore } from '../store/cartStore';
 import { useAuthStore } from '../store/authStore';
 import { useSettingsStore } from '../store/settingsStore';
 import SEO from '../components/SEO';
-import PromoCodeInput, { AppliedPromo } from '../components/PromoCodeInput';
+import PromoCodeInput from '../components/PromoCodeInput';
 import StripePaymentForm from '../components/StripePaymentForm';
 import LoyaltyRedemption from '../components/LoyaltyRedemption';
 
@@ -771,15 +771,39 @@ export default function Checkout() {
                       <span className="text-xs font-semibold text-slate-400">{items.length} article(s)</span>
                     </div>
                     <div className="max-h-[260px] space-y-4 overflow-y-auto pr-1">
-                      {items.map(({ product, quantity }) => (
-                        <div key={product.id} className="flex items-start justify-between gap-4 rounded-2xl bg-slate-950 p-4 border border-white/5">
-                          <div className="min-w-0 flex-1">
-                            <p className="truncate text-sm font-black uppercase tracking-[0.14em] text-white">{product.name}</p>
-                            <p className="mt-1 text-xs text-slate-500">Quantité : {quantity}</p>
+                      {items.map(({ product, quantity, subscriptionFrequency }) => {
+                        const discount = subscriptionFrequency === 'weekly' ? 0.15 : 
+                                       subscriptionFrequency === 'biweekly' ? 0.10 : 
+                                       subscriptionFrequency === 'monthly' ? 0.05 : 0;
+                        const itemPrice = product.price * (1 - discount) * quantity;
+                        
+                        return (
+                          <div key={`${product.id}-${subscriptionFrequency || 'once'}`} className="flex items-start justify-between gap-4 rounded-2xl bg-slate-950 p-4 border border-white/5">
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <p className="truncate text-sm font-black uppercase tracking-[0.14em] text-white">{product.name}</p>
+                                {subscriptionFrequency && (
+                                  <span className="text-[7px] font-black uppercase bg-emerald-400/10 text-emerald-400 px-1.5 py-0.5 rounded-full border border-emerald-400/20 whitespace-nowrap">
+                                    Abonnement
+                                  </span>
+                                )}
+                              </div>
+                              <p className="text-xs text-slate-500">Quantité : {quantity}</p>
+                              {subscriptionFrequency && (
+                                <p className="text-[10px] text-emerald-400/60 font-medium">
+                                  {subscriptionFrequency === 'weekly' ? 'Livraison Hebdomadaire' : subscriptionFrequency === 'biweekly' ? 'Toutes les 2 semaines' : 'Mensuel'}
+                                </p>
+                              )}
+                            </div>
+                            <div className="text-right">
+                              {subscriptionFrequency && (
+                                <p className="text-[10px] text-slate-500 line-through">{(product.price * quantity).toFixed(2)} €</p>
+                              )}
+                              <p className="text-sm font-bold text-white">{itemPrice.toFixed(2)} €</p>
+                            </div>
                           </div>
-                          <p className="text-sm font-bold text-white">{(product.price * quantity).toFixed(2)} €</p>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
 

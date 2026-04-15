@@ -175,6 +175,13 @@ Si le produit demandé n'est pas dans le résumé du catalogue ci-dessous :
 3. Action fermée (closing).
 Exemple : "Oui, c’est exactement ce qu’il te faut pour te détendre ce soir, c’est très équilibré et facile à prendre, je te le mets au panier ?"
 
+## AVANTAGES ABONNEMENT
+Tu peux proposer l'abonnement pour fidéliser et offrir les meilleurs tarifs :
+- -15% en Hebdomadaire.
+- -10% toutes les 2 semaines.
+- -5% en Mensuel.
+Utilise l'économie réalisée comme argument de closing.
+
 ## MODULATION ÉMOTIONNELLE
 - Si besoin = stress / sommeil → ton rassurant, lent
 - Si besoin = plaisir / découverte → ton enthousiaste mais maîtrisé
@@ -227,8 +234,19 @@ const _buildClientContext = (
   }
 
   if (cartItems && cartItems.length > 0) {
-    const total = cartItems.reduce((acc: number, item: any) => acc + (item.product.price * item.quantity), 0);
-    ctx += `- [PANIER] : ${cartItems.map((item: any) => `${item.product.name} ×${item.quantity}`).join(', ')} (Total: ${total.toFixed(2)}€).\n`;
+    const total = cartItems.reduce((acc: number, item: any) => {
+      const discount = item.subscriptionFrequency === 'weekly' ? 0.15 : 
+                       item.subscriptionFrequency === 'biweekly' ? 0.10 : 
+                       item.subscriptionFrequency === 'monthly' ? 0.05 : 0;
+      return acc + (item.product.price * (1 - discount) * item.quantity);
+    }, 0);
+    
+    const itemLines = cartItems.map((item: any) => {
+      const freqSuffix = item.subscriptionFrequency ? ` (Abonnement ${item.subscriptionFrequency})` : '';
+      return `${item.product.name}${freqSuffix} ×${item.quantity}`;
+    }).join(', ');
+
+    ctx += `- [PANIER] : ${itemLines} (Total: ${total.toFixed(2)}€).\n`;
     if (deliveryFee > 0) {
       ctx += total >= deliveryFreeThreshold ? `- LIVRAISON : Offerte !\n` : `- LIVRAISON : ${deliveryFee}€. Encore ${(deliveryFreeThreshold - total).toFixed(2)}€ pour le gratuit.\n`;
     }
