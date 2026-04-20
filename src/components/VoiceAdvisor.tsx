@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Mic, MicOff, PhoneOff, Volume2, X, Radio, Headphones } from 'lucide-react';
 import { Product, Review } from '../lib/types';
@@ -8,6 +8,9 @@ import { useGeminiLiveVoice, VoiceState } from '../hooks/useGeminiLiveVoice';
 import { useSettingsStore } from '../store/settingsStore';
 import { useTheme } from './ThemeProvider';
 import { useWishlistStore } from '../store/wishlistStore';
+import { useBudtenderStore } from '../store/budtenderStore';
+import TranscriptPanel from './budtender-ui/TranscriptPanel';
+import type { TranscriptMessage, SessionEndData } from '../types/budtenderSession';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -37,6 +40,7 @@ interface Props {
     loyaltyPoints?: number;
     allowCloseSession?: boolean;
     wishlistItems?: string[];
+    onSessionEnd?: (data: SessionEndData) => void;
 }
 
 // ─── Status labels ───────────────────────────────────────────────────────────
@@ -111,6 +115,7 @@ function WaveformBars({ state }: { state: VoiceState }) {
 function MicOrb({ voiceState, isMuted, isSearching }: { voiceState: VoiceState; isMuted: boolean; isSearching: boolean }) {
     const { resolvedTheme } = useTheme();
     const isLightTheme = resolvedTheme === 'light';
+
     const isActive = voiceState === 'listening' || voiceState === 'speaking';
     const isListening = voiceState === 'listening';
     const isSpeaking = voiceState === 'speaking';
@@ -201,12 +206,16 @@ export default function VoiceAdvisor({
     activeProduct,
     showUI = true, cartItems = [], customPrompt, loyaltyPoints, allowCloseSession = true,
     wishlistItems = [],
+    onSessionEnd,
 }: Props) {
     const { settings } = useSettingsStore();
     const { resolvedTheme } = useTheme();
     const isLightTheme = resolvedTheme === 'light';
 
-    const { voiceState, error, isMuted, isSupported, compatibilityError, toolActivity, startSession, stopSession, toggleMute } =
+    const proactiveGreeting = useBudtenderStore((s) => s.proactiveGreeting);
+    const setProactiveGreeting = useBudtenderStore((s) => s.setProactiveGreeting);
+
+    const { voiceState, error, isMuted, isSupported, compatibilityError, toolActivity, startSession, stopSession, toggleMute, inputTranscript, outputTranscript } =
         useGeminiLiveVoice({
             products,
             pastProducts,
@@ -233,6 +242,7 @@ export default function VoiceAdvisor({
             prewarmToken: isOpen,
             wishlistItems,
             onToggleFavorite,
+            proactiveGreeting,
         });
 
     // Auto-start ONCE when the panel opens — never on subsequent voiceState changes.
@@ -243,14 +253,74 @@ export default function VoiceAdvisor({
         if (isOpen && isSupported) {
             if (!hasAutoStartedRef.current) {
                 hasAutoStartedRef.current = true;
-                const timer = setTimeout(() => startSession(), 400);
+                const timer = setTimeout(() => {
+                    startSession();
+                    setProactiveGreeting(null); // clear after session starts
+                }, 400);
                 return () => clearTimeout(timer);
             }
         } else {
             // Panel closed: reset so next open auto-starts fresh
             hasAutoStartedRef.current = false;
         }
-    }, [isOpen, isSupported, startSession]);
+    }, [isOpen, isSupported, startSession, setProactiveGreeting]);
+
+    // ── Session start tracking ───────────────────────────────────────────────
+    const sessionStartRef = useRef<number | null>(null);
+    useEffect(() => {
+        if (voiceState === 'listening' && sessionStartRef.current === null) {
+            sessionStartRef.current = Date.now();
+        }
+        if (voiceState === 'idle' && !isOpen) {
+            sessionStartRef.current = null;
+        }
+    }, [voiceState, isOpen]);
+
+    // ── Transcript accumulation ──────────────────────────────────────────────
+    const [messages, setMessages] = useState<TranscriptMessage[]>([]);
+    const prevInputRef = useRef('');
+    const prevOutputRef = useRef('');
+
+    useEffect(() => {
+        if (inputTranscript && inputTranscript !== prevInputRef.current) {
+            const trimmed = inputTranscript.trim();
+            if (trimmed) {
+                setMessages(prev => {
+                    const last = prev[prev.length - 1];
+                    if (last?.role === 'user') {
+                        return [...prev.slice(0, -1), { ...last, text: trimmed }];
+                    }
+                    return [...prev, { role: 'user', text: trimmed, timestamp: Date.now() }];
+                });
+            }
+            prevInputRef.current = inputTranscript;
+        }
+    }, [inputTranscript]);
+
+    useEffect(() => {
+        if (outputTranscript && outputTranscript !== prevOutputRef.current) {
+            const trimmed = outputTranscript.trim();
+            if (trimmed) {
+                setMessages(prev => {
+                    const last = prev[prev.length - 1];
+                    if (last?.role === 'assistant') {
+                        return [...prev.slice(0, -1), { ...last, text: trimmed }];
+                    }
+                    return [...prev, { role: 'assistant', text: trimmed, timestamp: Date.now() }];
+                });
+            }
+            prevOutputRef.current = outputTranscript;
+        }
+    }, [outputTranscript]);
+
+    // Reset messages only when panel closes
+    useEffect(() => {
+        if (!isOpen) {
+            setMessages([]);
+            prevInputRef.current = '';
+            prevOutputRef.current = '';
+        }
+    }, [isOpen]);
 
     const isActive = voiceState === 'listening' || voiceState === 'speaking';
     const statusHint = voiceState === 'connecting'
@@ -264,11 +334,29 @@ export default function VoiceAdvisor({
                     : 'Prêt à démarrer une session vocale.';
 
     const handleClose = () => {
+        const endedAt = Date.now();
+        if (onSessionEnd && sessionStartRef.current) {
+            onSessionEnd({
+                startedAt: sessionStartRef.current,
+                endedAt,
+                transcript: messages,
+                recommendedProducts: [],
+            });
+        }
         stopSession();
         onClose();
     };
 
     const handleHangup = () => {
+        const endedAt = Date.now();
+        if (onSessionEnd && sessionStartRef.current) {
+            onSessionEnd({
+                startedAt: sessionStartRef.current,
+                endedAt,
+                transcript: messages,
+                recommendedProducts: [],
+            });
+        }
         stopSession();
         onClose();
         if (onHangup) onHangup();
@@ -286,7 +374,7 @@ export default function VoiceAdvisor({
                     exit={{ opacity: 0, scale: 0.9, y: 12, filter: 'blur(4px)' }}
                     transition={{ type: 'spring', stiffness: 500, damping: 35 }}
                     /* Position: refined and more compact */
-                    className="fixed bottom-24 sm:bottom-20 right-4 sm:right-6 z-[99998] w-[min(280px,calc(100vw-2rem))] pointer-events-auto"
+                    className="fixed bottom-24 sm:bottom-20 right-4 sm:right-6 z-[99998] w-[min(320px,calc(100vw-2rem))] pointer-events-auto"
                     style={{ originX: 1, originY: 1 }}
                 >
                     <div
@@ -390,6 +478,13 @@ export default function VoiceAdvisor({
                                 )}
                             </div>
                         </div>
+
+                        {/* ── Transcript ── */}
+                        {messages.length > 0 && (
+                            <div className={`border-t ${isLightTheme ? 'border-slate-100' : 'border-white/[0.04]'}`}>
+                                <TranscriptPanel messages={messages} />
+                            </div>
+                        )}
 
                         {/* ── Controls ── */}
                         <div className="px-3 pb-3 flex items-center gap-1.5">

@@ -52,6 +52,7 @@ const MachineConformity = lazy(() => import("./pages/MachineConformity"));
 const CGV = lazy(() => import("./pages/CGV"));
 const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
 const FAQPage = lazy(() => import("./pages/FAQPage"));
+const BudTenderHistory = lazy(() => import("./pages/BudTenderHistory"));
 // Assistant page supprimée — seul le mode vocal est conservé
 
 function PageLoader() {
@@ -147,6 +148,7 @@ export default function App() {
               <Route path="compte/parrainage" element={<Referrals />} />
               <Route path="compte/cadeau-anniversaire" element={<BirthdayGift />} />
               <Route path="compte/profil" element={<Profile />} />
+              <Route path="compte/budtender-historique" element={<BudTenderHistory />} />
             </Route>
 
             {/* Catch-all 404 */}

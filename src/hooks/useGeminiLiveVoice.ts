@@ -1204,6 +1204,8 @@ export function useGeminiLiveVoice({
     cleanup();
     isManualCloseRef.current = false;
     isClosingRef.current = false;
+    setInputTranscript('');
+    setOutputTranscript('');
     const sid = sessionIdRef.current + 1;
     sessionIdRef.current = sid;
 
@@ -2431,5 +2433,5 @@ export function useGeminiLiveVoice({
 
   const isSupported = useMemo(() => !compatibilityError, [compatibilityError]);
 
-  return { voiceState, error, isMuted, isSupported, compatibilityError, toolActivity, startSession, stopSession, toggleMute };
+  return { voiceState, error, isMuted, isSupported, compatibilityError, toolActivity, startSession, stopSession, toggleMute, inputTranscript, outputTranscript };
 }

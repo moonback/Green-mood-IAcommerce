@@ -9,6 +9,9 @@ import { getCachedProducts, getCachedSettings } from "../lib/budtenderCache";
 import { Product } from "../lib/types";
 import { BudTenderSettings } from "../lib/budtenderSettings";
 import { useBudtenderStore } from "../store/budtenderStore";
+import { useAuthStore } from "../store/authStore";
+import { shouldSendSummary } from "../lib/sessionGuard";
+import type { SessionEndData } from "../types/budtenderSession";
 import ProductCompareModal from "./ProductCompareModal";
 
 // UI Components
@@ -50,6 +53,37 @@ export default function BudTender() {
   const [settings, setSettings] = useState<BudTenderSettings | null>(null);
 
   const memory = useBudTenderMemory();
+
+  const handleSessionEnd = useCallback(async (data: SessionEndData) => {
+    const user = useAuthStore.getState().user;
+    if (!user?.email) return;
+
+    const durationSec = Math.floor((data.endedAt - data.startedAt) / 1000);
+    if (!shouldSendSummary(durationSec, user.id)) return;
+
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+    fetch(`${supabaseUrl}/functions/v1/send-session-summary`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${supabaseAnonKey}`,
+      },
+      body: JSON.stringify({
+        user_id: user.id,
+        user_email: user.email,
+        user_name: user.user_metadata?.full_name || user.email,
+        started_at: new Date(data.startedAt).toISOString(),
+        ended_at: new Date(data.endedAt).toISOString(),
+        duration_sec: durationSec,
+        transcript: data.transcript,
+        recommended_products: data.recommendedProducts,
+        store_name: settings?.store_name || 'Green-mood',
+        budtender_name: settings?.budtender_name || 'BudTender',
+      }),
+    }).catch(err => console.error('[BudTender] Session summary failed:', err));
+  }, [settings]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -162,6 +196,7 @@ export default function BudTender() {
         wishlistItems={wishlistItems}
         onToggleFavorite={toggleFavorite}
         showUI={true}
+        onSessionEnd={handleSessionEnd}
       />
 
       <AnimatePresence>
