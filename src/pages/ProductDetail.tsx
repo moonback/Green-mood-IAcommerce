@@ -1,4 +1,4 @@
-import { Suspense, lazy, useEffect, useMemo, useState, Fragment } from 'react';
+import { Suspense, lazy, useEffect, useMemo, useRef, useState, Fragment } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { ArrowLeft, ChevronRight, ShoppingBag, Star, BookOpen, Sparkles } from 'lucide-react';
 import { motion } from 'motion/react';
@@ -18,6 +18,7 @@ import { buildProductSEO } from '../lib/seo/metaBuilder';
 import { breadcrumbSchema } from '../lib/seo/schemaBuilder';
 import { useSettingsStore } from '../store/settingsStore';
 import { formatProductText } from '../lib/textFormatter';
+import { buildProactiveGreeting } from '../lib/proactiveGreeting';
 
 const ProductStory = lazy(() => import('../components/product-premium/ProductStory'));
 const TerpeneEffectsChart = lazy(() => import('../components/product-premium/TerpeneEffectsChart'));
@@ -178,6 +179,10 @@ export default function ProductDetail() {
   const navigate = useNavigate();
   const setActiveProduct = useBudtenderStore((s) => s.setActiveProduct);
   const currentActiveId = useBudtenderStore((s) => s.activeProduct?.id);
+  const isVoiceOpen = useBudtenderStore((s) => s.isVoiceOpen);
+  const openVoice = useBudtenderStore((s) => s.openVoice);
+  const setProactiveGreeting = useBudtenderStore((s) => s.setProactiveGreeting);
+  const globalSettings = useSettingsStore((s) => s.settings);
 
   const { data: product, isLoading: productLoading, error: productError } = useProductBySlug(slug);
   const { data: reviews = [] } = useProductReviews(product?.id);
@@ -226,6 +231,36 @@ export default function ProductDetail() {
   const updateQuantity = useCartStore((s) => s.updateQuantity);
   const openSidebar = useCartStore((s) => s.openSidebar);
   const addToast = useToastStore((s) => s.addToast);
+
+  // ── Proactive BudTender refs ──
+  const proactiveTriggeredRef = useRef(false);
+  const proactiveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Reset triggered flag when navigating to a new product
+  useEffect(() => {
+    proactiveTriggeredRef.current = false;
+  }, [product?.id]);
+
+  // ── Proactive BudTender timer ──
+  useEffect(() => {
+    if (!product) return;
+    if (!globalSettings?.budtender_voice_enabled) return;
+    if (isVoiceOpen) return;
+    if (proactiveTriggeredRef.current) return;
+
+    proactiveTimerRef.current = setTimeout(() => {
+      if (!isVoiceOpen && !proactiveTriggeredRef.current) {
+        proactiveTriggeredRef.current = true;
+        const greeting = buildProactiveGreeting(product, globalSettings);
+        setProactiveGreeting(greeting);
+        openVoice();
+      }
+    }, 30_000);
+
+    return () => {
+      if (proactiveTimerRef.current) clearTimeout(proactiveTimerRef.current);
+    };
+  }, [product?.id, isVoiceOpen, globalSettings?.budtender_voice_enabled]);
 
   // Sync with BudTender store (Cortex AI)
   useEffect(() => {

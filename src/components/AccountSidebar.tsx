@@ -13,6 +13,7 @@ import {
   LogOut,
   BrainCircuit,
   ChevronRight,
+  MessageSquare,
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useEffect } from 'react';
@@ -59,6 +60,7 @@ export default function AccountSidebar() {
     { icon: Users,           label: 'Parrainage',       to: '/compte/parrainage',            enabled: settings.loyalty_program_enabled },
     { icon: Settings,        label: 'Paramètres',       to: '/compte/profil' },
     { icon: BrainCircuit,    label: 'Profil IA',        to: '/compte/profil?tab=ai' },
+    { icon: MessageSquare,   label: 'Historique IA',    to: '/compte/budtender-historique' },
   ].filter((l) => l.enabled !== false);
 
   return (

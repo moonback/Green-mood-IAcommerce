@@ -20,6 +20,7 @@ import {
   Copy,
   Check,
   Sparkles,
+  MessageSquare,
 } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import { useSettingsStore } from '../store/settingsStore';
@@ -215,6 +216,14 @@ export default function Account() {
       label: 'Cadeau Anniversaire',
       description: "L'IA choisit pour vous !",
       to: '/compte/cadeau-anniversaire',
+      accentHex: '#10b981',
+      size: 'large',
+    },
+    {
+      icon: MessageSquare,
+      label: 'Historique BudTender',
+      description: 'Vos conversations passées',
+      to: '/compte/budtender-historique',
       accentHex: '#10b981',
       size: 'large',
     },
