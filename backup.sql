@@ -31,6 +31,13 @@ CREATE EXTENSION IF NOT EXISTS "pg_stat_statements" WITH SCHEMA "extensions";
 
 
 
+CREATE EXTENSION IF NOT EXISTS "pg_trgm" WITH SCHEMA "public";
+
+
+
+
+
+
 CREATE EXTENSION IF NOT EXISTS "pgcrypto" WITH SCHEMA "extensions";
 
 
@@ -87,8 +94,14 @@ CREATE OR REPLACE FUNCTION "public"."check_is_admin"() RETURNS boolean
     SET "search_path" TO 'public'
     AS $$
 BEGIN
-  IF auth.role() = 'service_role' OR auth.uid() IS NULL THEN
+  -- Service role always bypasses
+  IF auth.role() = 'service_role' THEN
     RETURN true;
+  END IF;
+
+  -- Anonymous users are NEVER admins
+  IF auth.uid() IS NULL THEN
+    RETURN false;
   END IF;
 
   RETURN EXISTS (
@@ -306,74 +319,13 @@ CREATE OR REPLACE FUNCTION "public"."finalize_order_and_award_points"("p_order_i
     LANGUAGE "plpgsql" SECURITY DEFINER
     SET "search_path" TO 'public'
     AS $$
-DECLARE
-  v_order public.orders%ROWTYPE;
-  v_profile_points integer;
-  v_new_balance integer;
 BEGIN
-  SELECT * INTO v_order
-  FROM public.orders
-  WHERE id = p_order_id
-  FOR UPDATE;
-
-  IF NOT FOUND THEN
-    RAISE EXCEPTION 'ORDER_NOT_FOUND:%', p_order_id;
-  END IF;
-
-  IF v_order.payment_status = 'paid' THEN
-    RETURN;
-  END IF;
-
   UPDATE public.orders
   SET payment_status = 'paid',
       status = 'processing',
       stripe_payment_intent_id = COALESCE(p_payment_intent_id, stripe_payment_intent_id)
-  WHERE id = p_order_id;
-
-  SELECT loyalty_points INTO v_profile_points
-  FROM public.profiles
-  WHERE id = v_order.user_id
-  FOR UPDATE;
-
-  v_new_balance := GREATEST(
-    0,
-    COALESCE(v_profile_points, 0)
-    - COALESCE(v_order.loyalty_points_redeemed, 0)
-    + COALESCE(v_order.loyalty_points_earned, 0)
-  );
-
-  UPDATE public.profiles
-  SET loyalty_points = v_new_balance,
-      updated_at = now()
-  WHERE id = v_order.user_id;
-
-  IF COALESCE(v_order.loyalty_points_earned, 0) > 0 THEN
-    INSERT INTO public.loyalty_transactions (user_id, order_id, type, points, balance_after, note)
-    VALUES (
-      v_order.user_id,
-      v_order.id,
-      'earned',
-      v_order.loyalty_points_earned,
-      v_new_balance,
-      'Commande #' || upper(left(v_order.id::text, 8))
-    );
-  END IF;
-
-  IF COALESCE(v_order.loyalty_points_redeemed, 0) > 0 THEN
-    INSERT INTO public.loyalty_transactions (user_id, order_id, type, points, balance_after, note)
-    VALUES (
-      v_order.user_id,
-      v_order.id,
-      'redeemed',
-      v_order.loyalty_points_redeemed,
-      v_new_balance,
-      'Utilisation de points sur commande #' || upper(left(v_order.id::text, 8))
-    );
-  END IF;
-
-  IF v_order.promo_code IS NOT NULL THEN
-    PERFORM public.increment_promo_uses(v_order.promo_code);
-  END IF;
+  WHERE id = p_order_id
+    AND payment_status != 'paid';
 END;
 $$;
 
@@ -469,6 +421,81 @@ $$;
 
 
 ALTER FUNCTION "public"."get_product_recommendations"("p_product_id" "uuid", "p_limit" integer) OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."handle_loyalty_on_payment"() RETURNS "trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'public'
+    AS $$
+DECLARE
+  v_profile_points integer;
+  v_new_balance integer;
+BEGIN
+  -- Detection of status change to 'paid'
+  IF (TG_OP = 'INSERT' AND NEW.payment_status = 'paid') 
+     OR (TG_OP = 'UPDATE' AND NEW.payment_status = 'paid' AND (OLD.payment_status IS NULL OR OLD.payment_status <> 'paid')) THEN
+     
+    -- Ensure user_id is present
+    IF NEW.user_id IS NOT NULL THEN
+      -- Get user's current points
+      SELECT loyalty_points INTO v_profile_points
+      FROM public.profiles
+      WHERE id = NEW.user_id
+      FOR UPDATE;
+
+      -- Calculate new balance
+      v_new_balance := GREATEST(
+        0,
+        COALESCE(v_profile_points, 0)
+        - COALESCE(NEW.loyalty_points_redeemed, 0)
+        + COALESCE(NEW.loyalty_points_earned, 0)
+      );
+
+      -- Update profile
+      UPDATE public.profiles
+      SET loyalty_points = v_new_balance
+      WHERE id = NEW.user_id;
+
+      -- Log transactions
+      IF COALESCE(NEW.loyalty_points_earned, 0) > 0 THEN
+        INSERT INTO public.loyalty_transactions (user_id, order_id, type, points, balance_after, note)
+        VALUES (
+          NEW.user_id,
+          NEW.id,
+          'earned',
+          NEW.loyalty_points_earned,
+          v_new_balance,
+          'Commande #' || upper(left(NEW.id::text, 8))
+        );
+      END IF;
+
+      IF COALESCE(NEW.loyalty_points_redeemed, 0) > 0 THEN
+        INSERT INTO public.loyalty_transactions (user_id, order_id, type, points, balance_after, note)
+        VALUES (
+          NEW.user_id,
+          NEW.id,
+          'redeemed',
+          NEW.loyalty_points_redeemed,
+          v_new_balance,
+          'Utilisation de points sur commande #' || upper(left(NEW.id::text, 8))
+        );
+      END IF;
+      
+      -- Increment promo uses if applicable
+      IF NEW.promo_code IS NOT NULL THEN
+        UPDATE public.promo_codes 
+        SET uses_count = uses_count + 1 
+        WHERE code = NEW.promo_code;
+      END IF;
+    END IF;
+  END IF;
+  
+  RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."handle_loyalty_on_payment"() OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."handle_new_user"() RETURNS "trigger"
@@ -596,23 +623,55 @@ CREATE OR REPLACE FUNCTION "public"."match_products"("query_embedding" "public".
 BEGIN
   RETURN QUERY
   SELECT
-    p.id, p.category_id, p.slug, p.name, p.description,
-    p.weight_grams, p.price, p.image_url,
-    p.stock_quantity, p.is_available, p.is_featured, p.is_active,
-    p.created_at, p.attributes, p.is_bundle, p.original_value,
-    1 - (p.embedding <=> query_embedding) AS similarity
-  FROM public.products p
+    p.id, p.category_id, p.slug, p.name, p.description, p.weight_grams, p.price, p.image_url,
+    p.stock_quantity, p.is_available, p.is_featured, p.is_active, p.created_at, p.attributes, p.is_bundle, p.original_value,
+    1 - (p.embedding::halfvec(3072) <=> query_embedding::halfvec(3072)) AS similarity
+  FROM products p
   WHERE p.is_active = true
-    AND p.is_available = true
     AND p.embedding IS NOT NULL
-    AND 1 - (p.embedding <=> query_embedding) > match_threshold
-  ORDER BY p.embedding <=> query_embedding
+    AND 1 - (p.embedding::halfvec(3072) <=> query_embedding::halfvec(3072)) > match_threshold
+  ORDER BY p.embedding::halfvec(3072) <=> query_embedding::halfvec(3072)
   LIMIT match_count;
 END;
 $$;
 
 
 ALTER FUNCTION "public"."match_products"("query_embedding" "public"."vector", "match_threshold" double precision, "match_count" integer) OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."match_products_text"("query_text" "text", "match_count" integer DEFAULT 30) RETURNS TABLE("id" "uuid", "category_id" "uuid", "slug" "text", "name" "text", "description" "text", "weight_grams" numeric, "price" numeric, "image_url" "text", "stock_quantity" integer, "is_available" boolean, "is_featured" boolean, "is_active" boolean, "created_at" timestamp with time zone, "attributes" "jsonb", "is_bundle" boolean, "original_value" numeric, "similarity" double precision)
+    LANGUAGE "plpgsql"
+    AS $$
+BEGIN
+  RETURN QUERY
+  SELECT
+    p.id, p.category_id, p.slug, p.name, p.description,
+    p.weight_grams, p.price, p.image_url,
+    p.stock_quantity, p.is_available, p.is_featured, p.is_active,
+    p.created_at, p.attributes, p.is_bundle, p.original_value,
+    (CASE 
+      WHEN p.name ILIKE query_text THEN 1.0
+      WHEN p.name ILIKE query_text || '%' THEN 0.8
+      WHEN p.name ILIKE '%' || query_text || '%' THEN 0.6
+      WHEN p.description ILIKE '%' || query_text || '%' THEN 0.4
+      ELSE 0.2
+    END)::float as similarity
+  FROM public.products p
+  WHERE p.is_active = true
+    AND p.is_available = true
+    AND (
+      p.name ILIKE '%' || query_text || '%'
+      OR p.description ILIKE '%' || query_text || '%'
+      OR p.slug ILIKE '%' || query_text || '%'
+      OR p.attributes::text ILIKE '%' || query_text || '%'
+    )
+  ORDER BY similarity DESC, p.is_featured DESC
+  LIMIT match_count;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."match_products_text"("query_text" "text", "match_count" integer) OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."prevent_admin_self_escalation"() RETURNS "trigger"
@@ -736,6 +795,66 @@ $$;
 
 
 ALTER FUNCTION "public"."reserve_stock_and_create_order"("p_user_id" "uuid", "p_items" "jsonb", "p_delivery_type" "text", "p_address_id" "uuid", "p_subtotal" numeric, "p_delivery_fee" numeric, "p_total" numeric, "p_points_earned" integer, "p_points_redeemed" integer, "p_promo_code" "text", "p_promo_discount" numeric) OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."rls_auto_enable"() RETURNS "event_trigger"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    SET "search_path" TO 'pg_catalog'
+    AS $$
+DECLARE
+  cmd record;
+BEGIN
+  FOR cmd IN
+    SELECT *
+    FROM pg_event_trigger_ddl_commands()
+    WHERE command_tag IN ('CREATE TABLE', 'CREATE TABLE AS', 'SELECT INTO')
+      AND object_type IN ('table','partitioned table')
+  LOOP
+     IF cmd.schema_name IS NOT NULL AND cmd.schema_name IN ('public') AND cmd.schema_name NOT IN ('pg_catalog','information_schema') AND cmd.schema_name NOT LIKE 'pg_toast%' AND cmd.schema_name NOT LIKE 'pg_temp%' THEN
+      BEGIN
+        EXECUTE format('alter table if exists %s enable row level security', cmd.object_identity);
+        RAISE LOG 'rls_auto_enable: enabled RLS on %', cmd.object_identity;
+      EXCEPTION
+        WHEN OTHERS THEN
+          RAISE LOG 'rls_auto_enable: failed to enable RLS on %', cmd.object_identity;
+      END;
+     ELSE
+        RAISE LOG 'rls_auto_enable: skip % (either system schema or not in enforced list: %.)', cmd.object_identity, cmd.schema_name;
+     END IF;
+  END LOOP;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."rls_auto_enable"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."search_products_fuzzy"("search_text" "text", "match_threshold" double precision DEFAULT 0.3, "match_count" integer DEFAULT 5) RETURNS SETOF "public"."products"
+    LANGUAGE "plpgsql" SECURITY DEFINER
+    AS $$
+BEGIN
+  -- Set the similarity threshold for the % operator
+  -- Note: similarity() ignores the set_limit, but % uses it.
+  -- Here we use similarity() directly for ordering.
+  RETURN QUERY
+  SELECT p.*
+  FROM public.products p
+  WHERE p.is_active = true
+    AND (
+      p.name % search_text 
+      OR similarity(p.name, search_text) > match_threshold
+    )
+  ORDER BY similarity(p.name, search_text) DESC
+  LIMIT match_count;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."search_products_fuzzy"("search_text" "text", "match_threshold" double precision, "match_count" integer) OWNER TO "postgres";
+
+
+COMMENT ON FUNCTION "public"."search_products_fuzzy"("search_text" "text", "match_threshold" double precision, "match_count" integer) IS 'Recherche floue de produits utilisant pg_trgm (trigrammes) pour une meilleure performance et tolérance aux fautes de frappe.';
+
 
 
 CREATE OR REPLACE FUNCTION "public"."set_updated_at"() RETURNS "trigger"
@@ -873,6 +992,32 @@ CREATE TABLE IF NOT EXISTS "public"."analytics_events" (
 ALTER TABLE "public"."analytics_events" OWNER TO "postgres";
 
 
+CREATE OR REPLACE VIEW "public"."analytics_funnel_daily" AS
+ WITH "daily_sessions" AS (
+         SELECT "date_trunc"('day'::"text", "analytics_events"."created_at") AS "event_date",
+            "analytics_events"."session_id",
+            "bool_or"(("analytics_events"."event_type" = 'page_view'::"text")) AS "has_viewed",
+            "bool_or"(("analytics_events"."event_type" = 'cart_add'::"text")) AS "has_added_to_cart",
+            "bool_or"(("analytics_events"."event_type" = 'checkout_start'::"text")) AS "has_started_checkout",
+            "bool_or"(("analytics_events"."event_type" = 'purchase'::"text")) AS "has_purchased"
+           FROM "public"."analytics_events"
+          GROUP BY ("date_trunc"('day'::"text", "analytics_events"."created_at")), "analytics_events"."session_id"
+        )
+ SELECT "event_date",
+    "count"("session_id") AS "total_sessions",
+    "count"(*) FILTER (WHERE "has_viewed") AS "unique_visitors",
+    "count"(*) FILTER (WHERE "has_added_to_cart") AS "cart_adds",
+    "count"(*) FILTER (WHERE "has_started_checkout") AS "checkout_starts",
+    "count"(*) FILTER (WHERE "has_purchased") AS "conversion_count",
+    "round"(((("count"(*) FILTER (WHERE "has_purchased"))::numeric / (NULLIF("count"(*) FILTER (WHERE "has_viewed"), 0))::numeric) * (100)::numeric), 2) AS "conversion_rate_percent"
+   FROM "daily_sessions"
+  GROUP BY "event_date"
+  ORDER BY "event_date" DESC;
+
+
+ALTER VIEW "public"."analytics_funnel_daily" OWNER TO "postgres";
+
+
 CREATE TABLE IF NOT EXISTS "public"."blog_posts" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "title" "text" NOT NULL,
@@ -913,6 +1058,22 @@ CREATE TABLE IF NOT EXISTS "public"."budtender_interactions" (
 
 
 ALTER TABLE "public"."budtender_interactions" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."budtender_sessions" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "user_id" "uuid" NOT NULL,
+    "started_at" timestamp with time zone NOT NULL,
+    "ended_at" timestamp with time zone NOT NULL,
+    "duration_sec" integer NOT NULL,
+    "transcript" "jsonb" DEFAULT '[]'::"jsonb" NOT NULL,
+    "recommended_products" "jsonb" DEFAULT '[]'::"jsonb" NOT NULL,
+    "email_sent" boolean DEFAULT false NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+ALTER TABLE "public"."budtender_sessions" OWNER TO "postgres";
 
 
 CREATE TABLE IF NOT EXISTS "public"."bundle_items" (
@@ -1199,6 +1360,31 @@ CREATE TABLE IF NOT EXISTS "public"."search_embeddings_cache" (
 ALTER TABLE "public"."search_embeddings_cache" OWNER TO "postgres";
 
 
+CREATE TABLE IF NOT EXISTS "public"."search_logs" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "query_text" "text" NOT NULL,
+    "results_count" integer DEFAULT 0,
+    "user_id" "uuid",
+    "session_id" "text",
+    "created_at" timestamp with time zone DEFAULT "now"()
+);
+
+
+ALTER TABLE "public"."search_logs" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."stock_alerts" (
+    "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
+    "user_id" "uuid" NOT NULL,
+    "product_id" "uuid" NOT NULL,
+    "created_at" timestamp with time zone DEFAULT "timezone"('utc'::"text", "now"()) NOT NULL,
+    "status" "text" DEFAULT 'active'::"text" NOT NULL
+);
+
+
+ALTER TABLE "public"."stock_alerts" OWNER TO "postgres";
+
+
 CREATE TABLE IF NOT EXISTS "public"."stock_movements" (
     "id" "uuid" DEFAULT "gen_random_uuid"() NOT NULL,
     "product_id" "uuid" NOT NULL,
@@ -1305,6 +1491,11 @@ ALTER TABLE ONLY "public"."blog_posts"
 
 ALTER TABLE ONLY "public"."budtender_interactions"
     ADD CONSTRAINT "budtender_interactions_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."budtender_sessions"
+    ADD CONSTRAINT "budtender_sessions_pkey" PRIMARY KEY ("id");
 
 
 
@@ -1448,6 +1639,21 @@ ALTER TABLE ONLY "public"."search_embeddings_cache"
 
 
 
+ALTER TABLE ONLY "public"."search_logs"
+    ADD CONSTRAINT "search_logs_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."stock_alerts"
+    ADD CONSTRAINT "stock_alerts_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."stock_alerts"
+    ADD CONSTRAINT "stock_alerts_user_id_product_id_key" UNIQUE ("user_id", "product_id");
+
+
+
 ALTER TABLE ONLY "public"."stock_movements"
     ADD CONSTRAINT "stock_movements_pkey" PRIMARY KEY ("id");
 
@@ -1556,11 +1762,35 @@ CREATE INDEX "idx_orders_stripe_payment_intent_id" ON "public"."orders" USING "b
 
 
 
+CREATE INDEX "idx_products_embedding_hnsw" ON "public"."products" USING "hnsw" ((("embedding")::"public"."halfvec"(3072)) "public"."halfvec_cosine_ops") WITH ("m"='16', "ef_construction"='64');
+
+
+
+CREATE INDEX "idx_products_name_trgm" ON "public"."products" USING "gist" ("name" "public"."gist_trgm_ops");
+
+
+
 CREATE INDEX "idx_products_sku" ON "public"."products" USING "btree" ("sku");
 
 
 
 CREATE INDEX "idx_search_cache_usage" ON "public"."search_embeddings_cache" USING "btree" ("usage_count" DESC, "last_used_at" DESC);
+
+
+
+CREATE INDEX "idx_search_logs_query_text" ON "public"."search_logs" USING "btree" ("query_text");
+
+
+
+CREATE INDEX "idx_subscriptions_next_delivery" ON "public"."subscriptions" USING "btree" ("next_delivery_date");
+
+
+
+CREATE INDEX "idx_subscriptions_status" ON "public"."subscriptions" USING "btree" ("status");
+
+
+
+CREATE INDEX "idx_subscriptions_user_id" ON "public"."subscriptions" USING "btree" ("user_id");
 
 
 
@@ -1581,6 +1811,10 @@ CREATE OR REPLACE TRIGGER "set_blog_posts_updated_at" BEFORE UPDATE ON "public".
 
 
 CREATE OR REPLACE TRIGGER "set_kb_updated_at" BEFORE UPDATE ON "public"."knowledge_base" FOR EACH ROW EXECUTE FUNCTION "public"."trigger_set_kb_updated_at"();
+
+
+
+CREATE OR REPLACE TRIGGER "tr_loyalty_on_payment" AFTER INSERT OR UPDATE ON "public"."orders" FOR EACH ROW EXECUTE FUNCTION "public"."handle_loyalty_on_payment"();
 
 
 
@@ -1609,6 +1843,11 @@ ALTER TABLE ONLY "public"."budtender_interactions"
 
 ALTER TABLE ONLY "public"."budtender_interactions"
     ADD CONSTRAINT "budtender_interactions_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."budtender_sessions"
+    ADD CONSTRAINT "budtender_sessions_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
 
 
 
@@ -1717,6 +1956,21 @@ ALTER TABLE ONLY "public"."reviews"
 
 
 
+ALTER TABLE ONLY "public"."search_logs"
+    ADD CONSTRAINT "search_logs_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY "public"."stock_alerts"
+    ADD CONSTRAINT "stock_alerts_product_id_fkey" FOREIGN KEY ("product_id") REFERENCES "public"."products"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."stock_alerts"
+    ADD CONSTRAINT "stock_alerts_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE CASCADE;
+
+
+
 ALTER TABLE ONLY "public"."stock_movements"
     ADD CONSTRAINT "stock_movements_product_id_fkey" FOREIGN KEY ("product_id") REFERENCES "public"."products"("id");
 
@@ -1752,6 +2006,24 @@ ALTER TABLE ONLY "public"."user_ai_preferences"
 
 
 
+CREATE POLICY "Admins can manage all sub_orders" ON "public"."subscription_orders" TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."profiles"
+  WHERE (("profiles"."id" = "auth"."uid"()) AND ("profiles"."is_admin" = true)))));
+
+
+
+CREATE POLICY "Admins can manage all subscriptions" ON "public"."subscriptions" TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."profiles"
+  WHERE (("profiles"."id" = "auth"."uid"()) AND ("profiles"."is_admin" = true)))));
+
+
+
+CREATE POLICY "Admins can view all stock alerts" ON "public"."stock_alerts" FOR SELECT TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."profiles"
+  WHERE (("profiles"."id" = "auth"."uid"()) AND ("profiles"."is_admin" = true)))));
+
+
+
 CREATE POLICY "Public read access" ON "public"."search_embeddings_cache" FOR SELECT TO "authenticated", "anon" USING (true);
 
 
@@ -1764,11 +2036,41 @@ CREATE POLICY "Service role can do everything on ai_response_cache" ON "public".
 
 
 
+CREATE POLICY "Users can insert their own subscriptions" ON "public"."subscriptions" FOR INSERT TO "authenticated" WITH CHECK (("auth"."uid"() = "user_id"));
+
+
+
+CREATE POLICY "Users can manage their own stock alerts" ON "public"."stock_alerts" TO "authenticated" USING (("auth"."uid"() = "user_id")) WITH CHECK (("auth"."uid"() = "user_id"));
+
+
+
 CREATE POLICY "Users can only see their own AI preferences" ON "public"."user_ai_preferences" FOR SELECT USING (("auth"."uid"() = "user_id"));
 
 
 
 CREATE POLICY "Users can only update their own AI preferences" ON "public"."user_ai_preferences" USING (("auth"."uid"() = "user_id"));
+
+
+
+CREATE POLICY "Users can update their own subscriptions" ON "public"."subscriptions" FOR UPDATE TO "authenticated" USING (("auth"."uid"() = "user_id"));
+
+
+
+CREATE POLICY "Users can view their own sub_orders" ON "public"."subscription_orders" FOR SELECT TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."subscriptions"
+  WHERE (("subscriptions"."id" = "subscription_orders"."subscription_id") AND ("subscriptions"."user_id" = "auth"."uid"())))));
+
+
+
+CREATE POLICY "Users can view their own subscriptions" ON "public"."subscriptions" FOR SELECT TO "authenticated" USING (("auth"."uid"() = "user_id"));
+
+
+
+CREATE POLICY "Users insert own sessions" ON "public"."budtender_sessions" FOR INSERT WITH CHECK (("auth"."uid"() = "user_id"));
+
+
+
+CREATE POLICY "Users see own sessions" ON "public"."budtender_sessions" FOR SELECT USING (("auth"."uid"() = "user_id"));
 
 
 
@@ -1789,9 +2091,7 @@ CREATE POLICY "analytics_events_insert_all" ON "public"."analytics_events" FOR I
 
 
 
-CREATE POLICY "analytics_events_select_admin" ON "public"."analytics_events" FOR SELECT USING ((EXISTS ( SELECT 1
-   FROM "public"."profiles"
-  WHERE (("profiles"."id" = "auth"."uid"()) AND ("profiles"."is_admin" = true)))));
+CREATE POLICY "analytics_events_select_admin" ON "public"."analytics_events" FOR SELECT TO "authenticated" USING ("public"."check_is_admin"());
 
 
 
@@ -1815,6 +2115,9 @@ CREATE POLICY "blog_posts_public_read" ON "public"."blog_posts" FOR SELECT USING
 
 
 ALTER TABLE "public"."budtender_interactions" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."budtender_sessions" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."bundle_items" ENABLE ROW LEVEL SECURITY;
@@ -1942,6 +2245,10 @@ CREATE POLICY "orders_owner_read" ON "public"."orders" FOR SELECT USING ((("user
 
 
 
+CREATE POLICY "orders_owner_update_status" ON "public"."orders" FOR UPDATE TO "authenticated" USING ((("auth"."uid"() = "user_id") AND ("payment_status" = 'pending'::"text"))) WITH CHECK (("auth"."uid"() = "user_id"));
+
+
+
 ALTER TABLE "public"."pos_reports" ENABLE ROW LEVEL SECURITY;
 
 
@@ -1974,9 +2281,11 @@ CREATE POLICY "profiles_self_read" ON "public"."profiles" FOR SELECT USING ((("i
 
 
 
-CREATE POLICY "profiles_self_update" ON "public"."profiles" FOR UPDATE USING (("id" = "auth"."uid"())) WITH CHECK ((("id" = "auth"."uid"()) AND ("is_admin" = ( SELECT "profiles_1"."is_admin"
-   FROM "public"."profiles" "profiles_1"
-  WHERE ("profiles_1"."id" = "auth"."uid"())))));
+CREATE POLICY "profiles_self_select" ON "public"."profiles" FOR SELECT TO "authenticated" USING ((("id" = "auth"."uid"()) OR "public"."check_is_admin"()));
+
+
+
+CREATE POLICY "profiles_self_update" ON "public"."profiles" FOR UPDATE TO "authenticated" USING ((("id" = "auth"."uid"()) OR "public"."check_is_admin"())) WITH CHECK ((("id" = "auth"."uid"()) OR "public"."check_is_admin"()));
 
 
 
@@ -2044,6 +2353,19 @@ CREATE POLICY "reviews_public_read" ON "public"."reviews" FOR SELECT USING ((("i
 ALTER TABLE "public"."search_embeddings_cache" ENABLE ROW LEVEL SECURITY;
 
 
+ALTER TABLE "public"."search_logs" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "search_logs_insert_all" ON "public"."search_logs" FOR INSERT WITH CHECK (true);
+
+
+
+CREATE POLICY "search_logs_select_admin" ON "public"."search_logs" FOR SELECT TO "authenticated" USING ((EXISTS ( SELECT 1
+   FROM "public"."profiles"
+  WHERE (("profiles"."id" = "auth"."uid"()) AND ("profiles"."is_admin" = true)))));
+
+
+
 CREATE POLICY "sessions_admin_all" ON "public"."user_active_sessions" USING ("public"."check_is_admin"());
 
 
@@ -2066,6 +2388,9 @@ CREATE POLICY "sessions_self_update" ON "public"."user_active_sessions" FOR UPDA
 
 CREATE POLICY "stock_admin_all" ON "public"."stock_movements" TO "authenticated" USING ("public"."check_is_admin"()) WITH CHECK ("public"."check_is_admin"());
 
+
+
+ALTER TABLE "public"."stock_alerts" ENABLE ROW LEVEL SECURITY;
 
 
 CREATE POLICY "stock_auth_insert" ON "public"."stock_movements" FOR INSERT WITH CHECK (("auth"."uid"() IS NOT NULL));
@@ -2125,7 +2450,7 @@ ALTER TABLE "public"."user_ai_preferences" ENABLE ROW LEVEL SECURITY;
 ALTER PUBLICATION "supabase_realtime" OWNER TO "postgres";
 
 
-
+ALTER PUBLICATION "supabase_realtime" ADD TABLE ONLY "public"."products";
 
 
 
@@ -2137,6 +2462,20 @@ GRANT USAGE ON SCHEMA "public" TO "postgres";
 GRANT USAGE ON SCHEMA "public" TO "anon";
 GRANT USAGE ON SCHEMA "public" TO "authenticated";
 GRANT USAGE ON SCHEMA "public" TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."gtrgm_in"("cstring") TO "postgres";
+GRANT ALL ON FUNCTION "public"."gtrgm_in"("cstring") TO "anon";
+GRANT ALL ON FUNCTION "public"."gtrgm_in"("cstring") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."gtrgm_in"("cstring") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."gtrgm_out"("public"."gtrgm") TO "postgres";
+GRANT ALL ON FUNCTION "public"."gtrgm_out"("public"."gtrgm") TO "anon";
+GRANT ALL ON FUNCTION "public"."gtrgm_out"("public"."gtrgm") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."gtrgm_out"("public"."gtrgm") TO "service_role";
 
 
 
@@ -2657,6 +2996,97 @@ GRANT ALL ON FUNCTION "public"."get_product_recommendations"("p_product_id" "uui
 
 
 
+GRANT ALL ON FUNCTION "public"."gin_extract_query_trgm"("text", "internal", smallint, "internal", "internal", "internal", "internal") TO "postgres";
+GRANT ALL ON FUNCTION "public"."gin_extract_query_trgm"("text", "internal", smallint, "internal", "internal", "internal", "internal") TO "anon";
+GRANT ALL ON FUNCTION "public"."gin_extract_query_trgm"("text", "internal", smallint, "internal", "internal", "internal", "internal") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."gin_extract_query_trgm"("text", "internal", smallint, "internal", "internal", "internal", "internal") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."gin_extract_value_trgm"("text", "internal") TO "postgres";
+GRANT ALL ON FUNCTION "public"."gin_extract_value_trgm"("text", "internal") TO "anon";
+GRANT ALL ON FUNCTION "public"."gin_extract_value_trgm"("text", "internal") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."gin_extract_value_trgm"("text", "internal") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."gin_trgm_consistent"("internal", smallint, "text", integer, "internal", "internal", "internal", "internal") TO "postgres";
+GRANT ALL ON FUNCTION "public"."gin_trgm_consistent"("internal", smallint, "text", integer, "internal", "internal", "internal", "internal") TO "anon";
+GRANT ALL ON FUNCTION "public"."gin_trgm_consistent"("internal", smallint, "text", integer, "internal", "internal", "internal", "internal") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."gin_trgm_consistent"("internal", smallint, "text", integer, "internal", "internal", "internal", "internal") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."gin_trgm_triconsistent"("internal", smallint, "text", integer, "internal", "internal", "internal") TO "postgres";
+GRANT ALL ON FUNCTION "public"."gin_trgm_triconsistent"("internal", smallint, "text", integer, "internal", "internal", "internal") TO "anon";
+GRANT ALL ON FUNCTION "public"."gin_trgm_triconsistent"("internal", smallint, "text", integer, "internal", "internal", "internal") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."gin_trgm_triconsistent"("internal", smallint, "text", integer, "internal", "internal", "internal") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."gtrgm_compress"("internal") TO "postgres";
+GRANT ALL ON FUNCTION "public"."gtrgm_compress"("internal") TO "anon";
+GRANT ALL ON FUNCTION "public"."gtrgm_compress"("internal") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."gtrgm_compress"("internal") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."gtrgm_consistent"("internal", "text", smallint, "oid", "internal") TO "postgres";
+GRANT ALL ON FUNCTION "public"."gtrgm_consistent"("internal", "text", smallint, "oid", "internal") TO "anon";
+GRANT ALL ON FUNCTION "public"."gtrgm_consistent"("internal", "text", smallint, "oid", "internal") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."gtrgm_consistent"("internal", "text", smallint, "oid", "internal") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."gtrgm_decompress"("internal") TO "postgres";
+GRANT ALL ON FUNCTION "public"."gtrgm_decompress"("internal") TO "anon";
+GRANT ALL ON FUNCTION "public"."gtrgm_decompress"("internal") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."gtrgm_decompress"("internal") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."gtrgm_distance"("internal", "text", smallint, "oid", "internal") TO "postgres";
+GRANT ALL ON FUNCTION "public"."gtrgm_distance"("internal", "text", smallint, "oid", "internal") TO "anon";
+GRANT ALL ON FUNCTION "public"."gtrgm_distance"("internal", "text", smallint, "oid", "internal") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."gtrgm_distance"("internal", "text", smallint, "oid", "internal") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."gtrgm_options"("internal") TO "postgres";
+GRANT ALL ON FUNCTION "public"."gtrgm_options"("internal") TO "anon";
+GRANT ALL ON FUNCTION "public"."gtrgm_options"("internal") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."gtrgm_options"("internal") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."gtrgm_penalty"("internal", "internal", "internal") TO "postgres";
+GRANT ALL ON FUNCTION "public"."gtrgm_penalty"("internal", "internal", "internal") TO "anon";
+GRANT ALL ON FUNCTION "public"."gtrgm_penalty"("internal", "internal", "internal") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."gtrgm_penalty"("internal", "internal", "internal") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."gtrgm_picksplit"("internal", "internal") TO "postgres";
+GRANT ALL ON FUNCTION "public"."gtrgm_picksplit"("internal", "internal") TO "anon";
+GRANT ALL ON FUNCTION "public"."gtrgm_picksplit"("internal", "internal") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."gtrgm_picksplit"("internal", "internal") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."gtrgm_same"("public"."gtrgm", "public"."gtrgm", "internal") TO "postgres";
+GRANT ALL ON FUNCTION "public"."gtrgm_same"("public"."gtrgm", "public"."gtrgm", "internal") TO "anon";
+GRANT ALL ON FUNCTION "public"."gtrgm_same"("public"."gtrgm", "public"."gtrgm", "internal") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."gtrgm_same"("public"."gtrgm", "public"."gtrgm", "internal") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."gtrgm_union"("internal", "internal") TO "postgres";
+GRANT ALL ON FUNCTION "public"."gtrgm_union"("internal", "internal") TO "anon";
+GRANT ALL ON FUNCTION "public"."gtrgm_union"("internal", "internal") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."gtrgm_union"("internal", "internal") TO "service_role";
+
+
+
 GRANT ALL ON FUNCTION "public"."halfvec_accum"(double precision[], "public"."halfvec") TO "postgres";
 GRANT ALL ON FUNCTION "public"."halfvec_accum"(double precision[], "public"."halfvec") TO "anon";
 GRANT ALL ON FUNCTION "public"."halfvec_accum"(double precision[], "public"."halfvec") TO "authenticated";
@@ -2780,6 +3210,12 @@ GRANT ALL ON FUNCTION "public"."hamming_distance"(bit, bit) TO "postgres";
 GRANT ALL ON FUNCTION "public"."hamming_distance"(bit, bit) TO "anon";
 GRANT ALL ON FUNCTION "public"."hamming_distance"(bit, bit) TO "authenticated";
 GRANT ALL ON FUNCTION "public"."hamming_distance"(bit, bit) TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."handle_loyalty_on_payment"() TO "anon";
+GRANT ALL ON FUNCTION "public"."handle_loyalty_on_payment"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."handle_loyalty_on_payment"() TO "service_role";
 
 
 
@@ -2985,6 +3421,12 @@ GRANT ALL ON FUNCTION "public"."match_products"("query_embedding" "public"."vect
 
 
 
+GRANT ALL ON FUNCTION "public"."match_products_text"("query_text" "text", "match_count" integer) TO "anon";
+GRANT ALL ON FUNCTION "public"."match_products_text"("query_text" "text", "match_count" integer) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."match_products_text"("query_text" "text", "match_count" integer) TO "service_role";
+
+
+
 GRANT ALL ON FUNCTION "public"."prevent_admin_self_escalation"() TO "anon";
 GRANT ALL ON FUNCTION "public"."prevent_admin_self_escalation"() TO "authenticated";
 GRANT ALL ON FUNCTION "public"."prevent_admin_self_escalation"() TO "service_role";
@@ -2997,9 +3439,63 @@ GRANT ALL ON FUNCTION "public"."reserve_stock_and_create_order"("p_user_id" "uui
 
 
 
+GRANT ALL ON FUNCTION "public"."rls_auto_enable"() TO "anon";
+GRANT ALL ON FUNCTION "public"."rls_auto_enable"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."rls_auto_enable"() TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."search_products_fuzzy"("search_text" "text", "match_threshold" double precision, "match_count" integer) TO "anon";
+GRANT ALL ON FUNCTION "public"."search_products_fuzzy"("search_text" "text", "match_threshold" double precision, "match_count" integer) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."search_products_fuzzy"("search_text" "text", "match_threshold" double precision, "match_count" integer) TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."set_limit"(real) TO "postgres";
+GRANT ALL ON FUNCTION "public"."set_limit"(real) TO "anon";
+GRANT ALL ON FUNCTION "public"."set_limit"(real) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."set_limit"(real) TO "service_role";
+
+
+
 GRANT ALL ON FUNCTION "public"."set_updated_at"() TO "anon";
 GRANT ALL ON FUNCTION "public"."set_updated_at"() TO "authenticated";
 GRANT ALL ON FUNCTION "public"."set_updated_at"() TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."show_limit"() TO "postgres";
+GRANT ALL ON FUNCTION "public"."show_limit"() TO "anon";
+GRANT ALL ON FUNCTION "public"."show_limit"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."show_limit"() TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."show_trgm"("text") TO "postgres";
+GRANT ALL ON FUNCTION "public"."show_trgm"("text") TO "anon";
+GRANT ALL ON FUNCTION "public"."show_trgm"("text") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."show_trgm"("text") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."similarity"("text", "text") TO "postgres";
+GRANT ALL ON FUNCTION "public"."similarity"("text", "text") TO "anon";
+GRANT ALL ON FUNCTION "public"."similarity"("text", "text") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."similarity"("text", "text") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."similarity_dist"("text", "text") TO "postgres";
+GRANT ALL ON FUNCTION "public"."similarity_dist"("text", "text") TO "anon";
+GRANT ALL ON FUNCTION "public"."similarity_dist"("text", "text") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."similarity_dist"("text", "text") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."similarity_op"("text", "text") TO "postgres";
+GRANT ALL ON FUNCTION "public"."similarity_op"("text", "text") TO "anon";
+GRANT ALL ON FUNCTION "public"."similarity_op"("text", "text") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."similarity_op"("text", "text") TO "service_role";
 
 
 
@@ -3063,6 +3559,41 @@ GRANT ALL ON FUNCTION "public"."sparsevec_negative_inner_product"("public"."spar
 GRANT ALL ON FUNCTION "public"."sparsevec_negative_inner_product"("public"."sparsevec", "public"."sparsevec") TO "anon";
 GRANT ALL ON FUNCTION "public"."sparsevec_negative_inner_product"("public"."sparsevec", "public"."sparsevec") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."sparsevec_negative_inner_product"("public"."sparsevec", "public"."sparsevec") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."strict_word_similarity"("text", "text") TO "postgres";
+GRANT ALL ON FUNCTION "public"."strict_word_similarity"("text", "text") TO "anon";
+GRANT ALL ON FUNCTION "public"."strict_word_similarity"("text", "text") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."strict_word_similarity"("text", "text") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."strict_word_similarity_commutator_op"("text", "text") TO "postgres";
+GRANT ALL ON FUNCTION "public"."strict_word_similarity_commutator_op"("text", "text") TO "anon";
+GRANT ALL ON FUNCTION "public"."strict_word_similarity_commutator_op"("text", "text") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."strict_word_similarity_commutator_op"("text", "text") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."strict_word_similarity_dist_commutator_op"("text", "text") TO "postgres";
+GRANT ALL ON FUNCTION "public"."strict_word_similarity_dist_commutator_op"("text", "text") TO "anon";
+GRANT ALL ON FUNCTION "public"."strict_word_similarity_dist_commutator_op"("text", "text") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."strict_word_similarity_dist_commutator_op"("text", "text") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."strict_word_similarity_dist_op"("text", "text") TO "postgres";
+GRANT ALL ON FUNCTION "public"."strict_word_similarity_dist_op"("text", "text") TO "anon";
+GRANT ALL ON FUNCTION "public"."strict_word_similarity_dist_op"("text", "text") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."strict_word_similarity_dist_op"("text", "text") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."strict_word_similarity_op"("text", "text") TO "postgres";
+GRANT ALL ON FUNCTION "public"."strict_word_similarity_op"("text", "text") TO "anon";
+GRANT ALL ON FUNCTION "public"."strict_word_similarity_op"("text", "text") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."strict_word_similarity_op"("text", "text") TO "service_role";
 
 
 
@@ -3244,6 +3775,41 @@ GRANT ALL ON FUNCTION "public"."vector_sub"("public"."vector", "public"."vector"
 
 
 
+GRANT ALL ON FUNCTION "public"."word_similarity"("text", "text") TO "postgres";
+GRANT ALL ON FUNCTION "public"."word_similarity"("text", "text") TO "anon";
+GRANT ALL ON FUNCTION "public"."word_similarity"("text", "text") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."word_similarity"("text", "text") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."word_similarity_commutator_op"("text", "text") TO "postgres";
+GRANT ALL ON FUNCTION "public"."word_similarity_commutator_op"("text", "text") TO "anon";
+GRANT ALL ON FUNCTION "public"."word_similarity_commutator_op"("text", "text") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."word_similarity_commutator_op"("text", "text") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."word_similarity_dist_commutator_op"("text", "text") TO "postgres";
+GRANT ALL ON FUNCTION "public"."word_similarity_dist_commutator_op"("text", "text") TO "anon";
+GRANT ALL ON FUNCTION "public"."word_similarity_dist_commutator_op"("text", "text") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."word_similarity_dist_commutator_op"("text", "text") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."word_similarity_dist_op"("text", "text") TO "postgres";
+GRANT ALL ON FUNCTION "public"."word_similarity_dist_op"("text", "text") TO "anon";
+GRANT ALL ON FUNCTION "public"."word_similarity_dist_op"("text", "text") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."word_similarity_dist_op"("text", "text") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."word_similarity_op"("text", "text") TO "postgres";
+GRANT ALL ON FUNCTION "public"."word_similarity_op"("text", "text") TO "anon";
+GRANT ALL ON FUNCTION "public"."word_similarity_op"("text", "text") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."word_similarity_op"("text", "text") TO "service_role";
+
+
+
 
 
 
@@ -3305,6 +3871,12 @@ GRANT ALL ON TABLE "public"."analytics_events" TO "service_role";
 
 
 
+GRANT ALL ON TABLE "public"."analytics_funnel_daily" TO "anon";
+GRANT ALL ON TABLE "public"."analytics_funnel_daily" TO "authenticated";
+GRANT ALL ON TABLE "public"."analytics_funnel_daily" TO "service_role";
+
+
+
 GRANT ALL ON TABLE "public"."blog_posts" TO "anon";
 GRANT ALL ON TABLE "public"."blog_posts" TO "authenticated";
 GRANT ALL ON TABLE "public"."blog_posts" TO "service_role";
@@ -3314,6 +3886,12 @@ GRANT ALL ON TABLE "public"."blog_posts" TO "service_role";
 GRANT ALL ON TABLE "public"."budtender_interactions" TO "anon";
 GRANT ALL ON TABLE "public"."budtender_interactions" TO "authenticated";
 GRANT ALL ON TABLE "public"."budtender_interactions" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."budtender_sessions" TO "anon";
+GRANT ALL ON TABLE "public"."budtender_sessions" TO "authenticated";
+GRANT ALL ON TABLE "public"."budtender_sessions" TO "service_role";
 
 
 
@@ -3419,6 +3997,18 @@ GRANT ALL ON TABLE "public"."search_embeddings_cache" TO "service_role";
 
 
 
+GRANT ALL ON TABLE "public"."search_logs" TO "anon";
+GRANT ALL ON TABLE "public"."search_logs" TO "authenticated";
+GRANT ALL ON TABLE "public"."search_logs" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."stock_alerts" TO "anon";
+GRANT ALL ON TABLE "public"."stock_alerts" TO "authenticated";
+GRANT ALL ON TABLE "public"."stock_alerts" TO "service_role";
+
+
+
 GRANT ALL ON TABLE "public"."stock_movements" TO "anon";
 GRANT ALL ON TABLE "public"."stock_movements" TO "authenticated";
 GRANT ALL ON TABLE "public"."stock_movements" TO "service_role";
@@ -3485,6 +4075,10 @@ ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TAB
 ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TABLES TO "anon";
 ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TABLES TO "authenticated";
 ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TABLES TO "service_role";
+
+
+
+
 
 
 
