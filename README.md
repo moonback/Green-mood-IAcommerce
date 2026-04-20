@@ -14,7 +14,7 @@
   <img src="https://img.shields.io/badge/Supabase-PostgreSQL-3ECF8E?logo=supabase&logoColor=white" />
   <img src="https://img.shields.io/badge/TailwindCSS-v4-06B6D4?logo=tailwindcss&logoColor=white" />
   <img src="https://img.shields.io/badge/Gemini_Live-Voice_AI-EA4335?logo=google&logoColor=white" />
-  <img src="https://img.shields.io/badge/Tests-361%20passing-brightgreen?logo=vitest" alt="Tests 361 passing" />
+  <img src="https://img.shields.io/badge/Tests-374%20passing-brightgreen?logo=vitest" alt="Tests 374 passing" />
   <img src="https://img.shields.io/badge/Stripe-Payments-635BFF?logo=stripe&logoColor=white" />
   <img src="https://img.shields.io/badge/Playwright-21%2F21_Passed-28A745?logo=playwright&logoColor=white" />
 </p>
@@ -92,6 +92,10 @@ Le cœur différenciant du projet. Un conseiller expert CBD disponible 24h/24 di
 - **Moteur de Skills modulaire** : fichiers `.md` injectés dynamiquement, minifiés automatiquement pour le TTS
 - **Token éphémère sécurisé** : la clé API Gemini ne transite jamais dans le navigateur (Edge Function `gemini-token`)
 - **Proactivité intelligente** : relance vocale après 8s (panier actif) ou 15s (navigation seule)
+- **Transcript temps réel** : panneau de chat textuel affiché simultanément à la voix, avec auto-scroll et filtrage des messages vides
+- **Résumé de session par email** : envoi automatique post-session via Edge Function `send-session-summary` (Resend) avec liste des produits recommandés et liens directs
+- **Déclenchement proactif sur fiche produit** : ouverture automatique après 30s de consultation avec greeting contextuel personnalisé au produit
+- **Historique de conversations** : page `/compte/budtender-historique` avec transcripts complets, filtres par période, et bouton "Relancer"
 
 ### Intelligence Omnicanale
 
@@ -339,12 +343,14 @@ npx supabase functions deploy gemini-token
 npx supabase functions deploy stripe-payment
 npx supabase functions deploy stripe-webhook
 npx supabase functions deploy admin-action
+npx supabase functions deploy send-session-summary
 
 # Configurer les secrets (NE JAMAIS préfixer avec VITE_)
 npx supabase secrets set OPENROUTER_API_KEY=sk-or-...
 npx supabase secrets set GEMINI_API_KEY=AIzaSy...
 npx supabase secrets set STRIPE_SECRET_KEY=sk_test_...
 npx supabase secrets set STRIPE_WEBHOOK_SECRET=whsec_...
+npx supabase secrets set RESEND_API_KEY=re_...  # Optionnel — emails résumé BudTender
 ```
 
 ### Étape 5 — Lancer l'application
@@ -401,6 +407,9 @@ STRIPE_SECRET_KEY=sk_test_51... (ou sk_live_... en production)
 # Stripe — validation signature webhook (HMAC-SHA256)
 STRIPE_WEBHOOK_SECRET=whsec_...
 
+# Resend — envoi emails résumé session BudTender (optionnel)
+RESEND_API_KEY=re_...
+
 # Application URL (pour les webhooks, emails transactionnels)
 APP_URL=https://votre-app.vercel.app
 ```
@@ -432,6 +441,7 @@ green-mood/
 │   │   ├── Cart.tsx / Checkout.tsx    # Panier + tunnel de commande Stripe
 │   │   ├── OrderConfirmation.tsx      # Page de confirmation post-paiement
 │   │   ├── Account.tsx                # Espace client (commandes, favoris, points)
+│   │   ├── BudTenderHistory.tsx       # Historique conversations BudTender
 │   │   ├── Admin.tsx                  # Dashboard admin central (28 tabs, 13KB)
 │   │   ├── POSPage.tsx                # Terminal de caisse (wrapper)
 │   │   ├── CustomerDisplay.tsx        # Écran client POS (WebSocket)
@@ -449,7 +459,7 @@ green-mood/
 │   │   ├── ProductCompareModal.tsx    # Tableau de comparaison produits
 │   │   ├── CartSidebar.tsx            # Panier latéral
 │   │   ├── BudTender.tsx              # Wrapper BudTender vocal
-│   │   ├── VoiceAdvisor.tsx           # Interface widget vocal
+│   │   ├── VoiceAdvisor.tsx           # Interface widget vocal + transcript temps réel
 │   │   │
 │   │   ├── admin/                     # 35+ composants admin
 │   │   │   ├── layout/                # AdminLayout, AdminSidebar, AdminHeader
@@ -460,6 +470,7 @@ green-mood/
 │   │   │
 │   │   ├── budtender/                 # Composants IA advisor (recommandations, quiz)
 │   │   ├── budtender-ui/              # Atoms UI du widget BudTender
+│   │   │   └── TranscriptPanel.tsx    # Panneau transcript temps réel (voix + texte)
 │   │   ├── product-premium/           # 13 composants fiche produit premium
 │   │   └── home/                      # Hero, Hero2, FuturisticBackground
 │   │
@@ -497,6 +508,10 @@ green-mood/
 │   │   ├── voiceSkills.ts             # Chargement dynamique skills vocaux
 │   │   ├── analytics.ts               # Event tracking Supabase
 │   │   ├── monitoring.ts              # Sentry initialisation
+│   │   ├── emailTemplate.ts           # Template HTML email résumé session BudTender
+│   │   ├── sessionGuard.ts            # Guard durée session (shouldSendSummary)
+│   │   ├── sessionPersistence.ts      # Constructeur record session (buildSessionRecord)
+│   │   ├── proactiveGreeting.ts       # Génération greeting contextuel fiche produit
 │   │   └── seo/                       # metaBuilder.ts, schemaBuilder.ts, internalLinks.ts
 │   │
 │   ├── skills/                        # 8 fichiers Markdown (skills IA)
@@ -519,19 +534,21 @@ green-mood/
 │   ├── config.toml                    # Configuration Supabase local dev
 │   ├── boutique-vierge.sql            # Schéma complet (62 KB)
 │   ├── migration_v8_esil_data.sql     # Données d'exemple (22 KB)
-│   ├── functions/                     # 6 Edge Functions Deno
+│   ├── functions/                     # 7 Edge Functions Deno
 │   │   ├── ai-chat/                   # Streaming LLM chat
 │   │   ├── ai-embeddings/             # Génération embeddings batch
 │   │   ├── gemini-token/              # Token éphémère Gemini Live
 │   │   ├── stripe-payment/            # Création PaymentIntent
 │   │   ├── stripe-webhook/            # Confirmation paiement + rollback
 │   │   ├── admin-action/              # Actions admin sécurisées
+│   │   ├── send-session-summary/      # Résumé session BudTender + email Resend
 │   │   └── _shared/                   # CORS headers, embedding cache utils
 │   └── migrations/                    # Migrations incrémentales
 │       ├── 20260325173918_remote_commit.sql  # Migration principale (127 KB)
 │       ├── 20260326_centralize_loyalty.sql   # Centralisation fidélité
 │       ├── 20260326_orders_rls_fix.sql       # Fix RLS commandes
-│       └── 20260327_fuzzy_search.sql         # pg_trgm + RPC fuzzy + index GIST
+│       ├── 20260327_fuzzy_search.sql
+│       └── 20260601_budtender_sessions.sql   # Table sessions BudTender + RLS       # pg_trgm + RPC fuzzy + index GIST
 │
 ├── public/
 │   ├── audio-processor.js             # AudioWorklet (capture micro, isolation thread)
@@ -735,6 +752,7 @@ La synchronisation s'effectue en temps réel via `messageQueueRef`, garantissant
 | `cannabis_conditions_vectors` | Conditions médicales | `condition`, `evidence_score`, `summary`, `embedding` |
 | `budtender_interactions` | Sessions IA | `user_id`, `interaction_type`, `duration_seconds` |
 | `budtender_user_prefs` | Préférences IA | `user_id`, `preferences jsonb` |
+| `budtender_sessions` | Sessions BudTender complètes | `user_id`, `transcript jsonb`, `recommended_products jsonb`, `duration_sec`, `email_sent` |
 | `analytics_events` | Événements tracking | `event_type`, `properties jsonb`, `user_id` |
 | `blog_posts` | Articles guides | `title`, `content`, `slug`, `generated_at` |
 | `stock_movements` | Traçabilité stock | `product_id`, `quantity`, `type`, `created_by` |
@@ -882,8 +900,9 @@ Les secrets Gemini / OpenRouter / Stripe côté serveur restent dans Supabase se
 ### Checklist production
 
 - [ ] Supabase : activer les extensions `vector` et `pg_trgm`
-- [ ] Supabase : exécuter `boutique-vierge.sql` + toutes les migrations
-- [ ] Supabase : déployer les 6 Edge Functions avec leurs secrets
+- [ ] Supabase : exécuter `boutique-vierge.sql` + toutes les migrations (dont `20260601_budtender_sessions.sql`)
+- [ ] Supabase : déployer les 7 Edge Functions avec leurs secrets
+- [ ] Resend : configurer `RESEND_API_KEY` dans les secrets Supabase (optionnel — emails résumé BudTender)
 - [ ] Stripe : configurer le webhook endpoint `https://votre-app.com/api/stripe-webhook`
 - [ ] Stripe : passer en mode Live (clés `pk_live_` / `sk_live_`)
 - [ ] Variables d'environnement VITE_* configurées sur la plateforme
