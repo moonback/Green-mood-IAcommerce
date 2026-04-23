@@ -11,6 +11,19 @@ import "./index.css";
 
 initMonitoring();
 
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker
+      .register("/sw.js")
+      .then((reg) => {
+        console.log("[SW] Service Worker Registered successfully!", reg);
+      })
+      .catch((err) => {
+        console.log("[SW] Service Worker Registration failed:", err);
+      });
+  });
+}
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
